@@ -5100,6 +5100,8 @@ const UI_TEXT = {
     stockRemainingMessage: "สินค้า \"{name}\" คงเหลือ {stock} ชิ้น",
     poRequired: "กรุณากรอกเลข PO",
     duplicatePoCancelled: "ยกเลิกการสร้างใบสั่งซื้อ เนื่องจากพบเลข PO ซ้ำ",
+    duplicatePoAlreadyUsed: "พบเลข PO นี้ถูกใช้แล้ว กรุณาเปลี่ยนเลข PO ก่อนสร้างออเดอร์ใหม่",
+    duplicatePoLookupFailed: "ไม่สามารถตรวจสอบเลข PO ซ้ำได้ กรุณาลองใหม่อีกครั้ง",
     checkingStock: "กำลังตรวจสอบสต๊อก...",
     creatingOrder: "กำลังสร้างใบสั่งซื้อ...",
     orderCreated: "สร้างใบสั่งซื้อเรียบร้อยแล้ว",
@@ -5842,6 +5844,8 @@ const UI_TEXT = {
     stockRemainingMessage: "Product \"{name}\" has {stock} pcs left",
     poRequired: "Please enter PO number",
     duplicatePoCancelled: "Order creation cancelled because this PO already exists",
+    duplicatePoAlreadyUsed: "This PO has already been used. Please change the PO number before creating a new order.",
+    duplicatePoLookupFailed: "Unable to check duplicate PO. Please try again.",
     checkingStock: "Checking stock...",
     creatingOrder: "Creating order...",
     orderCreated: "Order created successfully",
@@ -18183,7 +18187,6 @@ async function submitOrder(){
     }
 
     if (!await confirmDuplicatePoBeforeCreateOrder(poNumber)) {
-      showToast(t("duplicatePoCancelled", "ยกเลิกการสร้างใบสั่งซื้อ เนื่องจากพบเลข PO ซ้ำ"), "warning");
       return;
     }
 
@@ -24574,13 +24577,24 @@ async function checkDuplicatePo(poNumber) {
   return json.data || { duplicate: false, matches: [] };
 }
 
+function focusPoInputForDuplicatePo() {
+  setTimeout(() => {
+    const poInput = document.getElementById("poInput");
+    if (!poInput || typeof poInput.focus !== "function") return;
+    poInput.focus();
+    if (typeof poInput.select === "function") poInput.select();
+  }, 0);
+}
+
 async function confirmDuplicatePoBeforeCreateOrder(poNumber) {
   let result;
   try {
     result = await checkDuplicatePo(poNumber);
   } catch (err) {
-    console.warn("Duplicate PO lookup failed; continuing createOrder flow", err);
-    return true;
+    console.warn("Duplicate PO lookup failed; blocking createOrder flow", err);
+    showToast(t("duplicatePoLookupFailed", "ไม่สามารถตรวจสอบเลข PO ซ้ำได้ กรุณาลองใหม่อีกครั้ง"), "error");
+    focusPoInputForDuplicatePo();
+    return false;
   }
 
   const matches = Array.isArray(result?.matches) ? result.matches : [];
@@ -24589,13 +24603,13 @@ async function confirmDuplicatePoBeforeCreateOrder(poNumber) {
   const detailText = matches
     .slice(0, 3)
     .map(order => {
+      const displayValue = value => String(value ?? "-").trim().replace(/\s+/g, " ") || "-";
       const parts = [
-        `${t("orderNumber", "เลขออเดอร์")}: ${order?.orderId || "-"}`,
-        `${t("status", "สถานะ")}: ${getAdminOrderStatusLabel(order?.status || "-")}`,
-        `${t("source", "แหล่งที่มา")}: ${esc(order?.source || "-")}`
+        `${t("orderNumber", "เลขออเดอร์")}: ${displayValue(order?.orderId)}`,
+        `${t("status", "สถานะ")}: ${displayValue(order?.status)}`
       ];
-      if (order?.partnerRequestId) {
-        parts.push(`${t("partnerRequestId", "เลขคำขอคู่ค้า")}: ${order.partnerRequestId}`);
+      if (order?.createdBy) {
+        parts.push(`${t("createdBy", "ผู้สร้าง")}: ${displayValue(order.createdBy)}`);
       }
       return parts.join(" | ");
     })
@@ -24605,9 +24619,20 @@ async function confirmDuplicatePoBeforeCreateOrder(poNumber) {
     ? `\n${formatUiText("andMoreOrders", { count: matches.length - 3 }, "...และอีก {count} ออเดอร์")}`
     : "";
 
-  return window.confirm(
-    formatUiText("duplicatePoPartnerCreateConfirm", { po: poNumber, details: detailText, more: moreText }, "พบเลข PO ซ้ำ: {po}\n\n{details}{more}\n\nต้องการสร้างใบสั่งซื้อด้วย PO นี้ต่อหรือไม่?")
-  );
+  const message = [
+    t("duplicatePoAlreadyUsed", "พบเลข PO นี้ถูกใช้แล้ว กรุณาเปลี่ยนเลข PO ก่อนสร้างออเดอร์ใหม่"),
+    `PO: ${poNumber}`,
+    "",
+    `${detailText}${moreText}`
+  ].join("\n");
+
+  if (typeof window !== "undefined" && typeof window.alert === "function") {
+    window.alert(message);
+  } else {
+    showToast(t("duplicatePoAlreadyUsed", "พบเลข PO นี้ถูกใช้แล้ว กรุณาเปลี่ยนเลข PO ก่อนสร้างออเดอร์ใหม่"), "warning");
+  }
+  focusPoInputForDuplicatePo();
+  return false;
 }
 
 async function convertPartnerRequestToOrderFromAdmin(requestId) {
