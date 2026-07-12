@@ -4125,9 +4125,337 @@ textarea.input{
   line-height:1.45;
 }
 
+/* ================= UX FOUNDATION: TEST FRONTEND PHASE ================= */
+:root{
+  --color-primary:var(--primary, #1d4ed8);
+  --color-primary-hover:var(--primary-strong, #2563eb);
+  --color-background:var(--bg, #f4f6f8);
+  --color-surface:var(--surface, #ffffff);
+  --color-border:var(--border, #dbe3ea);
+  --color-text:var(--text, #111827);
+  --color-text-muted:var(--muted, #64748b);
+  --color-success:var(--success, #166534);
+  --color-warning:var(--warning, #92400e);
+  --color-danger:var(--danger, #b42318);
+  --space-1:4px;
+  --space-2:8px;
+  --space-3:12px;
+  --space-4:16px;
+  --space-5:20px;
+  --radius-control:8px;
+  --radius-card:8px;
+  --radius-sheet:8px;
+  --shadow-soft:0 1px 2px rgba(15,23,42,.06), 0 12px 30px rgba(15,23,42,.08);
+  --shadow-panel:0 16px 42px rgba(15,23,42,.14);
+  --font-ui:Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body[data-ux-foundation="true"]:not([data-theme="cute"]){
+  --bg:#f4f6f8;
+  --bg-soft:#edf2f7;
+  --surface:#ffffff;
+  --surface-2:#f8fafc;
+  --surface-3:#eef2f7;
+  --surface-glass:#ffffff;
+  --header-bg:rgba(255,255,255,.94);
+  --header-bg-scrolled:rgba(255,255,255,.98);
+  --sheet-bg:#ffffff;
+  --side-bg:#ffffff;
+  --text:#111827;
+  --text-soft:#475569;
+  --muted:#64748b;
+  --border:#dbe3ea;
+  --border-strong:#cbd5e1;
+  --primary:#1d4ed8;
+  --primary-strong:#2563eb;
+  --primary-text:#ffffff;
+  --secondary:#eef2f7;
+  --secondary-strong:#dbe3ea;
+  --success:#166534;
+  --warning:#92400e;
+  --danger:#b42318;
+  --focus-color:#3b82f6;
+  --focus-ring:0 0 0 3px rgba(59,130,246,.22);
+  --placeholder:#94a3b8;
+  --header-border:#dbe3ea;
+  --header-border-strong:#cbd5e1;
+  --inner-highlight:rgba(255,255,255,.86);
+  --theme-color-scheme:light;
+  --status-ready-bg:#dcfce7;
+  --status-ready-text:#166534;
+  --status-ready-border:#bbf7d0;
+  --status-ready-dot:#22c55e;
+  --status-ready-plus-bg:#dbeafe;
+  --status-ready-plus-text:#1e40af;
+  --status-ready-plus-border:#bfdbfe;
+  --status-shipping-bg:#dbeafe;
+  --status-shipping-text:#1e40af;
+  --status-shipping-border:#bfdbfe;
+  --status-warehouse-bg:#ede9fe;
+  --status-warehouse-text:#5b21b6;
+  --status-warehouse-border:#ddd6fe;
+  --status-out-bg:#fee2e2;
+  --status-out-text:#b42318;
+  --status-out-border:#fecaca;
+  --status-pending-bg:#fef3c7;
+  --status-pending-text:#92400e;
+  --status-pending-border:#fde68a;
+  --status-approved-bg:#dcfce7;
+  --status-approved-text:#166534;
+  --status-approved-border:#bbf7d0;
+  --status-rejected-bg:#fee2e2;
+  --status-rejected-text:#b42318;
+  --status-rejected-border:#fecaca;
+  --status-neutral-bg:#e2e8f0;
+  --status-neutral-text:#475569;
+  --status-neutral-border:#cbd5e1;
+  --shadow-card:var(--shadow-soft);
+  --shadow-control:0 8px 20px rgba(15,23,42,.08);
+  --shadow-header:0 6px 24px rgba(15,23,42,.08);
+  --shadow-header-scrolled:0 12px 32px rgba(15,23,42,.10);
+  --shadow-side:-8px 0 32px rgba(15,23,42,.14);
+  --shadow-floating:var(--shadow-panel);
+  --shadow-fab:var(--shadow-panel);
+  color-scheme:light;
+}
+
+body[data-ux-foundation="true"]{
+  font-family:var(--font-ui);
+  letter-spacing:0;
+}
+
+body[data-ux-foundation="true"] header{
+  min-height:88px;
+  border-bottom-color:var(--color-border);
+}
+
+body[data-ux-foundation="true"] .container{
+  width:min(1180px, 100%);
+  max-width:100%;
+  box-sizing:border-box;
+  margin:0 auto;
+  padding:var(--space-4) clamp(14px, 2vw, 24px) calc(88px + env(safe-area-inset-bottom, 0px));
+}
+
+body[data-ux-foundation="true"] .shop-title,
+body[data-ux-foundation="true"] .admin-title{
+  border-radius:var(--radius-control);
+  box-shadow:none;
+  padding:7px 10px;
+}
+
+body[data-ux-foundation="true"] .card,
+body[data-ux-foundation="true"] .product-card,
+body[data-ux-foundation="true"] .admin-card,
+body[data-ux-foundation="true"] .bulk-preview-card,
+body[data-ux-foundation="true"] .bulk-product-picker,
+body[data-ux-foundation="true"] .bulk-product-picker-row,
+body[data-ux-foundation="true"] .bulk-import-status,
+body[data-ux-foundation="true"] .bulk-import-success-card,
+body[data-ux-foundation="true"] .partner-order-source-badge,
+body[data-ux-foundation="true"] .delivery-note-po-card,
+body[data-ux-foundation="true"] .delivery-note-item-card,
+body[data-ux-foundation="true"] .billing-note-item-card,
+body[data-ux-foundation="true"] .landed-cost-apply-card{
+  border-radius:var(--radius-card);
+  border-color:var(--color-border);
+  box-shadow:var(--shadow-soft);
+  background:var(--color-surface);
+}
+
+body[data-ux-foundation="true"] .product-card{
+  align-items:flex-start;
+  min-width:0;
+}
+
+body[data-ux-foundation="true"] .product-card .thumb,
+body[data-ux-foundation="true"] .thumb-placeholder,
+body[data-ux-foundation="true"] .bulk-product-picker-thumb,
+body[data-ux-foundation="true"] .delivery-note-print-thumb,
+body[data-ux-foundation="true"] .billing-note-print-thumb{
+  border-radius:var(--radius-card);
+}
+
+body[data-ux-foundation="true"] .product-card .name,
+body[data-ux-foundation="true"] .admin-detail-title,
+body[data-ux-foundation="true"] .section-title{
+  letter-spacing:0;
+}
+
+body[data-ux-foundation="true"] .btn,
+body[data-ux-foundation="true"] .search-btn,
+body[data-ux-foundation="true"] .filter-btn,
+body[data-ux-foundation="true"] .filter-item,
+body[data-ux-foundation="true"] .sheet-nav-btn,
+body[data-ux-foundation="true"] .btn-remove{
+  border-radius:var(--radius-control);
+}
+
+body[data-ux-foundation="true"] .btn-primary{
+  background:var(--color-primary);
+  color:var(--primary-text);
+}
+
+body[data-ux-foundation="true"] .btn-primary:hover{
+  background:var(--color-primary-hover);
+  filter:none;
+}
+
+body[data-ux-foundation="true"] .btn-secondary,
+body[data-ux-foundation="true"] .btn-outline{
+  background:var(--surface-2);
+  color:var(--color-text);
+  border:1px solid var(--color-border);
+}
+
+body[data-ux-foundation="true"] input,
+body[data-ux-foundation="true"] select,
+body[data-ux-foundation="true"] textarea,
+body[data-ux-foundation="true"] .input,
+body[data-ux-foundation="true"] .form-group input,
+body[data-ux-foundation="true"] .form-group select{
+  border-radius:var(--radius-control);
+  border-color:var(--color-border);
+  background:var(--surface-2);
+  color:var(--color-text);
+}
+
+body[data-ux-foundation="true"] input:focus,
+body[data-ux-foundation="true"] select:focus,
+body[data-ux-foundation="true"] textarea:focus,
+body[data-ux-foundation="true"] .input:focus{
+  border-color:var(--focus-color);
+  box-shadow:var(--focus-ring);
+}
+
+body[data-ux-foundation="true"] .sheet{
+  box-sizing:border-box;
+  max-width:100%;
+  border-radius:var(--radius-sheet) var(--radius-sheet) 0 0;
+  background:var(--sheet-bg);
+  border:1px solid var(--color-border);
+  box-shadow:var(--shadow-panel);
+}
+
+body[data-ux-foundation="true"] .side-menu,
+body[data-ux-foundation="true"] .sheet.stock-menu-return-side{
+  box-sizing:border-box;
+  width:min(360px, 92vw);
+  background:var(--side-bg);
+}
+
+body[data-ux-foundation="true"] .side-menu .menu-group{
+  padding:var(--space-3);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-card);
+  background:var(--surface-2);
+}
+
+body[data-ux-foundation="true"] .side-menu .menu-group > .btn{
+  min-height:42px;
+  border-radius:var(--radius-control);
+}
+
+body[data-ux-foundation="true"] .side-menu .menu-group > .btn:disabled{
+  background:transparent;
+  border:1px dashed var(--color-border);
+  color:var(--color-text-muted);
+}
+
+body[data-ux-foundation="true"] .menu-section-label{
+  margin:0 0 var(--space-1);
+  color:var(--color-text-muted);
+  font-size:11px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+body[data-ux-foundation="true"] .status,
+body[data-ux-foundation="true"] .status-badge,
+body[data-ux-foundation="true"] .timeline-tag,
+body[data-ux-foundation="true"] .badge{
+  border-radius:999px;
+  box-shadow:none;
+}
+
+body[data-ux-foundation="true"] .filter-dropdown{
+  border-radius:var(--radius-card);
+  border:1px solid var(--color-border);
+  background:var(--color-surface);
+  box-shadow:var(--shadow-panel);
+}
+
+body[data-ux-foundation="true"] .sheet-action-footer,
+body[data-ux-foundation="true"] .qty-action,
+body[data-ux-foundation="true"] .product-action-zone,
+body[data-ux-foundation="true"] .admin-action,
+body[data-ux-foundation="true"] .sheet-topbar,
+body[data-ux-foundation="true"] .admin-sheet-topbar,
+body[data-ux-foundation="true"] .side-menu-topbar{
+  background:var(--sheet-bg);
+  border-color:var(--color-border);
+}
+
+body[data-ux-foundation="true"] .product-card .name,
+body[data-ux-foundation="true"] .admin-card,
+body[data-ux-foundation="true"] .bulk-preview-card,
+body[data-ux-foundation="true"] .delivery-note-item-card,
+body[data-ux-foundation="true"] .billing-note-item-card{
+  overflow-wrap:anywhere;
+}
+
+@media (min-width:900px){
+  body[data-ux-foundation="true"] .container{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:var(--space-4);
+  }
+
+  body[data-ux-foundation="true"] .container > .empty-state,
+  body[data-ux-foundation="true"] .container > .empty-state-lottie-ui{
+    grid-column:1 / -1;
+  }
+}
+
+@media (min-width:1280px){
+  body[data-ux-foundation="true"] .container{
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width:430px){
+  body[data-ux-foundation="true"] header{
+    min-height:78px;
+    align-items:flex-start;
+    gap:var(--space-2);
+  }
+
+  body[data-ux-foundation="true"] .header-action-stack{
+    gap:var(--space-1);
+  }
+
+  body[data-ux-foundation="true"] .product-card{
+    gap:var(--space-3);
+    padding:var(--space-3);
+  }
+
+  body[data-ux-foundation="true"] .product-card .thumb{
+    width:76px;
+    height:76px;
+  }
+
+  body[data-ux-foundation="true"] .sheet{
+    left:0;
+    right:0;
+    width:auto;
+    max-width:none;
+    max-height:92dvh;
+  }
+}
+
 </style>
 </head>
-<body>
+<body data-ux-foundation="true">
 
 <!-- 🔴 HEADER (Mode-Based Controlled) -->
 <header id="appHeader"></header>
@@ -17219,6 +17547,26 @@ function openMainMenu(triggerEl){
               </div>
 
               <div class="menu-group">
+                <div class="menu-section-label">${t("inventory", "สต๊อก")}</div>
+                <button class="btn btn-secondary"
+                  onclick="openStockTimelineInsideAdminMenu();">
+                  ${t("onhandStock", "สต๊อกคงเหลือ")}
+                </button>
+
+                <button class="btn btn-secondary" type="button" disabled
+                  aria-disabled="true"
+                  title="${t("backendRequired", "ต้องรอ Backend ในเฟสถัดไป")}">
+                  ${t("displayStock", "Display Stock")} · ${t("comingLater", "รอเฟสถัดไป")}
+                </button>
+
+                <button class="btn btn-secondary" type="button" disabled
+                  aria-disabled="true"
+                  title="${t("backendRequired", "ต้องรอ Backend ในเฟสถัดไป")}">
+                  ${t("sourceableStock", "Sourceable Stock")} · ${t("comingLater", "รอเฟสถัดไป")}
+                </button>
+              </div>
+
+              <div class="menu-group">
                 <div class="menu-section-label">${t("orders", "คำสั่งซื้อ")}</div>
                 <button class="btn btn-secondary"
                   onclick="closeMainMenu(); handleOpenPendingOrders();">
@@ -17318,6 +17666,18 @@ function openMainMenu(triggerEl){
                 <button class="btn btn-secondary"
                   onclick="closeMainMenu(); openChangePasswordSheet();">
                   ${t("changePassword", "เปลี่ยนรหัสผ่าน")}
+                </button>
+
+                <button class="btn btn-secondary" type="button" disabled
+                  aria-disabled="true"
+                  title="${t("permissionBackendPending", "ต้องรอ Role/Permission Backend")}">
+                  ${t("usersPermissions", "Users & Permissions")} · ${t("comingLater", "รอเฟสถัดไป")}
+                </button>
+
+                <button class="btn btn-secondary" type="button" disabled
+                  aria-disabled="true"
+                  title="${t("activityBackendPending", "ต้องรอ Activity Log Backend")}">
+                  ${t("activityLog", "Activity Log")} · ${t("comingLater", "รอเฟสถัดไป")}
                 </button>
               </div>
               `

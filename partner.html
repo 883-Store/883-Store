@@ -634,9 +634,215 @@
       .interest-summary{grid-template-columns:1fr}
       .summary-bar{left:8px;right:8px;bottom:8px}
     }
+
+    /* ================= UX FOUNDATION: TEST FRONTEND PHASE ================= */
+    :root{
+      --color-primary:var(--primary, #1d4ed8);
+      --color-primary-hover:var(--primary-strong, #2563eb);
+      --color-background:var(--bg, #f4f6f8);
+      --color-surface:var(--surface, #ffffff);
+      --color-border:var(--border, #dbe3ea);
+      --color-text:var(--text, #111827);
+      --color-text-muted:var(--muted, #64748b);
+      --color-success:var(--success, #166534);
+      --color-warning:var(--warning, #92400e);
+      --color-danger:var(--danger, #b42318);
+      --space-1:4px;
+      --space-2:8px;
+      --space-3:12px;
+      --space-4:16px;
+      --radius-control:8px;
+      --radius-card:8px;
+      --shadow-soft:0 1px 2px rgba(15,23,42,.06), 0 12px 30px rgba(15,23,42,.08);
+      --shadow-panel:0 16px 42px rgba(15,23,42,.14);
+      --font-ui:Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body[data-ux-foundation="true"]{
+      --bg:#f4f6f8;
+      --surface:#ffffff;
+      --surface-2:#f8fafc;
+      --text:#111827;
+      --text-soft:#475569;
+      --muted:#64748b;
+      --border:#dbe3ea;
+      --primary:#1d4ed8;
+      --primary-strong:#2563eb;
+      --danger:#b42318;
+      --success:#166534;
+      --warning:#92400e;
+      --shadow:var(--shadow-soft);
+      background:var(--bg);
+      color:var(--text);
+      font-family:var(--font-ui);
+      letter-spacing:0;
+    }
+
+    body[data-ux-foundation="true"] .page{
+      width:min(1180px,100%);
+      padding:18px clamp(14px, 2vw, 24px) 112px;
+    }
+
+    body[data-ux-foundation="true"] .hero{
+      background:rgba(255,255,255,.96);
+      border-bottom:1px solid var(--color-border);
+      box-shadow:0 8px 24px rgba(15,23,42,.06);
+    }
+
+    body[data-ux-foundation="true"] .hero-card{
+      gap:var(--space-3);
+    }
+
+    body[data-ux-foundation="true"] .eyebrow{
+      color:var(--color-primary);
+      letter-spacing:.08em;
+    }
+
+    body[data-ux-foundation="true"] h1{
+      letter-spacing:0;
+    }
+
+    body[data-ux-foundation="true"] .notice,
+    body[data-ux-foundation="true"] .panel-note,
+    body[data-ux-foundation="true"] .detail-note{
+      border-radius:var(--radius-card);
+      border-color:#bfdbfe;
+      background:#eff6ff;
+      color:#1e3a8a;
+    }
+
+    body[data-ux-foundation="true"] .pill,
+    body[data-ux-foundation="true"] .sku-chip,
+    body[data-ux-foundation="true"] .status{
+      border-radius:999px;
+      box-shadow:none;
+    }
+
+    body[data-ux-foundation="true"] .toolbar,
+    body[data-ux-foundation="true"] .product-card,
+    body[data-ux-foundation="true"] .panel,
+    body[data-ux-foundation="true"] .state-card,
+    body[data-ux-foundation="true"] .interest-item,
+    body[data-ux-foundation="true"] .summary-tile,
+    body[data-ux-foundation="true"] .detail-sheet,
+    body[data-ux-foundation="true"] .detail-image,
+    body[data-ux-foundation="true"] .detail-placeholder{
+      border-radius:var(--radius-card);
+      border-color:var(--color-border);
+      background:var(--color-surface);
+      box-shadow:var(--shadow-soft);
+    }
+
+    body[data-ux-foundation="true"] input,
+    body[data-ux-foundation="true"] textarea,
+    body[data-ux-foundation="true"] select{
+      border-radius:var(--radius-control);
+      border-color:var(--color-border);
+      background:var(--surface-2);
+      color:var(--color-text);
+    }
+
+    body[data-ux-foundation="true"] input:focus,
+    body[data-ux-foundation="true"] textarea:focus,
+    body[data-ux-foundation="true"] select:focus{
+      border-color:#3b82f6;
+      box-shadow:0 0 0 3px rgba(59,130,246,.22);
+    }
+
+    body[data-ux-foundation="true"] .btn,
+    body[data-ux-foundation="true"] .detail-close,
+    body[data-ux-foundation="true"] .size-chip{
+      border-radius:var(--radius-control);
+    }
+
+    body[data-ux-foundation="true"] .btn-primary{
+      background:var(--color-primary);
+      color:#fff;
+    }
+
+    body[data-ux-foundation="true"] .btn-secondary{
+      background:var(--surface-2);
+      color:var(--color-text);
+      border-color:var(--color-border);
+    }
+
+    body[data-ux-foundation="true"] .btn-danger{
+      background:var(--color-danger);
+    }
+
+    body[data-ux-foundation="true"] .thumb,
+    body[data-ux-foundation="true"] .thumb-placeholder,
+    body[data-ux-foundation="true"] .interest-thumb,
+    body[data-ux-foundation="true"] .interest-thumb-placeholder,
+    body[data-ux-foundation="true"] .compare-images img{
+      border-radius:var(--radius-card);
+      background:var(--surface-2);
+    }
+
+    body[data-ux-foundation="true"] .summary-bar{
+      border-radius:var(--radius-card);
+      background:rgba(255,255,255,.96);
+      border-color:var(--color-border);
+      box-shadow:var(--shadow-panel);
+    }
+
+    body[data-ux-foundation="true"] .detail-backdrop{
+      background:rgba(15,23,42,.45);
+    }
+
+    body[data-ux-foundation="true"] .detail-topbar{
+      background:rgba(255,255,255,.96);
+      border-color:var(--color-border);
+    }
+
+    body[data-ux-foundation="true"] .name,
+    body[data-ux-foundation="true"] .meta,
+    body[data-ux-foundation="true"] .details,
+    body[data-ux-foundation="true"] .helper{
+      overflow-wrap:anywhere;
+    }
+
+    @media (min-width:760px){
+      body[data-ux-foundation="true"] .grid{
+        gap:var(--space-4);
+      }
+
+      body[data-ux-foundation="true"] .layout{
+        gap:var(--space-4);
+      }
+    }
+
+    @media (max-width:430px){
+      body[data-ux-foundation="true"] .page{
+        padding-left:10px;
+        padding-right:10px;
+      }
+
+      body[data-ux-foundation="true"] .hero{
+        margin-left:-10px;
+        margin-right:-10px;
+        padding-left:10px;
+        padding-right:10px;
+      }
+
+      body[data-ux-foundation="true"] .product-card{
+        grid-template-columns:78px minmax(0,1fr);
+        padding:var(--space-3);
+      }
+
+      body[data-ux-foundation="true"] .thumb,
+      body[data-ux-foundation="true"] .thumb-placeholder{
+        width:78px;
+        height:78px;
+      }
+
+      body[data-ux-foundation="true"] .detail-sheet{
+        max-height:92dvh;
+      }
+    }
   </style>
 </head>
-<body>
+<body data-ux-foundation="true">
   <main id="app" class="page">
     <section class="state-card">
       <h2>กำลังโหลดแคตตาล็อก</h2>
