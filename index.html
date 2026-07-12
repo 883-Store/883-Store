@@ -4812,6 +4812,8 @@ const state = {
     loggedIn: false,
     user: null,
     token: null,
+    role: null,
+    permissions: [],
     expiredAt: null,
     orders: [],
     selectedOrder: null,
@@ -7219,6 +7221,40 @@ function isAuthError(message = "") {
    ].includes(String(message || "").trim());
  }
 
+function isPermissionDeniedError(message = "") {
+  return String(message || "").trim() === "Forbidden";
+}
+
+function normalizeAdminPermissions(value) {
+  if (!Array.isArray(value)) return [];
+
+  return Array.from(new Set(
+    value
+      .map(permission => String(permission || "").trim())
+      .filter(Boolean)
+  ));
+}
+
+function applyAdminAuthContext(payload = {}) {
+  const role = String(payload.role || "").trim();
+  state.admin.role = role || null;
+  state.admin.permissions = normalizeAdminPermissions(payload.permissions);
+}
+
+function hasAdminPermission(permission) {
+  const permissionKey = String(permission || "").trim();
+  if (!permissionKey) return true;
+
+  return normalizeAdminPermissions(state.admin?.permissions)
+    .includes(permissionKey);
+}
+
+function adminPermissionAttrs(permission) {
+  if (hasAdminPermission(permission)) return "";
+
+  return `disabled aria-disabled="true" title="${escAttr(t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้"))}"`;
+}
+
  async function postFormAction(form, { timeout = 30000 } = {}) {
    const res = await fetchWithTimeout(API_URL, {
      method: "POST",
@@ -7233,6 +7269,9 @@ function isAuthError(message = "") {
    }
 
    if (json?.error || json?.success === false) {
+     if (isPermissionDeniedError(json.error || json.message)) {
+       showToast(t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้"), "error");
+     }
      if (isAuthError(json.error)) {
        showToast(t("sessionExpiredLoginAgain", "Session หมดอายุ กรุณา login ใหม่"), "warning");
        exitAdmin({ silent: true });
@@ -7696,6 +7735,19 @@ async function fetchStockLogs() {
   form.append("token", state.admin.token);
 
   const json = await postFormAction(form);
+  if (json?.role || Array.isArray(json?.permissions)) {
+    const sessionPayload = {
+      token: state.admin.token,
+      username: state.admin.user,
+      expiredAt: state.admin.expiredAt,
+      role: json.role || state.admin.role,
+      permissions: Array.isArray(json.permissions)
+        ? json.permissions
+        : state.admin.permissions
+    };
+    applyAdminAuthContext(sessionPayload);
+    saveAdminSession(sessionPayload);
+  }
   return json.data;
 }
 
@@ -7709,6 +7761,19 @@ async function fetchOrders(){
   form.append("token", state.admin.token);
 
   const json = await postFormAction(form);
+  if (json?.role || Array.isArray(json?.permissions)) {
+    const sessionPayload = {
+      token: state.admin.token,
+      username: state.admin.user,
+      expiredAt: state.admin.expiredAt,
+      role: json.role || state.admin.role,
+      permissions: Array.isArray(json.permissions)
+        ? json.permissions
+        : state.admin.permissions
+    };
+    applyAdminAuthContext(sessionPayload);
+    saveAdminSession(sessionPayload);
+  }
   return json.data;
 }
   
@@ -9886,6 +9951,7 @@ async function handleAdminLogin(btn){
     state.admin.user = json.username;
     state.admin.token = json.token;
     state.admin.expiredAt = json.expiredAt;
+    applyAdminAuthContext(json);
 
     // ✅ SAVE SESSION (PERSIST)
     saveAdminSession(json);
@@ -17535,12 +17601,12 @@ function openMainMenu(triggerEl){
             ? `
               <div class="menu-group">
                 <div class="menu-section-label">${t("overview", "ภาพรวม")}</div>
-                <button class="btn btn-primary"
+                <button class="btn btn-primary" ${adminPermissionAttrs("order.view")}
                   onclick="closeMainMenu(); handleOpenDashboard();">
                   ${t("dashboardShort", "แดชบอร์ด")}
                 </button>
 
-                <button class="btn btn-secondary"
+                <button class="btn btn-secondary" ${adminPermissionAttrs("stock.view")}
                   onclick="openStockTimelineInsideAdminMenu();">
                   ${t("stockTimeline", "ไทม์ไลน์สต๊อก")}
                 </button>
@@ -17548,7 +17614,7 @@ function openMainMenu(triggerEl){
 
               <div class="menu-group">
                 <div class="menu-section-label">${t("inventory", "สต๊อก")}</div>
-                <button class="btn btn-secondary"
+                <button class="btn btn-secondary" ${adminPermissionAttrs("stock.view")}
                   onclick="openStockTimelineInsideAdminMenu();">
                   ${t("onhandStock", "สต๊อกคงเหลือ")}
                 </button>
@@ -17568,22 +17634,22 @@ function openMainMenu(triggerEl){
 
               <div class="menu-group">
                 <div class="menu-section-label">${t("orders", "คำสั่งซื้อ")}</div>
-                <button class="btn btn-secondary"
+                <button class="btn btn-secondary" ${adminPermissionAttrs("order.view")}
                   onclick="closeMainMenu(); handleOpenPendingOrders();">
                   ${t("pendingOrders", "ออเดอร์รออนุมัติ")} ${pendingCount > 0 ? `<span class="badge badge-count">${pendingCount}</span>` : ``}
                 </button>
 
-                 <button class="btn btn-secondary"
+                 <button class="btn btn-secondary" ${adminPermissionAttrs("delivery.view")}
                    onclick="closeMainMenu(); openPendingDeliverySheet();">
                    ${t("pendingDelivery", "ค้างส่ง")}
                  </button>
 
-                 <button class="btn btn-secondary"
+                 <button class="btn btn-secondary" ${adminPermissionAttrs("document.view")}
                    onclick="closeMainMenu(); openDeliveryNoteSheet();">
                    ${t("deliveryNote", "ใบส่งของ")}
                  </button>
 
-                 <button class="btn btn-secondary"
+                 <button class="btn btn-secondary" ${adminPermissionAttrs("document.view")}
                    onclick="closeMainMenu(); openBillingNoteSheet();">
                    ${t("billingNote", "ใบวางบิล")}
                  </button>
@@ -17591,7 +17657,7 @@ function openMainMenu(triggerEl){
                 ${
                   hasLastOrder
                     ? `
-                        <button class="btn btn-secondary"
+                        <button class="btn btn-secondary" ${adminPermissionAttrs("document.view")}
                           onclick="closeMainMenu(); reopenLastOrderSheet();">
                           ${t("latestBill", "บิลล่าสุด")}
                         </button>
@@ -17602,32 +17668,32 @@ function openMainMenu(triggerEl){
 
               <div class="menu-group">
                 <div class="menu-section-label">${t("products", "สินค้า")}</div>
-                <button class="btn btn-secondary"
+                <button class="btn btn-secondary" ${adminPermissionAttrs("product.create")}
                   onclick="closeMainMenu(); handleOpenAddProduct();">
                   ${t("addProduct", "เพิ่มสินค้าใหม่")}
                 </button>
 
-                <button class="btn btn-secondary"
+                <button class="btn btn-secondary" ${adminPermissionAttrs("product.create")}
                   onclick="closeMainMenu(); openMultiSizeProductSheet();">
                   ${t("addMultiSizeProduct", "เพิ่มสินค้าแบบหลายไซส์")}
                 </button>
 
-                <button class="btn btn-secondary"
+                <button class="btn btn-secondary" ${adminPermissionAttrs("product.view")}
                   onclick="closeMainMenu(); openVariantScanSheet();">
                   ${t("scanVariantGroups", "สแกนสินค้าเก่าเป็นกลุ่มไซส์")}
                 </button>
                 
-                <button class="btn btn-secondary"
+                <button class="btn btn-secondary" ${adminPermissionAttrs("product.create")}
                   onclick="closeMainMenu(); openBulkProductImportSheet();">
                   ${t("bulkImportProducts", "นำเข้าสินค้าหลายรายการ")}
                 </button>
 
-                <button class="btn btn-secondary"
+                <button class="btn btn-secondary" ${adminPermissionAttrs("product.edit")}
                   onclick="closeMainMenu(); openBulkProductUpdateSheet();">
                   ${t("bulkUpdateProducts", "อัปเดตราคา/สถานะหลายรายการ")}
                 </button>
 
-                <button class="btn btn-secondary"
+                <button class="btn btn-secondary" ${adminPermissionAttrs("cost.view")}
                   onclick="closeMainMenu(); openLandedCostSheet();">
                   ${t("landedCost", "คำนวณต้นทุนนำเข้า")}
                 </button>
@@ -17635,17 +17701,17 @@ function openMainMenu(triggerEl){
 
               <div class="menu-group">
                 <div class="menu-section-label">${t("partners", "คู่ค้า")}</div>
-                <button class="btn btn-secondary"
+                <button class="btn btn-secondary" ${adminPermissionAttrs("partner.view")}
                   onclick="closeMainMenu(); openPartnerAdminSheet();">
                   ${t("partners", "คู่ค้า")}
                 </button>
 
-                <button class="btn btn-secondary"
+                <button class="btn btn-secondary" ${adminPermissionAttrs("partner.view")}
                   onclick="closeMainMenu(); openPartnerCatalogSheet();">
                   ${t("partnerLinks", "ลิงก์คู่ค้า")}
                 </button>
 
-                <button class="btn btn-secondary"
+                <button class="btn btn-secondary" ${adminPermissionAttrs("partner_request.view")}
                   onclick="closeMainMenu(); openPartnerRequestsSheet();">
                   ${t("partnerRequests", "คำขอคู่ค้า")}
                 </button>
@@ -25669,11 +25735,13 @@ function focusInput(el) {
   }, 200);
 }
 
-function saveAdminSession({ token, username, expiredAt }) {
+function saveAdminSession({ token, username, expiredAt, role, permissions }) {
   localStorage.setItem("admin_session", JSON.stringify({
     token,
     username,
-    expiredAt
+    expiredAt,
+    role: String(role || "").trim() || null,
+    permissions: normalizeAdminPermissions(permissions)
   }));
 }
 
@@ -25697,6 +25765,8 @@ function clearAdminSession(){
   state.admin.loggedIn = false;
   state.admin.user = "";
   state.admin.token = "";
+  state.admin.role = null;
+  state.admin.permissions = [];
   state.admin.expiredAt = null;
   state.admin.orders = [];
   state.admin.selectedOrder = null;
@@ -25803,10 +25873,19 @@ async function restoreAdminSessionIfValid() {
     const json = await res.json();
 
     if (json?.success === true) {
+      const sessionPayload = {
+        ...restored,
+        role: json.role || restored.role,
+        permissions: Array.isArray(json.permissions)
+          ? json.permissions
+          : restored.permissions
+      };
       state.admin.loggedIn = true;
-      state.admin.user = restored.username || null;
-      state.admin.token = restored.token;
-      state.admin.expiredAt = restored.expiredAt;
+      state.admin.user = sessionPayload.username || null;
+      state.admin.token = sessionPayload.token;
+      state.admin.expiredAt = sessionPayload.expiredAt;
+      applyAdminAuthContext(sessionPayload);
+      saveAdminSession(sessionPayload);
 
       // ❗ ไม่ set state.mode ที่นี่ (กันกระทบ flow)
       return true;
@@ -25981,10 +26060,19 @@ const __domReady = new Promise((resolve) => {
         const json = await res.json();
 
         if (json && json.success === true) {
+          const sessionPayload = {
+            ...restored,
+            role: json.role || restored.role,
+            permissions: Array.isArray(json.permissions)
+              ? json.permissions
+              : restored.permissions
+          };
           state.admin.loggedIn = true;
-          state.admin.user = restored.username;
-          state.admin.token = restored.token;
-          state.admin.expiredAt = restored.expiredAt;
+          state.admin.user = sessionPayload.username;
+          state.admin.token = sessionPayload.token;
+          state.admin.expiredAt = sessionPayload.expiredAt;
+          applyAdminAuthContext(sessionPayload);
+          saveAdminSession(sessionPayload);
 
           adminRestored = true;
         }
