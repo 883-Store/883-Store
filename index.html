@@ -1026,6 +1026,16 @@ body[data-theme="cute"] .shop-subtitle{
     color:#ffffff;
   }
 
+  #adminDeveloperDiagnosticsSheet .diagnostic-suite-button.mutation{
+    background:#fff7ed;
+    border-color:#d97706;
+    color:#8a3b00;
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-suite-button.mutation:hover:not(:disabled){
+    border-color:#b45309;
+  }
+
   #adminDeveloperDiagnosticsSheet .diagnostic-suite-button.running{
     background:#e8f2ff;
     border-color:#4093df;
@@ -1050,6 +1060,16 @@ body[data-theme="cute"] .shop-subtitle{
     color:#64748b;
     border-color:#cbd5e1;
     box-shadow:none;
+  }
+
+  #adminDeveloperDiagnosticsSheet .developer-diagnostics-mutation-note{
+    color:#8a3b00;
+    background:#fff7ed;
+    border:1px solid #fed7aa;
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:13px;
+    line-height:1.45;
   }
 
   #adminDeveloperDiagnosticsSheet .developer-diagnostics-results{
@@ -7827,6 +7847,9 @@ function adminPermissionAttrs(permission) {
   return `disabled aria-disabled="true" title="${escAttr(t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้"))}"`;
 }
 
+const DISPLAY_UI_INTEGRATION_SUITE_ID = "display_ui_integration";
+const DISPLAY_UI_INTEGRATION_TEST_PREFIX = "TEST-UI-DISPLAY-";
+
 const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
   {
     id: "run_all_safe",
@@ -7848,6 +7871,11 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
   {
     id: "display_inventory",
     label: "Display Inventory"
+  },
+  {
+    id: DISPLAY_UI_INTEGRATION_SUITE_ID,
+    label: "Display UI Integration",
+    mutation: true
   },
   {
     id: "fulfillment_calculator",
@@ -8008,15 +8036,20 @@ function renderDeveloperDiagnosticsSheet() {
         ${DEVELOPER_DIAGNOSTIC_UI_SUITES.map(suite => {
           const isRunning = runningSuite === suite.id;
           return `
-            <button class="btn diagnostic-suite-button ${suite.primary ? "primary" : ""} ${isRunning ? "running" : ""}"
+            <button class="btn diagnostic-suite-button ${suite.primary ? "primary" : ""} ${suite.mutation ? "mutation" : ""} ${isRunning ? "running" : ""}"
               ${canRun && !runningSuite ? "" : "disabled"}
               aria-disabled="${canRun && !runningSuite ? "false" : "true"}"
               aria-busy="${isRunning ? "true" : "false"}"
+              title="${suite.mutation ? "Creates and cleans TEST-UI-DISPLAY records in TEST only" : ""}"
               onclick="runDeveloperDiagnosticSuiteFromAdmin('${suite.id}')">
               ${isRunning ? "Running..." : esc(suite.label)}
             </button>
           `;
         }).join("")}
+      </div>
+
+      <div class="developer-diagnostics-mutation-note">
+        Display UI Integration creates and cleans TEST-UI-DISPLAY- records in TEST only and is never included in Run All Safe Checks.
       </div>
 
       ${diagnostics.loadingAvailability ? `
@@ -8120,6 +8153,11 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId) {
     return;
   }
 
+  if (suite === DISPLAY_UI_INTEGRATION_SUITE_ID) {
+    confirmDisplayUiIntegrationDiagnosticFromAdmin();
+    return;
+  }
+
   const diagnostics = state.admin.developerDiagnostics;
   diagnostics.runningSuite = suite;
   diagnostics.error = "";
@@ -8142,6 +8180,548 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId) {
     diagnostics.runningSuite = "";
     renderDeveloperDiagnosticsSheet();
   }
+}
+
+function confirmDisplayUiIntegrationDiagnosticFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.runningSuite) return;
+
+  confirmSheet.setAttribute(
+    "aria-labelledby",
+    "displayUiIntegrationConfirmTitle"
+  );
+  confirmSheet.innerHTML = `
+    <h3 id="displayUiIntegrationConfirmTitle">Display UI Integration</h3>
+    <div class="display-inventory-help">
+      This TEST-only check creates one TEST-UI-DISPLAY Partner, Product, and approved Order, runs Display UI mutations through the normal frontend handler, then cleans the exact generated records.
+    </div>
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closeDisplayUiIntegrationDiagnosticConfirmation()">
+        Cancel
+      </button>
+      <button class="btn btn-primary" type="button"
+        onclick="executeDisplayUiIntegrationDiagnosticFromAdmin()">
+        Run Display UI Integration
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+}
+
+function closeDisplayUiIntegrationDiagnosticConfirmation() {
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  closeOverlay(confirmSheet);
+}
+
+async function executeDisplayUiIntegrationDiagnosticFromAdmin() {
+  closeDisplayUiIntegrationDiagnosticConfirmation();
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  const suite = DISPLAY_UI_INTEGRATION_SUITE_ID;
+  const diagnostics = state.admin.developerDiagnostics;
+  const startedAt = new Date();
+  const startedMs = Date.now();
+  const checks = [];
+  const cleanup = {
+    required: true,
+    status: "PENDING"
+  };
+  const requestCounts = {
+    listDisplayInventory: 0,
+    sendToDisplay: 0,
+    returnFromDisplay: 0,
+    fulfillFromDisplay: 0
+  };
+  const restorePostFormAction =
+    installDisplayUiIntegrationRequestCounter(requestCounts);
+  let fixture = null;
+  let baseline = null;
+
+  diagnostics.runningSuite = suite;
+  diagnostics.error = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const setup = await callDisplayUiIntegrationFixture("setup");
+    fixture = setup.fixture || null;
+    assertDisplayUiIntegrationFrontendFixture(fixture);
+
+    await refreshProducts();
+    await loadDisplayInventoryPartners();
+
+    const readBefore = requestCounts.listDisplayInventory;
+    await refreshDisplayInventory({ silent: true });
+    baseline = await inspectDisplayUiIntegrationFixture(fixture);
+    checks.push(makeDisplayUiIntegrationCheck(
+      "display_read",
+      requestCounts.listDisplayInventory > readBefore &&
+        !getDisplayInventoryState().error &&
+        getDisplayInventoryState().loading === false,
+      "listDisplayInventory completed through the normal Display refresh path"
+    ));
+
+    const sendRequestBefore = requestCounts.sendToDisplay;
+    const sendRefreshBefore = requestCounts.listDisplayInventory;
+    const beforeSend = baseline;
+    await runDisplayUiIntegrationActionThroughHandler(
+      fixture,
+      "send",
+      3,
+      fixture.runId + " SEND_TO_DISPLAY",
+      ""
+    );
+    const afterSend = await inspectDisplayUiIntegrationFixture(fixture);
+    checks.push(makeDisplayUiIntegrationCheck(
+      "send_flow",
+      requestCounts.sendToDisplay - sendRequestBefore === 1 &&
+        afterSend.mainWarehouse === beforeSend.mainWarehouse - 3 &&
+        afterSend.displayQuantity === beforeSend.displayQuantity + 3 &&
+        afterSend.companyOwnedPhysicalTotal === beforeSend.companyOwnedPhysicalTotal &&
+        hasParsedDisplayUiIntegrationSuccess(),
+      "Send used the Display submit handler once and preserved company-owned physical total"
+    ));
+    checks.push(makeDisplayUiIntegrationCheck(
+      "send_refresh",
+      requestCounts.listDisplayInventory > sendRefreshBefore &&
+        getDisplayInventoryBalance(fixture.partnerId, fixture.productId) === afterSend.displayQuantity &&
+        getDisplayInventoryState().loading === false,
+      "Display refresh ran after the successful Send mutation"
+    ));
+
+    const doubleSubmit = await runDisplayUiIntegrationDoubleSubmitGuard(
+      fixture,
+      afterSend,
+      requestCounts
+    );
+    checks.push(makeDisplayUiIntegrationCheck(
+      "double_submit_guard",
+      doubleSubmit.pass,
+      "Second submit invocation was blocked while the first request was pending"
+    ));
+
+    const returnRequestBefore = requestCounts.returnFromDisplay;
+    const beforeReturn = doubleSubmit.after;
+    await runDisplayUiIntegrationActionThroughHandler(
+      fixture,
+      "return",
+      1,
+      fixture.runId + " RETURN_FROM_DISPLAY",
+      ""
+    );
+    const afterReturn = await inspectDisplayUiIntegrationFixture(fixture);
+    checks.push(makeDisplayUiIntegrationCheck(
+      "return_flow",
+      requestCounts.returnFromDisplay - returnRequestBefore === 1 &&
+        afterReturn.mainWarehouse === beforeReturn.mainWarehouse + 1 &&
+        afterReturn.displayQuantity === beforeReturn.displayQuantity - 1 &&
+        afterReturn.companyOwnedPhysicalTotal === beforeReturn.companyOwnedPhysicalTotal &&
+        hasParsedDisplayUiIntegrationSuccess(),
+      "Return used the Display submit handler once and preserved company-owned physical total"
+    ));
+
+    const validationBefore = getDisplayUiIntegrationMutationRequestTotal(
+      requestCounts
+    );
+    const beforeValidation = afterReturn;
+    const zeroRejected = expectDisplayUiIntegrationValidationRejection(
+      fixture,
+      "send",
+      0,
+      fixture.runId + " ZERO_QTY",
+      ""
+    );
+    const negativeRejected = expectDisplayUiIntegrationValidationRejection(
+      fixture,
+      "send",
+      -1,
+      fixture.runId + " NEGATIVE_QTY",
+      ""
+    );
+    const overReturnRejected = expectDisplayUiIntegrationValidationRejection(
+      fixture,
+      "return",
+      beforeValidation.displayQuantity + 1,
+      fixture.runId + " OVER_RETURN",
+      ""
+    );
+    const afterValidation = await inspectDisplayUiIntegrationFixture(fixture);
+    checks.push(makeDisplayUiIntegrationCheck(
+      "over_return_guard",
+      zeroRejected &&
+        negativeRejected &&
+        overReturnRejected &&
+        getDisplayUiIntegrationMutationRequestTotal(requestCounts) === validationBefore &&
+        hasSameDisplayUiIntegrationBalance(beforeValidation, afterValidation),
+      "Zero, negative, and over-return quantities were rejected before mutation"
+    ));
+
+    const fulfillRequestBefore = requestCounts.fulfillFromDisplay;
+    const beforeFulfill = afterValidation;
+    await runDisplayUiIntegrationActionThroughHandler(
+      fixture,
+      "fulfill",
+      1,
+      fixture.runId + " FULFILL_FROM_DISPLAY",
+      fixture.orderId
+    );
+    const afterFulfill = await inspectDisplayUiIntegrationFixture(fixture);
+    checks.push(makeDisplayUiIntegrationCheck(
+      "fulfill_flow",
+      requestCounts.fulfillFromDisplay - fulfillRequestBefore === 1 &&
+        afterFulfill.mainWarehouse === beforeFulfill.mainWarehouse &&
+        afterFulfill.displayQuantity === beforeFulfill.displayQuantity - 1 &&
+        afterFulfill.companyOwnedPhysicalTotal === beforeFulfill.companyOwnedPhysicalTotal - 1 &&
+        hasParsedDisplayUiIntegrationSuccess(),
+      "Fulfill used the Display submit handler once and reduced Display only"
+    ));
+
+    const invalidOrderRequestBefore = requestCounts.fulfillFromDisplay;
+    const invalidOrderRejected = await expectDisplayUiIntegrationBackendRejection(
+      fixture,
+      "fulfill",
+      1,
+      fixture.runId + " INVALID_ORDER",
+      fixture.runId + "-INVALID-ORDER"
+    );
+    const afterInvalidOrder = await inspectDisplayUiIntegrationFixture(fixture);
+    checks.push(makeDisplayUiIntegrationCheck(
+      "invalid_order_guard",
+      invalidOrderRejected &&
+        requestCounts.fulfillFromDisplay - invalidOrderRequestBefore === 1 &&
+        hasSameDisplayUiIntegrationBalance(afterFulfill, afterInvalidOrder),
+      "Invalid approved Order input returned a controlled error without mutation"
+    ));
+
+    const finalInspection = afterInvalidOrder;
+    checks.push(makeDisplayUiIntegrationCheck(
+      "reconciliation",
+      finalInspection.mainWarehouse === baseline.mainWarehouse - 3 &&
+        finalInspection.displayQuantity === 2 &&
+        finalInspection.companyOwnedPhysicalTotal === baseline.companyOwnedPhysicalTotal - 1 &&
+        finalInspection.inventoryTransactions.sendToDisplay === 2 &&
+        finalInspection.inventoryTransactions.returnFromDisplay === 1 &&
+        finalInspection.inventoryTransactions.fulfillFromDisplay === 1 &&
+        finalInspection.inventoryTransactions.displayNet === finalInspection.displayQuantity &&
+        finalInspection.inventoryTransactions.partnerDisplayCount === 4,
+      "Display balances and InventoryTransactions reconcile after Send, Return, and Fulfill"
+    ));
+  } catch (err) {
+    checks.push(makeDisplayUiIntegrationCheck(
+      "suite_error",
+      false,
+      redactDisplayUiIntegrationMessage(err && err.message || err)
+    ));
+  } finally {
+    try {
+      if (!fixture || !fixture.runId) {
+        throw new Error("No TEST-UI-DISPLAY fixture to cleanup");
+      }
+      const cleanupResult = await callDisplayUiIntegrationFixture(
+        "cleanup",
+        fixture.runId
+      );
+      cleanup.status = cleanupResult.cleanup?.success ? "PASS" : "FAIL";
+      checks.push(makeDisplayUiIntegrationStatusCheck(
+        "cleanup",
+        cleanup.status,
+        cleanupResult.cleanup?.summary || "cleanup completed"
+      ));
+    } catch (cleanupErr) {
+      cleanup.status = "FAIL";
+      checks.push(makeDisplayUiIntegrationStatusCheck(
+        "cleanup",
+        "FAIL",
+        redactDisplayUiIntegrationMessage(
+          cleanupErr && cleanupErr.message || cleanupErr
+        )
+      ));
+    }
+
+    resetDisplayInventoryActionForm();
+    restorePostFormAction();
+    diagnostics.results[suite] = buildDisplayUiIntegrationResult(
+      startedAt,
+      startedMs,
+      checks,
+      cleanup
+    );
+    diagnostics.runningSuite = "";
+    renderDeveloperDiagnosticsSheet();
+    showToast(`Diagnostics ${diagnostics.results[suite].status}`, "info");
+  }
+}
+
+function installDisplayUiIntegrationRequestCounter(requestCounts) {
+  const originalPostFormAction = postFormAction;
+  postFormAction = async function(form, options) {
+    const action = form && typeof form.get === "function"
+      ? String(form.get("action") || "")
+      : "";
+    if (Object.prototype.hasOwnProperty.call(requestCounts, action)) {
+      requestCounts[action]++;
+    }
+    return await originalPostFormAction(form, options);
+  };
+
+  return () => {
+    postFormAction = originalPostFormAction;
+  };
+}
+
+async function callDisplayUiIntegrationFixture(operation, runId) {
+  const form = new URLSearchParams();
+  form.append("action", "displayUiIntegrationFixture");
+  form.append("token", state.admin.token);
+  form.append("operation", operation);
+  if (runId) {
+    form.append("runId", runId);
+  }
+
+  const json = await postFormAction(form, { timeout: 60000 });
+  return json.data || {};
+}
+
+async function inspectDisplayUiIntegrationFixture(fixture) {
+  const result = await callDisplayUiIntegrationFixture(
+    "inspect",
+    fixture.runId
+  );
+  return result;
+}
+
+function assertDisplayUiIntegrationFrontendFixture(fixture) {
+  const values = [
+    fixture?.runId,
+    fixture?.partnerId,
+    fixture?.productId,
+    fixture?.poNumber
+  ];
+  if (
+    !values.every(value =>
+      String(value || "").indexOf(DISPLAY_UI_INTEGRATION_TEST_PREFIX) === 0
+    ) ||
+    !fixture.orderId ||
+    fixture.displayQuantity !== 0
+  ) {
+    throw new Error("Invalid TEST-UI-DISPLAY fixture");
+  }
+}
+
+function prepareDisplayUiIntegrationAction(fixture, mode, quantity, reason, orderId) {
+  const displayState = getDisplayInventoryState();
+  displayState.actionMode = mode;
+  displayState.form = {
+    partnerId: fixture.partnerId,
+    productId: fixture.productId,
+    quantity: String(quantity),
+    reason: reason || "",
+    orderId: orderId || ""
+  };
+  displayState.pendingAction = null;
+  displayState.validationError = "";
+  displayState.lastResult = null;
+  confirmDisplayInventoryMovement();
+  closeOverlay(confirmSheet);
+  return displayState.pendingAction;
+}
+
+async function runDisplayUiIntegrationActionThroughHandler(
+  fixture,
+  mode,
+  quantity,
+  reason,
+  orderId
+) {
+  const action = prepareDisplayUiIntegrationAction(
+    fixture,
+    mode,
+    quantity,
+    reason,
+    orderId
+  );
+  if (!action) {
+    throw new Error(getDisplayInventoryState().validationError || "Display action was not prepared");
+  }
+
+  await submitConfirmedDisplayInventoryMovement();
+  const displayState = getDisplayInventoryState();
+  if (displayState.validationError) {
+    throw new Error(displayState.validationError);
+  }
+
+  return displayState.lastResult;
+}
+
+async function runDisplayUiIntegrationDoubleSubmitGuard(
+  fixture,
+  before,
+  requestCounts
+) {
+  const requestBefore = requestCounts.sendToDisplay;
+  const action = prepareDisplayUiIntegrationAction(
+    fixture,
+    "send",
+    1,
+    fixture.runId + " DOUBLE_SEND",
+    ""
+  );
+  if (!action) {
+    throw new Error("Double-submit action was not prepared");
+  }
+
+  const firstSubmit = submitConfirmedDisplayInventoryMovement();
+  const submittingEntered = getDisplayInventoryState().submitting === true;
+  const secondSubmit = submitConfirmedDisplayInventoryMovement();
+  await Promise.all([
+    firstSubmit,
+    Promise.resolve(secondSubmit)
+  ]);
+  const after = await inspectDisplayUiIntegrationFixture(fixture);
+
+  return {
+    after,
+    pass:
+      submittingEntered &&
+      requestCounts.sendToDisplay - requestBefore === 1 &&
+      after.mainWarehouse === before.mainWarehouse - 1 &&
+      after.displayQuantity === before.displayQuantity + 1 &&
+      after.companyOwnedPhysicalTotal === before.companyOwnedPhysicalTotal &&
+      getDisplayInventoryState().submitting === false
+  };
+}
+
+function expectDisplayUiIntegrationValidationRejection(
+  fixture,
+  mode,
+  quantity,
+  reason,
+  orderId
+) {
+  const action = prepareDisplayUiIntegrationAction(
+    fixture,
+    mode,
+    quantity,
+    reason,
+    orderId
+  );
+  return !action && !!getDisplayInventoryState().validationError;
+}
+
+async function expectDisplayUiIntegrationBackendRejection(
+  fixture,
+  mode,
+  quantity,
+  reason,
+  orderId
+) {
+  const action = prepareDisplayUiIntegrationAction(
+    fixture,
+    mode,
+    quantity,
+    reason,
+    orderId
+  );
+  if (!action) return false;
+
+  await submitConfirmedDisplayInventoryMovement();
+  const displayState = getDisplayInventoryState();
+  const rejected = !!displayState.validationError &&
+    displayState.submitting === false;
+  displayState.pendingAction = null;
+  return rejected;
+}
+
+function hasParsedDisplayUiIntegrationSuccess() {
+  const displayState = getDisplayInventoryState();
+  return !!(
+    displayState.lastResult &&
+    displayState.lastResult.productSummary &&
+    !displayState.validationError &&
+    displayState.submitting === false
+  );
+}
+
+function getDisplayUiIntegrationMutationRequestTotal(requestCounts) {
+  return Number(requestCounts.sendToDisplay || 0) +
+    Number(requestCounts.returnFromDisplay || 0) +
+    Number(requestCounts.fulfillFromDisplay || 0);
+}
+
+function hasSameDisplayUiIntegrationBalance(left, right) {
+  return !!(
+    left &&
+    right &&
+    left.mainWarehouse === right.mainWarehouse &&
+    left.displayQuantity === right.displayQuantity &&
+    left.companyOwnedPhysicalTotal === right.companyOwnedPhysicalTotal
+  );
+}
+
+function makeDisplayUiIntegrationCheck(name, passed, summary) {
+  return makeDisplayUiIntegrationStatusCheck(
+    name,
+    passed ? "PASS" : "FAIL",
+    summary
+  );
+}
+
+function makeDisplayUiIntegrationStatusCheck(name, status, summary) {
+  const normalizedStatus = String(status || "").trim().toUpperCase();
+  return {
+    name,
+    status: ["PASS", "FAIL", "PARTIAL", "BLOCKED"].includes(normalizedStatus)
+      ? normalizedStatus
+      : "FAIL",
+    summary: redactDisplayUiIntegrationMessage(summary || "")
+  };
+}
+
+function buildDisplayUiIntegrationResult(startedAt, startedMs, checks, cleanup) {
+  return {
+    success: true,
+    environment: "TEST",
+    suite: DISPLAY_UI_INTEGRATION_SUITE_ID,
+    status: getDisplayUiIntegrationStatusFromChecks(checks),
+    startedAt: startedAt.toISOString(),
+    durationMs: Math.max(0, Date.now() - startedMs),
+    checks,
+    cleanup
+  };
+}
+
+function getDisplayUiIntegrationStatusFromChecks(checks) {
+  const statuses = (checks || []).map(check =>
+    String(check && check.status || "").toUpperCase()
+  );
+  if (!statuses.length) return "BLOCKED";
+  if (statuses.includes("FAIL")) return "FAIL";
+  if (statuses.every(status => status === "BLOCKED")) return "BLOCKED";
+  if (statuses.includes("PARTIAL") || statuses.includes("BLOCKED")) {
+    return "PARTIAL";
+  }
+  return "PASS";
+}
+
+function redactDisplayUiIntegrationMessage(message) {
+  return String(message || "")
+    .replace(/https?:\/\/\S+/g, "[redacted-url]")
+    .replace(/AKfyc[\w-]+/g, "[redacted-script-id]")
+    .replace(/Bearer\s+\S+/gi, "Bearer [redacted-token]")
+    .replace(/token[=:]\s*[\w.-]+/gi, "token=[redacted-token]")
+    .replace(/ORD-[0-9a-fA-F-]+/g, "[redacted-order-id]")
+    .replace(/ITX-[0-9a-fA-F-]+/g, "[redacted-transaction-id]")
+    .replace(/LOG-[\w-]+/g, "[redacted-log-id]")
+    .slice(0, 240);
 }
 
  async function postFormAction(form, { timeout = 30000 } = {}) {
