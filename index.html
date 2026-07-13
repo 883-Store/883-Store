@@ -941,6 +941,288 @@ body[data-theme="cute"] .shop-subtitle{
     font-size:13px;
   }
 
+  #adminDeveloperDiagnosticsSheet{
+    --diagnostic-bg:#f8fafc;
+    --diagnostic-card:#ffffff;
+    --diagnostic-border:#d9e2ec;
+    --diagnostic-border-strong:#b8c7d9;
+    --diagnostic-text:#172033;
+    --diagnostic-muted:#526174;
+    --diagnostic-soft:#eef3f8;
+    color:var(--diagnostic-text);
+  }
+
+  #adminDeveloperDiagnosticsSheet .admin-sheet-topbar{
+    align-items:center;
+    gap:12px;
+    border-bottom:1px solid var(--diagnostic-border);
+    padding-bottom:12px;
+    margin-bottom:14px;
+  }
+
+  #adminDeveloperDiagnosticsSheet .admin-sheet-topbar h3{
+    color:var(--diagnostic-text);
+    font-size:20px;
+    line-height:1.25;
+    margin:0;
+  }
+
+  #adminDeveloperDiagnosticsSheet .developer-diagnostics-panel{
+    display:grid;
+    gap:14px;
+  }
+
+  #adminDeveloperDiagnosticsSheet .developer-diagnostics-env{
+    background:var(--diagnostic-card);
+    border:1px solid var(--diagnostic-border);
+    border-radius:8px;
+    box-shadow:0 8px 22px rgba(23,32,51,.10);
+    color:var(--diagnostic-text);
+  }
+
+  #adminDeveloperDiagnosticsSheet .developer-diagnostics-env .name,
+  #adminDeveloperDiagnosticsSheet .developer-diagnostics-results-title{
+    color:var(--diagnostic-text);
+    font-weight:800;
+  }
+
+  #adminDeveloperDiagnosticsSheet .developer-diagnostics-env .price{
+    color:#0f5eaa;
+    background:none;
+    -webkit-text-fill-color:currentColor;
+    text-shadow:none;
+  }
+
+  #adminDeveloperDiagnosticsSheet .developer-diagnostics-env .stock,
+  #adminDeveloperDiagnosticsSheet .diagnostic-meta,
+  #adminDeveloperDiagnosticsSheet .diagnostic-check-summary{
+    color:var(--diagnostic-muted);
+  }
+
+  #adminDeveloperDiagnosticsSheet .developer-diagnostics-actions{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
+    gap:10px;
+    margin:0;
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-suite-button{
+    min-height:48px;
+    padding:10px 12px;
+    border-radius:8px;
+    border:1px solid var(--diagnostic-border-strong);
+    background:#ffffff;
+    color:var(--diagnostic-text);
+    box-shadow:0 3px 10px rgba(23,32,51,.08);
+    font-weight:800;
+    line-height:1.25;
+    white-space:normal;
+    overflow-wrap:anywhere;
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-suite-button.primary{
+    background:#0f62b5;
+    border-color:#0b4f93;
+    color:#ffffff;
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-suite-button.running{
+    background:#e8f2ff;
+    border-color:#4093df;
+    color:#064f92;
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-suite-button:hover:not(:disabled){
+    filter:none;
+    border-color:#0f62b5;
+    transform:translateY(-1px);
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-suite-button:focus-visible,
+  #adminDeveloperDiagnosticsSheet summary:focus-visible{
+    outline:3px solid rgba(15,98,181,.28);
+    outline-offset:3px;
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-suite-button:disabled{
+    opacity:1;
+    background:#edf2f7;
+    color:#64748b;
+    border-color:#cbd5e1;
+    box-shadow:none;
+  }
+
+  #adminDeveloperDiagnosticsSheet .developer-diagnostics-results{
+    background:var(--diagnostic-bg);
+    border:1px solid var(--diagnostic-border);
+    border-radius:8px;
+    display:grid;
+    gap:12px;
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-result-card{
+    background:var(--diagnostic-card);
+    border:1px solid var(--diagnostic-border);
+    border-radius:8px;
+    box-shadow:0 6px 16px rgba(23,32,51,.08);
+    color:var(--diagnostic-text);
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-card-header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-suite-name{
+    color:var(--diagnostic-text);
+    font-size:15px;
+    font-weight:800;
+    line-height:1.3;
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-meta-grid{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:8px;
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-meta{
+    padding:8px 10px;
+    border-radius:8px;
+    background:var(--diagnostic-soft);
+    font-size:12px;
+    line-height:1.35;
+    overflow-wrap:anywhere;
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-meta strong{
+    display:block;
+    color:var(--diagnostic-text);
+    font-size:12px;
+    margin-bottom:2px;
+  }
+
+  #adminDeveloperDiagnosticsSheet details{
+    border-top:1px solid var(--diagnostic-border);
+    padding-top:8px;
+  }
+
+  #adminDeveloperDiagnosticsSheet summary{
+    color:#0f5eaa;
+    cursor:pointer;
+    font-weight:800;
+    min-height:36px;
+    display:flex;
+    align-items:center;
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-check-list{
+    display:grid;
+    gap:8px;
+    margin-top:8px;
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-check-row{
+    padding:8px 10px;
+    border:1px solid var(--diagnostic-border);
+    border-radius:8px;
+    background:#fbfdff;
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-check-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    color:var(--diagnostic-text);
+    font-size:13px;
+    font-weight:700;
+    overflow-wrap:anywhere;
+  }
+
+  #adminDeveloperDiagnosticsSheet .diagnostic-check-summary{
+    margin-top:4px;
+    font-size:12px;
+    line-height:1.4;
+    overflow-wrap:anywhere;
+  }
+
+  #adminDeveloperDiagnosticsSheet .status-badge{
+    border-width:1px;
+    border-style:solid;
+    color:var(--diagnostic-status-text, var(--diagnostic-text));
+    background:var(--diagnostic-status-bg, #edf2f7);
+    border-color:var(--diagnostic-status-border, #cbd5e1);
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:0;
+  }
+
+  #adminDeveloperDiagnosticsSheet .status-approved{
+    --diagnostic-status-bg:#dcfce7;
+    --diagnostic-status-text:#14532d;
+    --diagnostic-status-border:#86efac;
+  }
+
+  #adminDeveloperDiagnosticsSheet .status-rejected{
+    --diagnostic-status-bg:#fee2e2;
+    --diagnostic-status-text:#7f1d1d;
+    --diagnostic-status-border:#fca5a5;
+  }
+
+  #adminDeveloperDiagnosticsSheet .status-partial{
+    --diagnostic-status-bg:#ffedd5;
+    --diagnostic-status-text:#7c2d12;
+    --diagnostic-status-border:#fdba74;
+  }
+
+  #adminDeveloperDiagnosticsSheet .status-blocked{
+    --diagnostic-status-bg:#fef3c7;
+    --diagnostic-status-text:#713f12;
+    --diagnostic-status-border:#facc15;
+  }
+
+  #adminDeveloperDiagnosticsSheet .status-running{
+    --diagnostic-status-bg:#dbeafe;
+    --diagnostic-status-text:#1e3a8a;
+    --diagnostic-status-border:#93c5fd;
+  }
+
+  #adminDeveloperDiagnosticsSheet .status-not-run,
+  #adminDeveloperDiagnosticsSheet .status-neutral{
+    --diagnostic-status-bg:#f1f5f9;
+    --diagnostic-status-text:#334155;
+    --diagnostic-status-border:#cbd5e1;
+  }
+
+  @media (max-width:768px){
+    #adminDeveloperDiagnosticsSheet .diagnostic-meta-grid{
+      grid-template-columns:minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width:430px){
+    #adminDeveloperDiagnosticsSheet{
+      padding-left:max(12px, env(safe-area-inset-left, 0px));
+      padding-right:max(12px, env(safe-area-inset-right, 0px));
+    }
+
+    #adminDeveloperDiagnosticsSheet .admin-sheet-topbar{
+      align-items:flex-start;
+    }
+
+    #adminDeveloperDiagnosticsSheet .developer-diagnostics-actions{
+      grid-template-columns:minmax(0, 1fr);
+    }
+
+    #adminDeveloperDiagnosticsSheet .diagnostic-card-header{
+      align-items:flex-start;
+      flex-direction:column;
+    }
+  }
+
   .partner-order-source-badge{
     display:grid;
     gap:4px;
@@ -7293,6 +7575,10 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     label: "Inventory Transaction"
   },
   {
+    id: "display_inventory",
+    label: "Display Inventory"
+  },
+  {
     id: "fulfillment_calculator",
     label: "Fulfillment Calculator"
   },
@@ -7424,91 +7710,123 @@ function renderDeveloperDiagnosticsSheet() {
   const runningSuite = diagnostics.runningSuite;
 
   adminDeveloperDiagnosticsSheet.innerHTML = `
-    <div class="admin-sheet-topbar">
-      <button class="btn btn-outline back-btn"
-        onclick="backToAdminMenuFromDeveloperDiagnostics()">
-        ${t("backToMenu", "Back to menu")}
-      </button>
-      <h3 id="adminDeveloperDiagnosticsSheetTitle">
-        Developer Diagnostics
-      </h3>
-    </div>
-
-    <div class="card metric-card">
-      <div class="name">Environment</div>
-      <div class="price">${esc(availability?.environment || "-")}</div>
-      <div class="stock">Availability: ${canRun ? "READY" : "UNAVAILABLE"}</div>
-    </div>
-
-    ${diagnostics.error ? `
-      <div class="empty-state" style="color:#d93025">
-        ${esc(diagnostics.error)}
-      </div>
-    ` : ``}
-
-    <div class="action-row">
-      ${DEVELOPER_DIAGNOSTIC_UI_SUITES.map(suite => `
-        <button class="btn ${suite.primary ? "btn-primary" : "btn-secondary"}"
-          ${canRun && !runningSuite ? "" : "disabled"}
-          onclick="runDeveloperDiagnosticSuiteFromAdmin('${suite.id}')">
-          ${runningSuite === suite.id ? "Running..." : esc(suite.label)}
+    <div class="developer-diagnostics-panel">
+      <div class="admin-sheet-topbar">
+        <button class="btn btn-outline back-btn"
+          onclick="backToAdminMenuFromDeveloperDiagnostics()">
+          ${t("backToMenu", "Back to menu")}
         </button>
-      `).join("")}
-    </div>
+        <h3 id="adminDeveloperDiagnosticsSheetTitle">
+          Developer Diagnostics
+        </h3>
+      </div>
 
-    ${diagnostics.loadingAvailability ? `
-      <div class="loading has-lottie">${renderLottieLoading(t("loadingData", "Loading data"))}</div>
-    ` : ``}
+      <div class="card metric-card developer-diagnostics-env">
+        <div class="name">Environment</div>
+        <div class="price">${esc(availability?.environment || "-")}</div>
+        <div class="stock">Availability: ${canRun ? "READY" : "UNAVAILABLE"}</div>
+      </div>
 
-    <div class="admin-detail-section">
-      <div class="admin-detail-title">Suite Results</div>
-      ${DEVELOPER_DIAGNOSTIC_UI_SUITES.map(renderDeveloperDiagnosticResultCard).join("")}
+      ${diagnostics.error ? `
+        <div class="empty-state" style="color:#b42318">
+          ${esc(diagnostics.error)}
+        </div>
+      ` : ``}
+
+      <div class="action-row developer-diagnostics-actions" role="group" aria-label="Developer diagnostic suites">
+        ${DEVELOPER_DIAGNOSTIC_UI_SUITES.map(suite => {
+          const isRunning = runningSuite === suite.id;
+          return `
+            <button class="btn diagnostic-suite-button ${suite.primary ? "primary" : ""} ${isRunning ? "running" : ""}"
+              ${canRun && !runningSuite ? "" : "disabled"}
+              aria-disabled="${canRun && !runningSuite ? "false" : "true"}"
+              aria-busy="${isRunning ? "true" : "false"}"
+              onclick="runDeveloperDiagnosticSuiteFromAdmin('${suite.id}')">
+              ${isRunning ? "Running..." : esc(suite.label)}
+            </button>
+          `;
+        }).join("")}
+      </div>
+
+      ${diagnostics.loadingAvailability ? `
+        <div class="loading has-lottie">${renderLottieLoading(t("loadingData", "Loading data"))}</div>
+      ` : ``}
+
+      <div class="admin-detail-section developer-diagnostics-results">
+        <div class="admin-detail-title developer-diagnostics-results-title">Suite Results</div>
+        ${DEVELOPER_DIAGNOSTIC_UI_SUITES.map(renderDeveloperDiagnosticResultCard).join("")}
+      </div>
     </div>
   `;
 }
 
 function renderDeveloperDiagnosticResultCard(suite) {
-  const result = state.admin.developerDiagnostics.results[suite.id];
+  const diagnostics = state.admin.developerDiagnostics;
+  const result = diagnostics.results[suite.id];
   const checks = Array.isArray(result?.checks) ? result.checks : [];
+  const isRunning = diagnostics.runningSuite === suite.id;
+  const status = isRunning
+    ? "RUNNING"
+    : String(result?.status || "NOT_RUN").trim().toUpperCase().replace(/\s+/g, "_");
+  const statusLabel = status === "NOT_RUN" ? "NOT RUN" : status;
 
   return `
-    <div class="card admin-card">
-      <div class="admin-card-meta">
-        <span class="name">${esc(suite.label)}</span>
-        <span class="status-badge compact ${getDeveloperDiagnosticStatusClass(result?.status)}">
-          ${esc(result?.status || "NOT RUN")}
+    <div class="card admin-card diagnostic-result-card">
+      <div class="diagnostic-card-header">
+        <span class="name diagnostic-suite-name">${esc(suite.label)}</span>
+        <span class="status-badge compact ${getDeveloperDiagnosticStatusClass(status)}">
+          ${esc(statusLabel)}
         </span>
       </div>
-      <div class="stock">Started: ${esc(result?.startedAt || "-")}</div>
-      <div class="stock">Duration: ${Number(result?.durationMs || 0)} ms</div>
-      <div class="stock">
-        Cleanup: ${esc(result?.cleanup?.required ? result.cleanup.status : "NOT_REQUIRED")}
+      <div class="diagnostic-meta-grid">
+        <div class="diagnostic-meta">
+          <strong>Started</strong>
+          ${esc(result?.startedAt || "-")}
+        </div>
+        <div class="diagnostic-meta">
+          <strong>Duration</strong>
+          ${Number(result?.durationMs || 0)} ms
+        </div>
+        <div class="diagnostic-meta">
+          <strong>Cleanup</strong>
+          ${esc(result?.cleanup?.required ? result.cleanup.status : "NOT_REQUIRED")}
+        </div>
       </div>
       <details>
-        <summary>Details</summary>
-        ${
-          checks.length
-            ? checks.map(check => `
-                <div class="admin-card-meta">
-                  <span>${esc(check.name || "-")}</span>
-                  <span>${esc(check.status || "-")}</span>
-                </div>
-                <div class="stock">${esc(check.summary || "-")}</div>
-              `).join("")
-            : `<div class="stock">No result yet</div>`
-        }
+        <summary aria-label="${escAttr(`${suite.label} details`)}">Details</summary>
+        <div class="diagnostic-check-list">
+          ${
+            checks.length
+              ? checks.map(check => `
+                  <div class="diagnostic-check-row">
+                    <div class="diagnostic-check-head">
+                      <span>${esc(check.name || "-")}</span>
+                      <span class="status-badge compact ${getDeveloperDiagnosticStatusClass(check.status)}">
+                        ${esc(check.status || "-")}
+                      </span>
+                    </div>
+                    <div class="diagnostic-check-summary">${esc(check.summary || "-")}</div>
+                  </div>
+                `).join("")
+              : `<div class="diagnostic-check-summary">No result yet</div>`
+          }
+        </div>
       </details>
     </div>
   `;
 }
 
 function getDeveloperDiagnosticStatusClass(status) {
+  const key = String(status || "").trim().toUpperCase().replace(/\s+/g, "_");
+
   return {
     PASS: "status-approved",
     FAIL: "status-rejected",
-    PARTIAL: "status-pending",
-    BLOCKED: "status-pending"
-  }[String(status || "").trim().toUpperCase()] || "status-neutral";
+    PARTIAL: "status-partial",
+    BLOCKED: "status-blocked",
+    NOT_RUN: "status-not-run",
+    RUNNING: "status-running"
+  }[key] || "status-neutral";
 }
 
 async function runDeveloperDiagnosticSuiteFromAdmin(suiteId) {
