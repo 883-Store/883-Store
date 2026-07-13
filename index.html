@@ -1197,8 +1197,217 @@ body[data-theme="cute"] .shop-subtitle{
     --diagnostic-status-border:#cbd5e1;
   }
 
+  #adminDisplayInventorySheet{
+    --display-bg:#f8fafc;
+    --display-card:#ffffff;
+    --display-border:#d8e2ee;
+    --display-border-strong:#b8c7d9;
+    --display-text:#172033;
+    --display-muted:#526174;
+    --display-soft:#eef4f8;
+    --display-accent:#0f62b5;
+    color:var(--display-text);
+  }
+
+  #adminDisplayInventorySheet .display-inventory-panel{
+    display:grid;
+    gap:14px;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-summary{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:10px;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-summary .metric-card{
+    background:var(--display-card);
+    border:1px solid var(--display-border);
+    border-radius:8px;
+    box-shadow:0 6px 16px rgba(23,32,51,.08);
+    color:var(--display-text);
+  }
+
+  #adminDisplayInventorySheet .display-inventory-summary .name,
+  #adminDisplayInventorySheet .display-inventory-action-title,
+  #adminDisplayInventorySheet .display-inventory-section-title{
+    color:var(--display-text);
+    font-weight:800;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-summary .price{
+    color:var(--display-accent);
+    background:none;
+    -webkit-text-fill-color:currentColor;
+    text-shadow:none;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-filters,
+  #adminDisplayInventorySheet .display-inventory-action-form{
+    background:var(--display-card);
+    border:1px solid var(--display-border);
+    border-radius:8px;
+    display:grid;
+    gap:10px;
+    padding:12px;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-filter-grid,
+  #adminDisplayInventorySheet .display-inventory-form-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:10px;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-filter-grid .form-group,
+  #adminDisplayInventorySheet .display-inventory-form-grid .form-group{
+    min-width:0;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-toggle{
+    align-items:center;
+    color:var(--display-text);
+    display:flex;
+    gap:8px;
+    min-height:40px;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-toggle input{
+    min-height:auto;
+    width:auto;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-actions,
+  #adminDisplayInventorySheet .display-inventory-row-actions,
+  #adminDisplayInventorySheet .display-inventory-mode-tabs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-mode-tabs .btn{
+    min-height:42px;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-mode-tabs .active{
+    background:var(--display-accent);
+    border-color:#0b4f93;
+    color:#ffffff;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-list{
+    display:grid;
+    gap:10px;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-row{
+    background:var(--display-card);
+    border:1px solid var(--display-border);
+    border-radius:8px;
+    box-shadow:0 5px 14px rgba(23,32,51,.07);
+    display:grid;
+    gap:10px;
+    padding:12px;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-row-head{
+    align-items:flex-start;
+    display:flex;
+    gap:10px;
+    justify-content:space-between;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-title{
+    color:var(--display-text);
+    font-size:15px;
+    font-weight:800;
+    line-height:1.35;
+    overflow-wrap:anywhere;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-subtitle,
+  #adminDisplayInventorySheet .display-inventory-meta,
+  #adminDisplayInventorySheet .display-inventory-help{
+    color:var(--display-muted);
+    font-size:12px;
+    line-height:1.45;
+    overflow-wrap:anywhere;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-qty-grid{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:8px;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-qty{
+    background:var(--display-soft);
+    border-radius:8px;
+    color:var(--display-text);
+    display:grid;
+    gap:2px;
+    min-width:0;
+    padding:8px 10px;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-qty span{
+    color:var(--display-muted);
+    font-size:12px;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-qty strong{
+    color:var(--display-text);
+    font-size:17px;
+    line-height:1.2;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-action-preview{
+    background:var(--display-soft);
+    border:1px solid var(--display-border);
+    border-radius:8px;
+    color:var(--display-text);
+    display:grid;
+    gap:4px;
+    padding:10px;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-error{
+    background:#fee2e2;
+    border:1px solid #fca5a5;
+    border-radius:8px;
+    color:#7f1d1d;
+    padding:10px;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-success{
+    background:#dcfce7;
+    border:1px solid #86efac;
+    border-radius:8px;
+    color:#14532d;
+    padding:10px;
+  }
+
+  #adminDisplayInventorySheet .display-inventory-danger{
+    background:#7f1d1d;
+    border-color:#7f1d1d;
+    color:#ffffff;
+  }
+
+  #adminDisplayInventorySheet input,
+  #adminDisplayInventorySheet select,
+  #adminDisplayInventorySheet textarea{
+    max-width:100%;
+  }
+
   @media (max-width:768px){
     #adminDeveloperDiagnosticsSheet .diagnostic-meta-grid{
+      grid-template-columns:minmax(0, 1fr);
+    }
+
+    #adminDisplayInventorySheet .display-inventory-summary,
+    #adminDisplayInventorySheet .display-inventory-filter-grid,
+    #adminDisplayInventorySheet .display-inventory-form-grid,
+    #adminDisplayInventorySheet .display-inventory-qty-grid{
       grid-template-columns:minmax(0, 1fr);
     }
   }
@@ -1221,7 +1430,23 @@ body[data-theme="cute"] .shop-subtitle{
       align-items:flex-start;
       flex-direction:column;
     }
+
+    #adminDisplayInventorySheet{
+      padding-left:max(12px, env(safe-area-inset-left, 0px));
+      padding-right:max(12px, env(safe-area-inset-right, 0px));
+    }
+
+    #adminDisplayInventorySheet .display-inventory-row-head{
+      flex-direction:column;
+    }
+
+    #adminDisplayInventorySheet .display-inventory-actions .btn,
+    #adminDisplayInventorySheet .display-inventory-row-actions .btn,
+    #adminDisplayInventorySheet .display-inventory-mode-tabs .btn{
+      flex:1 1 100%;
+    }
   }
+
 
   .partner-order-source-badge{
     display:grid;
@@ -4818,6 +5043,7 @@ body[data-ux-foundation="true"] .billing-note-item-card{
  <div id="adminPartnersSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="adminPartnersSheetTitle" tabindex="-1"></div>
  <div id="adminPartnerCatalogSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="adminPartnerCatalogSheetTitle" tabindex="-1"></div>
  <div id="adminPartnerRequestsSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="adminPartnerRequestsSheetTitle" tabindex="-1"></div>
+ <div id="adminDisplayInventorySheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="adminDisplayInventorySheetTitle" tabindex="-1"></div>
  <div id="adminDeveloperDiagnosticsSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="adminDeveloperDiagnosticsSheetTitle" tabindex="-1"></div>
 
   
@@ -4873,6 +5099,8 @@ const adminPartnerCatalogSheet =
   document.getElementById("adminPartnerCatalogSheet");
 const adminPartnerRequestsSheet =
   document.getElementById("adminPartnerRequestsSheet");
+const adminDisplayInventorySheet =
+  document.getElementById("adminDisplayInventorySheet");
 const adminDeveloperDiagnosticsSheet =
   document.getElementById("adminDeveloperDiagnosticsSheet");
 
@@ -4899,6 +5127,7 @@ const ADMIN_SHEETS = Object.freeze({
   partners: adminPartnersSheet,
   partnerCatalog: adminPartnerCatalogSheet,
   partnerRequests: adminPartnerRequestsSheet,
+  displayInventory: adminDisplayInventorySheet,
   developerDiagnostics: adminDeveloperDiagnosticsSheet,
   bulkPending: bulkPendingDeliverySheet
 });
@@ -5001,6 +5230,20 @@ Object.assign(window, {
   setPartnerRequestConvertPoNumber,
   convertPartnerRequestToOrderFromAdmin,
   backToPartnerRequestList,
+  openDisplayInventorySheet,
+  closeDisplayInventorySheet,
+  backToAdminMenuFromDisplayInventory,
+  refreshDisplayInventory,
+  setDisplayInventoryPartnerFilter,
+  setDisplayInventoryKeywordFilter,
+  toggleDisplayInventoryPositiveOnly,
+  clearDisplayInventoryFilters,
+  setDisplayInventoryActionMode,
+  updateDisplayInventoryFormField,
+  prefillDisplayInventoryAction,
+  confirmDisplayInventoryMovement,
+  submitConfirmedDisplayInventoryMovement,
+  cancelDisplayInventoryConfirmation,
   downloadBulkProductTemplate,
   handleBulkProductFileUpload,
   copyBulkProductHeader,
@@ -5294,6 +5537,34 @@ const state = {
       convertError: "",
       error: "",
       view: "list"
+    },
+    displayInventory: {
+      items: [],
+      total: 0,
+      implemented: false,
+      loading: false,
+      loadingPartners: false,
+      error: "",
+      message: "",
+      partnerError: "",
+      partners: [],
+      filters: {
+        partnerId: "",
+        q: "",
+        positiveOnly: true
+      },
+      actionMode: "send",
+      form: {
+        partnerId: "",
+        productId: "",
+        quantity: "",
+        reason: "",
+        orderId: ""
+      },
+      validationError: "",
+      submitting: false,
+      pendingAction: null,
+      lastResult: null
     },
     developerDiagnostics: {
       availability: null,
@@ -18240,10 +18511,9 @@ function openMainMenu(triggerEl){
                   ${t("onhandStock", "สต๊อกคงเหลือ")}
                 </button>
 
-                <button class="btn btn-secondary" type="button" disabled
-                  aria-disabled="true"
-                  title="${t("backendRequired", "ต้องรอ Backend ในเฟสถัดไป")}">
-                  ${t("displayStock", "Display Stock")} · ${t("comingLater", "รอเฟสถัดไป")}
+                <button class="btn btn-secondary" ${adminPermissionAttrs("stock.view")}
+                  onclick="closeMainMenu(); openDisplayInventorySheet();">
+                  ${t("displayStock", "สต๊อกตัวโชว์")}
                 </button>
 
                 <button class="btn btn-secondary" type="button" disabled
@@ -23560,6 +23830,907 @@ function backToAdminMenuFromLandedCost() {
     openMainMenu();
     syncOverlayBackdropState();
   });
+}
+
+function ensureAdminSessionForDisplayInventory() {
+  if (
+    state.mode !== "admin" ||
+    !state.admin.loggedIn ||
+    !state.admin.token ||
+    isAdminSessionExpired()
+  ) {
+    showToast(t("sessionExpiredLoginAgain", "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง"), "warning");
+    exitAdmin();
+    return false;
+  }
+
+  if (!hasAdminPermission("stock.view")) {
+    showToast(t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้"), "error");
+    return false;
+  }
+
+  return true;
+}
+
+function getDisplayInventoryState() {
+  return state.admin.displayInventory;
+}
+
+function getDisplayInventoryActionConfig(mode) {
+  return {
+    send: {
+      action: "sendToDisplay",
+      permission: "stock.send_display",
+      title: t("sendToDisplay", "ส่งไปตัวโชว์"),
+      confirmTitle: t("confirmSendToDisplay", "ยืนยันส่งไปตัวโชว์"),
+      success: t("sendToDisplaySuccess", "ส่งสินค้าไปตัวโชว์แล้ว"),
+      danger: false
+    },
+    return: {
+      action: "returnFromDisplay",
+      permission: "stock.return_display",
+      title: t("returnFromDisplay", "รับกลับเข้าคลัง"),
+      confirmTitle: t("confirmReturnFromDisplay", "ยืนยันรับกลับเข้าคลัง"),
+      success: t("returnFromDisplaySuccess", "รับสินค้ากลับเข้าคลังแล้ว"),
+      danger: false
+    },
+    fulfill: {
+      action: "fulfillFromDisplay",
+      permission: "order.approve",
+      title: t("fulfillFromDisplay", "ส่งตรงให้ลูกค้า"),
+      confirmTitle: t("confirmFulfillFromDisplay", "ยืนยันส่งตรงให้ลูกค้า"),
+      success: t("fulfillFromDisplaySuccess", "บันทึกส่งตรงให้ลูกค้าแล้ว"),
+      danger: true
+    }
+  }[mode] || null;
+}
+
+function getAllowedDisplayInventoryActionModes() {
+  return ["send", "return", "fulfill"].filter(mode => {
+    const config = getDisplayInventoryActionConfig(mode);
+    return config && hasAdminPermission(config.permission);
+  });
+}
+
+function normalizeDisplayInventoryProductId(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function findDisplayInventoryProduct(productId) {
+  const target = normalizeDisplayInventoryProductId(productId);
+  return (Array.isArray(state.products) ? state.products : [])
+    .find(product =>
+      normalizeDisplayInventoryProductId(product.productId) === target
+    ) || null;
+}
+
+function getDisplayInventoryProductName(productId) {
+  const product = findDisplayInventoryProduct(productId);
+  return String(product?.displayName || product?.name || "").trim();
+}
+
+function getDisplayInventoryMainQty(productId) {
+  const product = findDisplayInventoryProduct(productId);
+  if (!product) return null;
+  const qty = Number(product.stock);
+  return Number.isFinite(qty) ? qty : null;
+}
+
+function getDisplayInventoryBalance(partnerId, productId) {
+  const targetPartner = String(partnerId || "").trim();
+  const targetProduct = normalizeDisplayInventoryProductId(productId);
+  const item = getDisplayInventoryState().items.find(row =>
+    String(row.partnerId || "").trim() === targetPartner &&
+    normalizeDisplayInventoryProductId(row.productId) === targetProduct
+  );
+  return Number(item?.quantity || 0);
+}
+
+function getDisplayInventoryProductDisplayTotal(productId) {
+  const targetProduct = normalizeDisplayInventoryProductId(productId);
+  return getDisplayInventoryState().items
+    .filter(row => normalizeDisplayInventoryProductId(row.productId) === targetProduct)
+    .reduce((total, row) => total + Number(row.quantity || 0), 0);
+}
+
+function formatDisplayInventoryQty(value) {
+  if (value === null || value === undefined || value === "") return "-";
+  const qty = Number(value);
+  if (!Number.isFinite(qty)) return "-";
+  return qty.toLocaleString("th-TH");
+}
+
+function getDisplayInventoryPartnerOptions() {
+  const byId = new Map();
+  getDisplayInventoryState().partners.forEach(partner => {
+    const partnerId = String(partner.partnerId || "").trim();
+    if (!partnerId) return;
+    byId.set(partnerId, {
+      partnerId,
+      partnerName: String(partner.partnerName || partnerId).trim()
+    });
+  });
+  getDisplayInventoryState().items.forEach(item => {
+    const partnerId = String(item.partnerId || "").trim();
+    if (!partnerId || byId.has(partnerId)) return;
+    byId.set(partnerId, {
+      partnerId,
+      partnerName: String(item.partnerName || partnerId).trim()
+    });
+  });
+  return Array.from(byId.values())
+    .sort((left, right) =>
+      String(left.partnerName || "").localeCompare(String(right.partnerName || ""), "th", {
+        numeric: true,
+        sensitivity: "base"
+      })
+    );
+}
+
+function getVisibleDisplayInventoryItems() {
+  const displayState = getDisplayInventoryState();
+  const partnerId = String(displayState.filters.partnerId || "").trim();
+  const q = String(displayState.filters.q || "").trim().toLowerCase();
+
+  return displayState.items.filter(item => {
+    if (displayState.filters.positiveOnly && Number(item.quantity || 0) <= 0) {
+      return false;
+    }
+    if (partnerId && String(item.partnerId || "").trim() !== partnerId) {
+      return false;
+    }
+    if (q) {
+      const haystack = [
+        item.partnerId,
+        item.partnerName,
+        item.productId,
+        item.productName,
+        getDisplayInventoryProductName(item.productId),
+        item.note
+      ].join(" ").toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function getDisplayInventorySummary() {
+  const products = Array.isArray(state.products) ? state.products : [];
+  const mainWarehouseTotal = products.length
+    ? products.reduce((total, product) => total + (Number(product.stock) || 0), 0)
+    : null;
+  const displayTotal = getDisplayInventoryState().items
+    .reduce((total, item) => total + Number(item.quantity || 0), 0);
+
+  return {
+    mainWarehouseTotal,
+    displayTotal,
+    companyOwnedPhysicalTotal: mainWarehouseTotal === null
+      ? null
+      : mainWarehouseTotal + displayTotal
+  };
+}
+
+function resetDisplayInventoryActionForm() {
+  const displayState = getDisplayInventoryState();
+  displayState.form = {
+    partnerId: "",
+    productId: "",
+    quantity: "",
+    reason: "",
+    orderId: ""
+  };
+  displayState.validationError = "";
+  displayState.pendingAction = null;
+}
+
+function openDisplayInventorySheet() {
+  if (!ensureAdminSessionForDisplayInventory()) return;
+
+  const displayState = getDisplayInventoryState();
+  const allowedModes = getAllowedDisplayInventoryActionModes();
+  if (!allowedModes.includes(displayState.actionMode)) {
+    displayState.actionMode = allowedModes[0] || "send";
+  }
+  displayState.error = "";
+  displayState.message = "";
+  displayState.validationError = "";
+  renderDisplayInventorySheet();
+  openOverlay(adminDisplayInventorySheet);
+  loadDisplayInventoryScreenData();
+}
+
+function closeDisplayInventorySheet() {
+  closeOverlay(adminDisplayInventorySheet);
+}
+
+function backToAdminMenuFromDisplayInventory() {
+  closeDisplayInventorySheet();
+  syncOverlayBackdropState();
+  requestAnimationFrame(() => {
+    openMainMenu();
+    syncOverlayBackdropState();
+  });
+}
+
+async function loadDisplayInventoryScreenData() {
+  await Promise.all([
+    ensureDisplayInventoryProductSnapshot(),
+    loadDisplayInventoryPartners(),
+    refreshDisplayInventory({ silent: true })
+  ]);
+}
+
+async function ensureDisplayInventoryProductSnapshot() {
+  if (Array.isArray(state.products) && state.products.length) return;
+  try {
+    await refreshProducts();
+  } catch (err) {
+    console.warn("Display Inventory product snapshot failed", err);
+  }
+}
+
+async function loadDisplayInventoryPartners() {
+  if (!ensureAdminSessionForDisplayInventory()) return;
+  const displayState = getDisplayInventoryState();
+  if (displayState.loadingPartners) return;
+
+  displayState.loadingPartners = true;
+  displayState.partnerError = "";
+  renderDisplayInventorySheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "listPartners");
+    form.append("token", state.admin.token);
+    form.append("status", "active");
+    form.append("limit", "100");
+
+    const json = await postFormAction(form);
+    displayState.partners = Array.isArray(json.data?.partners)
+      ? json.data.partners
+      : [];
+  } catch (err) {
+    console.error(err);
+    displayState.partners = [];
+    displayState.partnerError = isPermissionDeniedError(String(err?.message || err || ""))
+      ? t("displayPartnerListPermission", "บัญชีนี้โหลดรายชื่อคู่ค้าไม่ได้ ให้ระบุ Partner ID เอง ระบบ Backend จะตรวจสอบคู่ค้าที่ active อีกครั้ง")
+      : getDisplayInventoryReadableError(err);
+  } finally {
+    displayState.loadingPartners = false;
+    renderDisplayInventorySheet();
+  }
+}
+
+async function fetchDisplayInventoryPage(offset) {
+  const form = new URLSearchParams();
+  form.append("action", "listDisplayInventory");
+  form.append("token", state.admin.token);
+  form.append("limit", "100");
+  form.append("offset", String(offset || 0));
+  return await postFormAction(form);
+}
+
+async function fetchAllDisplayInventoryRows() {
+  const rows = [];
+  let total = 0;
+  let implemented = false;
+  let offset = 0;
+  let guard = 0;
+
+  do {
+    const json = await fetchDisplayInventoryPage(offset);
+    const data = json.data || {};
+    const pageItems = Array.isArray(data.displayInventory)
+      ? data.displayInventory
+      : Array.isArray(data.items)
+        ? data.items
+        : [];
+    total = Number(data.total || pageItems.length || 0);
+    implemented = data.implemented === true;
+    rows.push(...pageItems);
+    offset += pageItems.length || 100;
+    guard++;
+  } while (rows.length < total && guard < 20);
+
+  return {
+    rows,
+    total: total || rows.length,
+    implemented
+  };
+}
+
+async function refreshDisplayInventory(options = {}) {
+  if (!ensureAdminSessionForDisplayInventory()) return;
+  const displayState = getDisplayInventoryState();
+  if (displayState.loading) return;
+
+  displayState.loading = true;
+  displayState.error = "";
+  if (!options.silent) displayState.message = "";
+  renderDisplayInventorySheet();
+
+  try {
+    const result = await fetchAllDisplayInventoryRows();
+    displayState.items = result.rows;
+    displayState.total = result.total;
+    displayState.implemented = result.implemented;
+  } catch (err) {
+    console.error(err);
+    displayState.items = [];
+    displayState.total = 0;
+    displayState.error = getDisplayInventoryReadableError(err);
+  } finally {
+    displayState.loading = false;
+    renderDisplayInventorySheet();
+  }
+}
+
+function setDisplayInventoryPartnerFilter(value) {
+  getDisplayInventoryState().filters.partnerId = String(value || "").trim();
+  renderDisplayInventorySheet();
+}
+
+function setDisplayInventoryKeywordFilter(value) {
+  getDisplayInventoryState().filters.q = String(value || "");
+}
+
+function toggleDisplayInventoryPositiveOnly(checked) {
+  getDisplayInventoryState().filters.positiveOnly = !!checked;
+  renderDisplayInventorySheet();
+}
+
+function clearDisplayInventoryFilters() {
+  const filters = getDisplayInventoryState().filters;
+  filters.partnerId = "";
+  filters.q = "";
+  filters.positiveOnly = true;
+  renderDisplayInventorySheet();
+}
+
+function setDisplayInventoryActionMode(mode) {
+  const config = getDisplayInventoryActionConfig(mode);
+  if (!config || !hasAdminPermission(config.permission)) {
+    showToast(t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้"), "warning");
+    return;
+  }
+  const displayState = getDisplayInventoryState();
+  displayState.actionMode = mode;
+  displayState.validationError = "";
+  renderDisplayInventorySheet();
+}
+
+function updateDisplayInventoryFormField(field, value) {
+  const displayState = getDisplayInventoryState();
+  if (!Object.prototype.hasOwnProperty.call(displayState.form, field)) return;
+  displayState.form[field] = field === "productId"
+    ? normalizeDisplayInventoryProductId(value)
+    : String(value || "");
+  displayState.validationError = "";
+}
+
+function prefillDisplayInventoryAction(mode, partnerId, productId) {
+  const config = getDisplayInventoryActionConfig(mode);
+  if (!config || !hasAdminPermission(config.permission)) {
+    showToast(t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้"), "warning");
+    return;
+  }
+  const displayState = getDisplayInventoryState();
+  displayState.actionMode = mode;
+  displayState.form.partnerId = String(partnerId || "").trim();
+  displayState.form.productId = normalizeDisplayInventoryProductId(productId);
+  displayState.form.quantity = "";
+  displayState.form.reason = "";
+  displayState.form.orderId = "";
+  displayState.validationError = "";
+  renderDisplayInventorySheet();
+  adminDisplayInventorySheet
+    .querySelector("[data-display-inventory-action-form]")
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function validateDisplayInventoryAction() {
+  const displayState = getDisplayInventoryState();
+  const mode = displayState.actionMode;
+  const config = getDisplayInventoryActionConfig(mode);
+  const form = displayState.form;
+  const partnerId = String(form.partnerId || "").trim();
+  const productId = normalizeDisplayInventoryProductId(form.productId);
+  const quantity = Number(form.quantity);
+  const reason = String(form.reason || "").trim();
+  const orderId = String(form.orderId || "").trim();
+  const partner = getDisplayInventoryPartnerOptions()
+    .find(item => String(item.partnerId || "").trim() === partnerId);
+  const product = findDisplayInventoryProduct(productId);
+  const mainQty = getDisplayInventoryMainQty(productId);
+  const displayQty = getDisplayInventoryBalance(partnerId, productId);
+
+  if (!config || !hasAdminPermission(config.permission)) {
+    throw new Error(t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้"));
+  }
+  if (!partnerId) {
+    throw new Error(t("displayPartnerRequired", "กรุณาเลือกคู่ค้าให้ชัดเจน"));
+  }
+  if (!product) {
+    throw new Error(t("displayProductRequired", "กรุณาเลือกสินค้าจากรายการให้ชัดเจน"));
+  }
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    throw new Error(t("invalidQty", "จำนวนไม่ถูกต้อง"));
+  }
+  if (mode === "send" && mainQty !== null && quantity > mainQty) {
+    throw new Error(t("displayMainNotEnough", "จำนวนมากกว่าคลังหลักที่มีอยู่"));
+  }
+  if ((mode === "return" || mode === "fulfill") && quantity > displayQty) {
+    throw new Error(t("displayBalanceNotEnough", "จำนวนมากกว่าสต๊อกตัวโชว์ที่มีอยู่"));
+  }
+  if (mode === "fulfill" && !orderId) {
+    throw new Error(t("displayOrderRequired", "กรุณาระบุ Approved Order ID"));
+  }
+
+  return {
+    mode,
+    action: config.action,
+    title: config.title,
+    confirmTitle: config.confirmTitle,
+    success: config.success,
+    danger: config.danger,
+    partnerId,
+    partnerName: partner?.partnerName || partnerId,
+    productId,
+    productName: String(product.displayName || product.name || productId).trim(),
+    quantity,
+    reason,
+    orderId,
+    mainQty,
+    displayQty
+  };
+}
+
+function confirmDisplayInventoryMovement() {
+  const displayState = getDisplayInventoryState();
+  if (displayState.submitting) return;
+
+  try {
+    const action = validateDisplayInventoryAction();
+    displayState.pendingAction = action;
+    displayState.validationError = "";
+    renderDisplayInventoryConfirmation(action);
+  } catch (err) {
+    displayState.validationError = getDisplayInventoryReadableError(err);
+    renderDisplayInventorySheet();
+  }
+}
+
+function renderDisplayInventoryConfirmation(action) {
+  confirmSheet.innerHTML = `
+    <h3 id="confirmSheetTitle">${esc(action.confirmTitle)}</h3>
+    <div class="display-inventory-action-preview">
+      <strong>${esc(action.productId)} · ${esc(action.productName || "-")}</strong>
+      <span>${t("partner", "คู่ค้า")}: ${esc(action.partnerName || action.partnerId)}</span>
+      <span>${t("quantity", "จำนวน")}: ${formatDisplayInventoryQty(action.quantity)}</span>
+      ${action.orderId ? `<span>Order ID: ${esc(action.orderId)}</span>` : ""}
+      ${action.reason ? `<span>${t("reason", "เหตุผล")}: ${esc(action.reason)}</span>` : ""}
+    </div>
+    <div class="display-inventory-help" style="margin-top:10px">
+      ${action.mode === "fulfill"
+        ? t("displayFulfillConfirmHelp", "รายการนี้จะบันทึกการส่งจากตัวโชว์ให้ลูกค้าโดยไม่เปลี่ยนคลังหลัก")
+        : t("displayMutationConfirmHelp", "ระบบจะส่งคำสั่งไป Backend และรีเฟรชข้อมูลหลังสำเร็จ")}
+    </div>
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="cancelDisplayInventoryConfirmation()">
+        ${t("cancel", "ยกเลิก")}
+      </button>
+      <button class="btn ${action.danger ? "btn-danger" : "btn-primary"}" type="button"
+        onclick="submitConfirmedDisplayInventoryMovement()">
+        ${esc(action.title)}
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+}
+
+function cancelDisplayInventoryConfirmation() {
+  getDisplayInventoryState().pendingAction = null;
+  closeOverlay(confirmSheet);
+}
+
+async function submitConfirmedDisplayInventoryMovement() {
+  const displayState = getDisplayInventoryState();
+  const action = displayState.pendingAction;
+  if (!action || displayState.submitting) return;
+
+  displayState.submitting = true;
+  const buttons = confirmSheet.querySelectorAll("button");
+  buttons.forEach(button => button.disabled = true);
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", action.action);
+    form.append("token", state.admin.token);
+    form.append("partnerId", action.partnerId);
+    form.append("productId", action.productId);
+    form.append("quantity", String(action.quantity));
+    form.append("reason", action.reason);
+    if (action.mode === "fulfill") {
+      form.append("orderId", action.orderId);
+    }
+
+    const json = await postFormAction(form, { timeout: 45000 });
+    displayState.lastResult = json.data || null;
+    displayState.message = action.success;
+    displayState.validationError = "";
+    displayState.pendingAction = null;
+    displayState.form.quantity = "";
+    displayState.form.reason = "";
+    displayState.form.orderId = "";
+    closeOverlay(confirmSheet);
+    showToast(action.success, "success");
+    await refreshProducts();
+    await refreshDisplayInventory({ silent: true });
+  } catch (err) {
+    const message = getDisplayInventoryReadableError(err);
+    displayState.validationError = message;
+    showToast(message, "error");
+    renderDisplayInventorySheet();
+  } finally {
+    displayState.submitting = false;
+    buttons.forEach(button => button.disabled = false);
+    renderDisplayInventorySheet();
+  }
+}
+
+function getDisplayInventoryReadableError(err) {
+  const raw = String(err?.message || err || "").trim();
+  const text = raw || t("unexpectedError", "เกิดข้อผิดพลาด");
+  const lower = text.toLowerCase();
+
+  if (isAuthError(text)) {
+    return t("sessionExpiredLoginAgain", "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
+  }
+  if (isPermissionDeniedError(text)) {
+    return t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้");
+  }
+  if (lower.includes("stock not enough")) {
+    return t("displayMainNotEnough", "จำนวนในคลังหลักไม่พอสำหรับส่งไปตัวโชว์");
+  }
+  if (lower.includes("display inventory not enough")) {
+    return t("displayBalanceNotEnough", "จำนวนสต๊อกตัวโชว์ไม่พอ");
+  }
+  if (lower.includes("order must be approved")) {
+    return t("displayOrderMustBeApproved", "Order ต้องมีสถานะ APPROVED ก่อนส่งตรงจากตัวโชว์");
+  }
+  if (lower.includes("order not found")) {
+    return t("displayOrderNotFound", "ไม่พบ Order ID นี้");
+  }
+  if (lower.includes("partner not found")) {
+    return t("displayPartnerNotFound", "ไม่พบคู่ค้า หรือคู่ค้าถูกปิดใช้งาน");
+  }
+  if (lower.includes("product not found")) {
+    return t("displayProductNotFound", "ไม่พบสินค้านี้");
+  }
+  if (lower.includes("positive integer")) {
+    return t("invalidQty", "จำนวนไม่ถูกต้อง");
+  }
+
+  return text;
+}
+
+function renderDisplayInventoryPartnerOptions(selectedValue) {
+  const options = getDisplayInventoryPartnerOptions();
+  return `
+    <option value="">${t("selectPartner", "เลือกคู่ค้า")}</option>
+    ${options.map(partner => `
+      <option value="${escAttr(partner.partnerId)}" ${String(selectedValue || "") === partner.partnerId ? "selected" : ""}>
+        ${esc(partner.partnerName || partner.partnerId)} (${esc(partner.partnerId)})
+      </option>
+    `).join("")}
+  `;
+}
+
+function renderDisplayInventoryProductOptions() {
+  const products = Array.isArray(state.products) ? state.products : [];
+  return products.map(product => `
+    <option value="${escAttr(product.productId || "")}">
+      ${esc(product.displayName || product.name || product.productId || "")}
+    </option>
+  `).join("");
+}
+
+function renderDisplayInventoryPartnerDatalistOptions() {
+  return getDisplayInventoryPartnerOptions().map(partner => `
+    <option value="${escAttr(partner.partnerId)}">
+      ${esc(partner.partnerName || partner.partnerId)}
+    </option>
+  `).join("");
+}
+
+function renderDisplayInventorySummary() {
+  const summary = getDisplayInventorySummary();
+  return `
+    <div class="display-inventory-summary">
+      <div class="card metric-card">
+        <div class="name">${t("mainWarehouse", "คลังหลัก")}</div>
+        <div class="price">${formatDisplayInventoryQty(summary.mainWarehouseTotal)}</div>
+        <div class="stock">${t("fromProductsStock", "จาก Products.stock")}</div>
+      </div>
+      <div class="card metric-card">
+        <div class="name">${t("displayTotal", "ตัวโชว์รวม")}</div>
+        <div class="price">${formatDisplayInventoryQty(summary.displayTotal)}</div>
+        <div class="stock">${t("fromDisplayInventory", "จาก display_inventory")}</div>
+      </div>
+      <div class="card metric-card">
+        <div class="name">${t("companyOwnedPhysicalTotal", "สินค้าของบริษัททั้งหมด")}</div>
+        <div class="price">${formatDisplayInventoryQty(summary.companyOwnedPhysicalTotal)}</div>
+        <div class="stock">${t("mainPlusDisplay", "คลังหลัก + ตัวโชว์")}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDisplayInventoryFilters() {
+  const displayState = getDisplayInventoryState();
+  return `
+    <div class="display-inventory-filters">
+      <div class="display-inventory-section-title">${t("filters", "ตัวกรอง")}</div>
+      <div class="display-inventory-filter-grid">
+        <div class="form-group">
+          <label for="displayInventoryPartnerFilter">${t("partner", "คู่ค้า")}</label>
+          <select id="displayInventoryPartnerFilter" onchange="setDisplayInventoryPartnerFilter(this.value)">
+            <option value="">${t("allProducts", "ทั้งหมด")}</option>
+            ${renderDisplayInventoryPartnerOptions(displayState.filters.partnerId).replace(`<option value="">${t("selectPartner", "เลือกคู่ค้า")}</option>`, "")}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="displayInventoryKeywordFilter">${t("productKeyword", "คำค้นสินค้า")}</label>
+          <input id="displayInventoryKeywordFilter" type="search"
+            value="${escAttr(displayState.filters.q || "")}"
+            placeholder="${t("productSearchPlaceholder", "ค้นหาสินค้า / รหัส")}"
+            oninput="setDisplayInventoryKeywordFilter(this.value)"
+            onkeydown="if(event.key === 'Enter') renderDisplayInventorySheet();">
+        </div>
+      </div>
+      <label class="display-inventory-toggle">
+        <input type="checkbox" ${displayState.filters.positiveOnly ? "checked" : ""}
+          onchange="toggleDisplayInventoryPositiveOnly(this.checked)">
+        <span>${t("displayPositiveOnly", "แสดงเฉพาะรายการที่มีจำนวนมากกว่า 0")}</span>
+      </label>
+      <div class="display-inventory-actions">
+        <button class="btn btn-primary" type="button" onclick="renderDisplayInventorySheet()">
+          ${t("search", "ค้นหา")}
+        </button>
+        <button class="btn btn-outline" type="button" onclick="refreshDisplayInventory()">
+          ${t("refresh", "รีเฟรช")}
+        </button>
+        <button class="btn btn-outline" type="button" onclick="clearDisplayInventoryFilters()">
+          ${t("clearFilters", "ล้างตัวกรอง")}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderDisplayInventoryActionForm() {
+  const displayState = getDisplayInventoryState();
+  const allowedModes = getAllowedDisplayInventoryActionModes();
+  if (!allowedModes.length) {
+    return `
+      <div class="display-inventory-action-form">
+        <div class="display-inventory-action-title">${t("displayActions", "การเคลื่อนไหวตัวโชว์")}</div>
+        <div class="display-inventory-help">${t("displayNoMutationPermission", "บัญชีนี้ดูข้อมูลได้เท่านั้น ยังไม่มีสิทธิ์ทำรายการตัวโชว์")}</div>
+      </div>
+    `;
+  }
+
+  if (!allowedModes.includes(displayState.actionMode)) {
+    displayState.actionMode = allowedModes[0];
+  }
+
+  const config = getDisplayInventoryActionConfig(displayState.actionMode);
+  const form = displayState.form;
+  const mainQty = getDisplayInventoryMainQty(form.productId);
+  const displayQty = getDisplayInventoryBalance(form.partnerId, form.productId);
+  const productDisplayTotal = getDisplayInventoryProductDisplayTotal(form.productId);
+  const companyTotal = mainQty === null ? null : mainQty + productDisplayTotal;
+
+  return `
+    <div class="display-inventory-action-form" data-display-inventory-action-form>
+      <div class="display-inventory-action-title">${t("displayActions", "การเคลื่อนไหวตัวโชว์")}</div>
+      <div class="display-inventory-mode-tabs" role="tablist" aria-label="${t("displayActions", "การเคลื่อนไหวตัวโชว์")}">
+        ${allowedModes.map(mode => {
+          const item = getDisplayInventoryActionConfig(mode);
+          return `
+            <button class="btn btn-outline ${displayState.actionMode === mode ? "active" : ""}" type="button"
+              onclick="setDisplayInventoryActionMode('${mode}')">
+              ${esc(item.title)}
+            </button>
+          `;
+        }).join("")}
+      </div>
+      ${displayState.actionMode === "fulfill" ? `
+        <div class="display-inventory-help">
+          ${t("displayFulfillHelp", "บันทึกการส่งจากตัวโชว์ของคู่ค้าไปให้ลูกค้าโดยตรง ต้องระบุ Order ID ที่ APPROVED แล้ว")}
+        </div>
+      ` : ""}
+      <div class="display-inventory-form-grid">
+        <div class="form-group">
+          <label for="displayInventoryFormPartner">${t("partner", "คู่ค้า")} *</label>
+          <input id="displayInventoryFormPartner" list="displayInventoryPartnerOptions"
+            value="${escAttr(form.partnerId || "")}"
+            placeholder="PTR-001"
+            oninput="updateDisplayInventoryFormField('partnerId', this.value)"
+            onchange="renderDisplayInventorySheet()"
+            onblur="renderDisplayInventorySheet()">
+          <datalist id="displayInventoryPartnerOptions">
+            ${renderDisplayInventoryPartnerDatalistOptions()}
+          </datalist>
+        </div>
+        <div class="form-group">
+          <label for="displayInventoryFormProduct">${t("productCode", "รหัส")} *</label>
+          <input id="displayInventoryFormProduct" list="displayInventoryProductOptions"
+            value="${escAttr(form.productId || "")}"
+            placeholder="SKU"
+            oninput="updateDisplayInventoryFormField('productId', this.value)"
+            onchange="renderDisplayInventorySheet()"
+            onblur="renderDisplayInventorySheet()">
+          <datalist id="displayInventoryProductOptions">
+            ${renderDisplayInventoryProductOptions()}
+          </datalist>
+        </div>
+        <div class="form-group">
+          <label for="displayInventoryFormQuantity">${t("quantity", "จำนวน")} *</label>
+          <input id="displayInventoryFormQuantity" type="number" min="1" step="1"
+            value="${escAttr(form.quantity || "")}"
+            oninput="updateDisplayInventoryFormField('quantity', this.value)">
+        </div>
+        ${displayState.actionMode === "fulfill" ? `
+          <div class="form-group">
+            <label for="displayInventoryFormOrderId">Approved Order ID *</label>
+            <input id="displayInventoryFormOrderId"
+              value="${escAttr(form.orderId || "")}"
+              placeholder="ORD-..."
+              oninput="updateDisplayInventoryFormField('orderId', this.value)">
+          </div>
+        ` : ""}
+      </div>
+      <div class="form-group">
+        <label for="displayInventoryFormReason">${displayState.actionMode === "fulfill" ? t("deliveryReference", "เหตุผล / เลขอ้างอิงจัดส่ง") : t("reason", "เหตุผล")}</label>
+        <textarea id="displayInventoryFormReason" rows="2"
+          oninput="updateDisplayInventoryFormField('reason', this.value)">${esc(form.reason || "")}</textarea>
+      </div>
+      <div class="display-inventory-action-preview">
+        <div>${t("mainWarehouse", "คลังหลัก")}: <strong>${formatDisplayInventoryQty(mainQty)}</strong></div>
+        <div>${t("displayBalance", "ตัวโชว์ของคู่ค้านี้")}: <strong>${formatDisplayInventoryQty(displayQty)}</strong></div>
+        <div>${t("companyOwnedPhysicalTotal", "สินค้าของบริษัททั้งหมด")}: <strong>${formatDisplayInventoryQty(companyTotal)}</strong></div>
+      </div>
+      ${displayState.validationError ? `<div class="display-inventory-error" role="alert">${esc(displayState.validationError)}</div>` : ""}
+      <button class="btn ${config.danger ? "display-inventory-danger" : "btn-primary"}" type="button"
+        ${displayState.submitting ? "disabled" : ""}
+        onclick="confirmDisplayInventoryMovement()">
+        ${displayState.submitting ? t("saving", "กำลังบันทึก...") : esc(config.title)}
+      </button>
+    </div>
+  `;
+}
+
+function renderDisplayInventoryRow(item) {
+  const mainQty = getDisplayInventoryMainQty(item.productId);
+  const displayTotal = getDisplayInventoryProductDisplayTotal(item.productId);
+  const companyTotal = mainQty === null ? null : mainQty + displayTotal;
+  const productName = item.productName || getDisplayInventoryProductName(item.productId) || "-";
+  const partnerLabel = item.partnerName || item.partnerId || "-";
+
+  return `
+    <div class="display-inventory-row">
+      <div class="display-inventory-row-head">
+        <div>
+          <div class="display-inventory-title">${esc(partnerLabel)}</div>
+          <div class="display-inventory-subtitle">${esc(item.productId || "-")} · ${esc(productName)}</div>
+        </div>
+        <span class="status-badge compact ${Number(item.quantity || 0) > 0 ? "status-approved" : "status-neutral"}">
+          ${formatDisplayInventoryQty(item.quantity)}
+        </span>
+      </div>
+      <div class="display-inventory-qty-grid">
+        <div class="display-inventory-qty">
+          <span>${t("mainWarehouse", "คลังหลัก")}</span>
+          <strong>${formatDisplayInventoryQty(mainQty)}</strong>
+        </div>
+        <div class="display-inventory-qty">
+          <span>${t("displayBalance", "ตัวโชว์")}</span>
+          <strong>${formatDisplayInventoryQty(item.quantity)}</strong>
+        </div>
+        <div class="display-inventory-qty">
+          <span>${t("companyOwnedPhysicalTotal", "สินค้าของบริษัททั้งหมด")}</span>
+          <strong>${formatDisplayInventoryQty(companyTotal)}</strong>
+        </div>
+      </div>
+      <div class="display-inventory-meta">
+        ${t("updatedAt", "อัปเดตล่าสุด")}: ${esc(item.updatedAt ? formatThaiDate(item.updatedAt) : "-")}<br>
+        ${t("updatedBy", "อัปเดตโดย")}: ${esc(item.updatedBy || "-")}<br>
+        ${t("note", "หมายเหตุ")}: ${esc(item.note || "-")}
+      </div>
+      <div class="display-inventory-row-actions">
+        ${hasAdminPermission("stock.send_display") ? `
+          <button class="btn btn-outline" type="button"
+            onclick="prefillDisplayInventoryAction('send', ${toInlineJsStringLiteral(item.partnerId)}, ${toInlineJsStringLiteral(item.productId)})">
+            ${t("sendToDisplay", "ส่งไปตัวโชว์")}
+          </button>
+        ` : ""}
+        ${hasAdminPermission("stock.return_display") ? `
+          <button class="btn btn-outline" type="button"
+            onclick="prefillDisplayInventoryAction('return', ${toInlineJsStringLiteral(item.partnerId)}, ${toInlineJsStringLiteral(item.productId)})">
+            ${t("returnFromDisplay", "รับกลับเข้าคลัง")}
+          </button>
+        ` : ""}
+        ${hasAdminPermission("order.approve") ? `
+          <button class="btn btn-outline" type="button"
+            onclick="prefillDisplayInventoryAction('fulfill', ${toInlineJsStringLiteral(item.partnerId)}, ${toInlineJsStringLiteral(item.productId)})">
+            ${t("fulfillFromDisplay", "ส่งตรงให้ลูกค้า")}
+          </button>
+        ` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function renderDisplayInventoryList() {
+  const displayState = getDisplayInventoryState();
+  if (displayState.loading) {
+    return `<div class="loading has-lottie">${renderLottieLoading(t("loadingData", "กำลังโหลดข้อมูล"))}</div>`;
+  }
+  if (displayState.error) {
+    return `
+      <div class="display-inventory-error" role="alert">
+        ${esc(displayState.error)}
+      </div>
+    `;
+  }
+
+  const rows = getVisibleDisplayInventoryItems();
+  if (!rows.length) {
+    return `<div class="empty-state">${t("displayInventoryEmpty", "ยังไม่มีรายการสต๊อกตัวโชว์ตามเงื่อนไขนี้")}</div>`;
+  }
+
+  return `
+    <div class="display-inventory-help">
+      ${formatUiText("displayInventoryFound", { count: rows.length.toLocaleString("th-TH") }, "พบ {count} รายการ")}
+    </div>
+    <div class="display-inventory-list">
+      ${rows.map(renderDisplayInventoryRow).join("")}
+    </div>
+  `;
+}
+
+function renderDisplayInventorySheet() {
+  const displayState = getDisplayInventoryState();
+  adminDisplayInventorySheet.innerHTML = `
+    <div class="display-inventory-panel">
+      <div class="sheet-topbar">
+        <button class="btn btn-outline sheet-nav-btn"
+          onclick="backToAdminMenuFromDisplayInventory()"
+          aria-label="${t("backToAdminMenu", "กลับเมนูแอดมิน")}">←</button>
+        <h3 id="adminDisplayInventorySheetTitle">${t("displayStock", "สต๊อกตัวโชว์")}</h3>
+        <button class="btn btn-outline sheet-nav-btn"
+          onclick="closeDisplayInventorySheet()"
+          aria-label="${t("close", "ปิด")}">×</button>
+      </div>
+
+      <div class="display-inventory-help">
+        ${t("displayInventoryHelp", "สต๊อกตัวโชว์คือสินค้าของบริษัทที่อยู่กับคู่ค้า โดยรวมยอดต่อคู่ค้าและสินค้าเท่านั้น")}
+      </div>
+
+      ${displayState.message ? `<div class="display-inventory-success" role="status">${esc(displayState.message)}</div>` : ""}
+      ${displayState.partnerError ? `<div class="display-inventory-error" role="alert">${esc(displayState.partnerError)}</div>` : ""}
+
+      ${renderDisplayInventorySummary()}
+      ${renderDisplayInventoryFilters()}
+      ${renderDisplayInventoryActionForm()}
+
+      <div class="display-inventory-section-title">${t("displayInventoryRows", "รายการตัวโชว์")}</div>
+      ${renderDisplayInventoryList()}
+    </div>
+  `;
 }
 
 function ensureAdminSessionForPartnerAdmin() {
