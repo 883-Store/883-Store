@@ -4980,6 +4980,650 @@ body[data-ux-foundation="true"] .billing-note-item-card{
   }
 }
 
+/* ================= LUOPANICH ERP DESIGN SYSTEM: LOCKED ================= */
+:root,
+body[data-ux-foundation="true"]{
+  --ds-primary:#6366F1;
+  --ds-secondary:#EC4899;
+  --ds-success:#22C55E;
+  --ds-warning:#F59E0B;
+  --ds-info:#3B82F6;
+  --ds-error:#EF4444;
+  --ds-background:#F8FAFC;
+  --ds-surface:#FFFFFF;
+  --ds-neutral:#1F2937;
+  --ds-neutral-light:#6B7280;
+  --ds-border:#E5E7EB;
+
+  --ds-space-1:8px;
+  --ds-space-2:16px;
+  --ds-space-3:24px;
+  --ds-space-4:32px;
+  --ds-space-5:40px;
+
+  --ds-radius-control:8px;
+  --ds-radius-card:8px;
+  --ds-radius-sheet:8px;
+  --ds-shadow-card:0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.08);
+  --ds-shadow-panel:0 18px 48px rgba(15,23,42,.16);
+
+  --ds-h1:32px;
+  --ds-h2:24px;
+  --ds-h3:20px;
+  --ds-body:16px;
+  --ds-caption:12px;
+}
+
+body[data-ux-foundation="true"]{
+  --bg:var(--ds-background);
+  --bg-soft:#EEF2FF;
+  --surface:var(--ds-surface);
+  --surface-2:#F9FAFB;
+  --surface-3:#F3F4F6;
+  --surface-glass:var(--ds-surface);
+  --header-bg:rgba(255,255,255,.96);
+  --header-bg-scrolled:rgba(255,255,255,.98);
+  --sheet-bg:var(--ds-surface);
+  --side-bg:var(--ds-surface);
+  --text:var(--ds-neutral);
+  --text-soft:#374151;
+  --muted:var(--ds-neutral-light);
+  --border:var(--ds-border);
+  --border-strong:#D1D5DB;
+  --primary:var(--ds-primary);
+  --primary-strong:#4F46E5;
+  --primary-text:#FFFFFF;
+  --secondary:var(--ds-secondary);
+  --secondary-strong:#DB2777;
+  --success:var(--ds-success);
+  --warning:var(--ds-warning);
+  --danger:var(--ds-error);
+  --focus-color:var(--ds-primary);
+  --focus-ring:0 0 0 3px rgba(99,102,241,.20);
+  --placeholder:#9CA3AF;
+  --header-border:var(--ds-border);
+  --header-border-strong:#D1D5DB;
+  --theme-color-scheme:light;
+
+  --color-primary:var(--ds-primary);
+  --color-primary-hover:#4F46E5;
+  --color-background:var(--ds-background);
+  --color-surface:var(--ds-surface);
+  --color-border:var(--ds-border);
+  --color-text:var(--ds-neutral);
+  --color-text-muted:var(--ds-neutral-light);
+  --color-success:var(--ds-success);
+  --color-warning:var(--ds-warning);
+  --color-danger:var(--ds-error);
+
+  --radius-control:var(--ds-radius-control);
+  --radius-card:var(--ds-radius-card);
+  --radius-sheet:var(--ds-radius-sheet);
+  --shadow-soft:var(--ds-shadow-card);
+  --shadow-panel:var(--ds-shadow-panel);
+  --shadow-card:var(--ds-shadow-card);
+  --shadow-control:0 6px 18px rgba(15,23,42,.08);
+  --shadow-header:0 1px 2px rgba(15,23,42,.05);
+  --shadow-header-scrolled:0 8px 24px rgba(15,23,42,.08);
+  --shadow-side:var(--ds-shadow-panel);
+  --shadow-floating:var(--ds-shadow-panel);
+  --shadow-fab:0 14px 36px rgba(99,102,241,.24);
+
+  --status-ready-bg:#DCFCE7;
+  --status-ready-text:#166534;
+  --status-ready-border:#BBF7D0;
+  --status-ready-dot:var(--ds-success);
+  --status-ready-plus-bg:#E0E7FF;
+  --status-ready-plus-text:#3730A3;
+  --status-ready-plus-border:#C7D2FE;
+  --status-shipping-bg:#DBEAFE;
+  --status-shipping-text:#1D4ED8;
+  --status-shipping-border:#BFDBFE;
+  --status-warehouse-bg:#FCE7F3;
+  --status-warehouse-text:#BE185D;
+  --status-warehouse-border:#FBCFE8;
+  --status-out-bg:#FEE2E2;
+  --status-out-text:#B91C1C;
+  --status-out-border:#FECACA;
+  --status-pending-bg:#FEF3C7;
+  --status-pending-text:#92400E;
+  --status-pending-border:#FDE68A;
+  --status-approved-bg:#DCFCE7;
+  --status-approved-text:#166534;
+  --status-approved-border:#BBF7D0;
+  --status-rejected-bg:#FEE2E2;
+  --status-rejected-text:#B91C1C;
+  --status-rejected-border:#FECACA;
+  --status-neutral-bg:#F3F4F6;
+  --status-neutral-text:#374151;
+  --status-neutral-border:#E5E7EB;
+
+  background:var(--ds-background);
+  color:var(--ds-neutral);
+  color-scheme:light;
+  font-family:Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size:var(--ds-body);
+  line-height:1.6;
+}
+
+body[data-ux-foundation="true"] *,
+body[data-ux-foundation="true"] *::before,
+body[data-ux-foundation="true"] *::after{
+  box-sizing:border-box;
+}
+
+body[data-ux-foundation="true"] h1,
+body[data-ux-foundation="true"] .h1{
+  font-size:var(--ds-h1);
+  line-height:1.3;
+  font-weight:700;
+}
+
+body[data-ux-foundation="true"] h2,
+body[data-ux-foundation="true"] .h2{
+  font-size:var(--ds-h2);
+  line-height:1.4;
+  font-weight:600;
+}
+
+body[data-ux-foundation="true"] h3,
+body[data-ux-foundation="true"] .h3,
+body[data-ux-foundation="true"] .section-title,
+body[data-ux-foundation="true"] .admin-detail-title,
+body[data-ux-foundation="true"] .display-inventory-section-title,
+body[data-ux-foundation="true"] .display-inventory-action-title{
+  font-size:var(--ds-h3);
+  line-height:1.4;
+  font-weight:600;
+  color:var(--ds-neutral);
+}
+
+body[data-ux-foundation="true"] .caption,
+body[data-ux-foundation="true"] .stock,
+body[data-ux-foundation="true"] .meta,
+body[data-ux-foundation="true"] .sku,
+body[data-ux-foundation="true"] .admin-card-meta,
+body[data-ux-foundation="true"] .info-label,
+body[data-ux-foundation="true"] .menu-section-label{
+  font-size:var(--ds-caption);
+  line-height:1.6;
+}
+
+body[data-ux-foundation="true"] header{
+  min-height:88px;
+  background:var(--header-bg);
+  border-bottom:1px solid var(--ds-border);
+  box-shadow:var(--shadow-header);
+}
+
+body[data-ux-foundation="true"] header.scrolled{
+  background:var(--header-bg-scrolled);
+  box-shadow:var(--shadow-header-scrolled);
+}
+
+body[data-ux-foundation="true"] .shop-title,
+body[data-ux-foundation="true"] .admin-title,
+body[data-ux-foundation="true"] .brand-pill{
+  background:#EEF2FF;
+  border:1px solid #C7D2FE;
+  color:#3730A3;
+  border-radius:var(--ds-radius-control);
+  box-shadow:none;
+}
+
+body[data-ux-foundation="true"] .container{
+  gap:var(--ds-space-2);
+  padding:var(--ds-space-2) clamp(var(--ds-space-2), 3vw, var(--ds-space-4)) calc(96px + env(safe-area-inset-bottom, 0px));
+}
+
+body[data-ux-foundation="true"] .card,
+body[data-ux-foundation="true"] .product-card,
+body[data-ux-foundation="true"] .admin-card,
+body[data-ux-foundation="true"] .metric-card,
+body[data-ux-foundation="true"] .summary-card,
+body[data-ux-foundation="true"] .action-card,
+body[data-ux-foundation="true"] .data-card,
+body[data-ux-foundation="true"] .info-card,
+body[data-ux-foundation="true"] .order-success-card,
+body[data-ux-foundation="true"] .timeline-card-with-thumb,
+body[data-ux-foundation="true"] .bulk-template-table,
+body[data-ux-foundation="true"] .bulk-data-preview-table,
+body[data-ux-foundation="true"] .bulk-preview-card,
+body[data-ux-foundation="true"] .bulk-update-preview-card,
+body[data-ux-foundation="true"] .bulk-product-picker,
+body[data-ux-foundation="true"] .bulk-product-picker-row,
+body[data-ux-foundation="true"] .bulk-import-status,
+body[data-ux-foundation="true"] .bulk-import-success-card,
+body[data-ux-foundation="true"] .partner-order-source-badge,
+body[data-ux-foundation="true"] .delivery-note-po-card,
+body[data-ux-foundation="true"] .delivery-note-item-card,
+body[data-ux-foundation="true"] .billing-note-item-card,
+body[data-ux-foundation="true"] .landed-cost-apply-card,
+body[data-ux-foundation="true"] #adminDeveloperDiagnosticsSheet .diagnostic-result-card,
+body[data-ux-foundation="true"] #adminDisplayInventorySheet .display-inventory-row,
+body[data-ux-foundation="true"] #adminDisplayInventorySheet .display-inventory-filters,
+body[data-ux-foundation="true"] #adminDisplayInventorySheet .display-inventory-action-form{
+  background:var(--ds-surface);
+  border:1px solid var(--ds-border);
+  border-radius:var(--ds-radius-card);
+  box-shadow:var(--ds-shadow-card);
+  color:var(--ds-neutral);
+}
+
+body[data-ux-foundation="true"] .metric-card,
+body[data-ux-foundation="true"] .summary-card{
+  border-top:4px solid var(--ds-primary);
+}
+
+body[data-ux-foundation="true"] .action-card,
+body[data-ux-foundation="true"] .admin-card{
+  border-left:4px solid var(--ds-info);
+}
+
+body[data-ux-foundation="true"] .data-card,
+body[data-ux-foundation="true"] .bulk-template-table,
+body[data-ux-foundation="true"] .bulk-data-preview-table{
+  border-left:4px solid var(--ds-secondary);
+}
+
+body[data-ux-foundation="true"] .product-card,
+body[data-ux-foundation="true"] .admin-card,
+body[data-ux-foundation="true"] .bulk-preview-card,
+body[data-ux-foundation="true"] .delivery-note-item-card,
+body[data-ux-foundation="true"] .billing-note-item-card{
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+
+body[data-ux-foundation="true"] .price{
+  background:none;
+  -webkit-text-fill-color:currentColor;
+  color:var(--ds-primary);
+  text-shadow:none;
+}
+
+body[data-ux-foundation="true"] .btn,
+body[data-ux-foundation="true"] button.btn,
+body[data-ux-foundation="true"] .search-btn,
+body[data-ux-foundation="true"] .filter-btn,
+body[data-ux-foundation="true"] .menu-btn,
+body[data-ux-foundation="true"] .filter-item,
+body[data-ux-foundation="true"] .sheet-nav-btn,
+body[data-ux-foundation="true"] .viewer-copy-tile,
+body[data-ux-foundation="true"] .viewer-copy-toggle{
+  min-height:44px;
+  padding:12px 16px;
+  border-radius:var(--ds-radius-control);
+  border:1px solid transparent;
+  box-shadow:none;
+  font-size:var(--ds-body);
+  font-weight:600;
+  line-height:1.2;
+}
+
+body[data-ux-foundation="true"] .btn-primary,
+body[data-ux-foundation="true"] .search-btn,
+body[data-ux-foundation="true"] .menu-btn{
+  background:var(--ds-primary);
+  border-color:var(--ds-primary);
+  color:#FFFFFF;
+}
+
+body[data-ux-foundation="true"] .btn-secondary,
+body[data-ux-foundation="true"] .filter-btn{
+  background:var(--ds-secondary);
+  border-color:var(--ds-secondary);
+  color:#FFFFFF;
+}
+
+body[data-ux-foundation="true"] .btn-outline,
+body[data-ux-foundation="true"] .btn-ghost,
+body[data-ux-foundation="true"] .filter-item,
+body[data-ux-foundation="true"] .sheet-nav-btn{
+  background:transparent;
+  border-color:var(--ds-border);
+  color:var(--ds-neutral);
+}
+
+body[data-ux-foundation="true"] .btn-danger,
+body[data-ux-foundation="true"] .btn-reject,
+body[data-ux-foundation="true"] .btn-remove,
+body[data-ux-foundation="true"] .display-inventory-danger{
+  background:var(--ds-error);
+  border-color:var(--ds-error);
+  color:#FFFFFF;
+}
+
+body[data-ux-foundation="true"] .btn-success,
+body[data-ux-foundation="true"] .btn-approve{
+  background:var(--ds-success);
+  border-color:var(--ds-success);
+  color:#FFFFFF;
+}
+
+body[data-ux-foundation="true"] .btn:hover:not(:disabled),
+body[data-ux-foundation="true"] .search-btn:hover,
+body[data-ux-foundation="true"] .filter-btn:hover,
+body[data-ux-foundation="true"] .menu-btn:hover{
+  filter:brightness(.97);
+}
+
+body[data-ux-foundation="true"] .btn:focus-visible,
+body[data-ux-foundation="true"] button:focus-visible,
+body[data-ux-foundation="true"] input:focus-visible,
+body[data-ux-foundation="true"] select:focus-visible,
+body[data-ux-foundation="true"] textarea:focus-visible,
+body[data-ux-foundation="true"] .filter-item:focus-visible{
+  outline:0;
+  box-shadow:var(--focus-ring);
+}
+
+body[data-ux-foundation="true"] .form-group{
+  gap:var(--ds-space-1);
+  margin-bottom:var(--ds-space-2);
+}
+
+body[data-ux-foundation="true"] .form-group label,
+body[data-ux-foundation="true"] label{
+  color:var(--ds-neutral);
+  font-size:var(--ds-caption);
+  font-weight:600;
+  line-height:1.6;
+}
+
+body[data-ux-foundation="true"] input,
+body[data-ux-foundation="true"] select,
+body[data-ux-foundation="true"] textarea,
+body[data-ux-foundation="true"] .input,
+body[data-ux-foundation="true"] .search-input,
+body[data-ux-foundation="true"] .delivery-note-qty-input,
+body[data-ux-foundation="true"] .billing-note-qty-input,
+body[data-ux-foundation="true"] .delivery-note-note-input{
+  min-height:44px;
+  padding:10px 12px;
+  background:#FFFFFF;
+  border:1px solid var(--ds-border);
+  border-radius:var(--ds-radius-control);
+  color:var(--ds-neutral);
+  font-size:var(--ds-body) !important;
+}
+
+body[data-ux-foundation="true"] textarea{
+  min-height:96px;
+  resize:vertical;
+}
+
+body[data-ux-foundation="true"] input::placeholder,
+body[data-ux-foundation="true"] textarea::placeholder{
+  color:#9CA3AF;
+}
+
+body[data-ux-foundation="true"] table,
+body[data-ux-foundation="true"] .bulk-template-table table,
+body[data-ux-foundation="true"] .bulk-data-preview-table table{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  color:var(--ds-neutral);
+  font-size:14px;
+}
+
+body[data-ux-foundation="true"] th,
+body[data-ux-foundation="true"] td,
+body[data-ux-foundation="true"] .bulk-template-table th,
+body[data-ux-foundation="true"] .bulk-template-table td,
+body[data-ux-foundation="true"] .bulk-data-preview-table th,
+body[data-ux-foundation="true"] .bulk-data-preview-table td{
+  padding:12px;
+  border-bottom:1px solid var(--ds-border);
+  vertical-align:top;
+}
+
+body[data-ux-foundation="true"] th,
+body[data-ux-foundation="true"] .bulk-template-table th{
+  background:#EEF2FF;
+  color:#3730A3;
+  font-size:var(--ds-caption);
+  font-weight:700;
+  text-align:left;
+}
+
+body[data-ux-foundation="true"] .sheet,
+body[data-ux-foundation="true"] .side-menu,
+body[data-ux-foundation="true"] .filter-dropdown,
+body[data-ux-foundation="true"] .viewer-copy-panel{
+  background:var(--ds-surface);
+  border:1px solid var(--ds-border);
+  border-radius:var(--ds-radius-sheet);
+  box-shadow:var(--ds-shadow-panel);
+  color:var(--ds-neutral);
+}
+
+body[data-ux-foundation="true"] .sheet{
+  border-radius:var(--ds-radius-sheet) var(--ds-radius-sheet) 0 0;
+}
+
+body[data-ux-foundation="true"] .sheet-topbar,
+body[data-ux-foundation="true"] .admin-sheet-topbar,
+body[data-ux-foundation="true"] .side-menu-topbar,
+body[data-ux-foundation="true"] .sheet-action-footer{
+  background:var(--ds-surface);
+  border-color:var(--ds-border);
+}
+
+body[data-ux-foundation="true"] .side-menu,
+body[data-ux-foundation="true"] .sheet.stock-menu-return-side{
+  width:min(360px, 92vw);
+}
+
+body[data-ux-foundation="true"] .side-menu .menu-group,
+body[data-ux-foundation="true"] .stock-menu-return-side .menu-group{
+  gap:var(--ds-space-1);
+  padding:var(--ds-space-2);
+  background:#F9FAFB;
+  border:1px solid var(--ds-border);
+  border-radius:var(--ds-radius-card);
+}
+
+body[data-ux-foundation="true"] .side-menu .menu-group > .btn,
+body[data-ux-foundation="true"] .stock-menu-return-side .menu-group > .btn{
+  justify-content:flex-start;
+  background:#FFFFFF;
+  border:1px solid var(--ds-border);
+  color:var(--ds-neutral);
+}
+
+body[data-ux-foundation="true"] .side-menu .menu-group > .btn-primary,
+body[data-ux-foundation="true"] .stock-menu-return-side .menu-group > .btn-primary{
+  border-left:4px solid var(--ds-primary);
+}
+
+body[data-ux-foundation="true"] .side-menu .menu-group > .btn-danger,
+body[data-ux-foundation="true"] .stock-menu-return-side .menu-group > .btn-danger{
+  border-color:#FECACA;
+  border-left:4px solid var(--ds-error);
+  color:#B91C1C;
+}
+
+body[data-ux-foundation="true"] #floatingBar{
+  background:#FFFFFF;
+  border:1px solid var(--ds-border);
+  border-radius:var(--ds-radius-card);
+  box-shadow:var(--ds-shadow-panel);
+}
+
+body[data-ux-foundation="true"] .status,
+body[data-ux-foundation="true"] .status-badge,
+body[data-ux-foundation="true"] .timeline-tag,
+body[data-ux-foundation="true"] .badge,
+body[data-ux-foundation="true"] .badge-count,
+body[data-ux-foundation="true"] .partner-order-source-badge{
+  min-height:24px;
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid var(--status-neutral-border);
+  background:var(--status-neutral-bg);
+  color:var(--status-neutral-text);
+  font-size:var(--ds-caption);
+  font-weight:700;
+  line-height:1.2;
+}
+
+body[data-ux-foundation="true"] .status-approved,
+body[data-ux-foundation="true"] .status-closed,
+body[data-ux-foundation="true"] .status.ready{
+  background:var(--status-approved-bg);
+  color:var(--status-approved-text);
+  border-color:var(--status-approved-border);
+}
+
+body[data-ux-foundation="true"] .status-pending,
+body[data-ux-foundation="true"] .status-open{
+  background:var(--status-pending-bg);
+  color:var(--status-pending-text);
+  border-color:var(--status-pending-border);
+}
+
+body[data-ux-foundation="true"] .status-rejected,
+body[data-ux-foundation="true"] .status.out{
+  background:var(--status-rejected-bg);
+  color:var(--status-rejected-text);
+  border-color:var(--status-rejected-border);
+}
+
+body[data-ux-foundation="true"] .status-blocked,
+body[data-ux-foundation="true"] .status-partial{
+  background:#FEF3C7;
+  color:#92400E;
+  border-color:#FDE68A;
+}
+
+body[data-ux-foundation="true"] .loading,
+body[data-ux-foundation="true"] .empty-state,
+body[data-ux-foundation="true"] .empty-state-lottie-ui{
+  padding:var(--ds-space-4) var(--ds-space-2);
+  background:#FFFFFF;
+  border:1px dashed var(--ds-border);
+  border-radius:var(--ds-radius-card);
+  color:var(--ds-neutral-light);
+  font-size:var(--ds-body);
+  line-height:1.6;
+}
+
+body[data-ux-foundation="true"] .display-inventory-error,
+body[data-ux-foundation="true"] .delivery-note-item-error,
+body[data-ux-foundation="true"] .billing-note-item-error,
+body[data-ux-foundation="true"] .toast.error,
+body[data-ux-foundation="true"] .bulk-preview-card.has-error{
+  background:#FEF2F2;
+  border-color:#FECACA;
+  color:#991B1B;
+}
+
+body[data-ux-foundation="true"] .display-inventory-success,
+body[data-ux-foundation="true"] .bulk-import-success-card,
+body[data-ux-foundation="true"] .toast.success{
+  background:#F0FDF4;
+  border-color:#BBF7D0;
+  color:#166534;
+}
+
+body[data-ux-foundation="true"] .toast.warning{
+  background:#FFFBEB;
+  border-color:#FDE68A;
+  color:#92400E;
+}
+
+body[data-ux-foundation="true"] .toast.info{
+  background:#EFF6FF;
+  border-color:#BFDBFE;
+  color:#1D4ED8;
+}
+
+body[data-ux-foundation="true"] .icon-sf{
+  width:20px;
+  height:20px;
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  fill:none;
+}
+
+body[data-ux-foundation="true"] img,
+body[data-ux-foundation="true"] .thumb,
+body[data-ux-foundation="true"] .product-card .thumb,
+body[data-ux-foundation="true"] .thumb-placeholder,
+body[data-ux-foundation="true"] .bulk-product-picker-thumb{
+  max-width:100%;
+  border-radius:var(--ds-radius-card);
+}
+
+@media (min-width:390px){
+  body[data-ux-foundation="true"] .container{
+    padding-inline:var(--ds-space-2);
+  }
+}
+
+@media (min-width:768px){
+  body[data-ux-foundation="true"] .container{
+    gap:var(--ds-space-3);
+  }
+
+  body[data-ux-foundation="true"] .sheet:not(.stock-menu-return-side){
+    left:50%;
+    right:auto;
+    width:min(720px, calc(100vw - 48px));
+    transform:translate3d(-50%, 100%, 0);
+  }
+
+  body[data-ux-foundation="true"] .sheet.show:not(.stock-menu-return-side){
+    transform:translate3d(-50%, 0, 0);
+  }
+}
+
+@media (min-width:1024px){
+  body[data-ux-foundation="true"] .container{
+    width:min(1180px, 100%);
+  }
+
+  body[data-ux-foundation="true"] .sheet:not(.stock-menu-return-side){
+    width:min(860px, calc(100vw - 64px));
+  }
+}
+
+@media (min-width:1280px){
+  body[data-ux-foundation="true"] .container{
+    width:min(1240px, 100%);
+  }
+}
+
+@media (min-width:1440px){
+  body[data-ux-foundation="true"] .container{
+    width:min(1320px, 100%);
+  }
+}
+
+@media (max-width:767px){
+  body[data-ux-foundation="true"] .admin-action,
+  body[data-ux-foundation="true"] .sheet-action-footer,
+  body[data-ux-foundation="true"] .display-inventory-actions,
+  body[data-ux-foundation="true"] .display-inventory-row-actions,
+  body[data-ux-foundation="true"] .delivery-note-bulk-select-row,
+  body[data-ux-foundation="true"] .billing-note-bulk-select-row{
+    display:grid;
+    grid-template-columns:minmax(0, 1fr);
+    gap:var(--ds-space-1);
+  }
+
+  body[data-ux-foundation="true"] .btn,
+  body[data-ux-foundation="true"] .search-btn,
+  body[data-ux-foundation="true"] .filter-btn,
+  body[data-ux-foundation="true"] .menu-btn{
+    width:100%;
+  }
+}
+
 </style>
 </head>
 <body data-ux-foundation="true">
@@ -7848,6 +8492,7 @@ function adminPermissionAttrs(permission) {
 }
 
 const DISPLAY_UI_INTEGRATION_SUITE_ID = "display_ui_integration";
+const SOURCE_MASTER_SUITE_ID = "source_master";
 const DISPLAY_UI_INTEGRATION_TEST_PREFIX = "TEST-UI-DISPLAY-";
 
 const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
@@ -7873,9 +8518,16 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     label: "Display Inventory"
   },
   {
+    id: SOURCE_MASTER_SUITE_ID,
+    label: "Source Master",
+    mutation: true,
+    mutationDescription: "Creates one TEST-DIAG Supplier Source, verifies Source Master read/update/deactivate guards, then cleans the exact generated Source row. The GENERAL Source remains."
+  },
+  {
     id: DISPLAY_UI_INTEGRATION_SUITE_ID,
     label: "Display UI Integration",
-    mutation: true
+    mutation: true,
+    mutationDescription: "Creates and cleans TEST-UI-DISPLAY records in TEST only."
   },
   {
     id: "fulfillment_calculator",
@@ -8040,7 +8692,7 @@ function renderDeveloperDiagnosticsSheet() {
               ${canRun && !runningSuite ? "" : "disabled"}
               aria-disabled="${canRun && !runningSuite ? "false" : "true"}"
               aria-busy="${isRunning ? "true" : "false"}"
-              title="${suite.mutation ? "Creates and cleans TEST-UI-DISPLAY records in TEST only" : ""}"
+              title="${suite.mutation ? escAttr(suite.mutationDescription || "Creates and cleans TEST records in TEST only") : ""}"
               onclick="runDeveloperDiagnosticSuiteFromAdmin('${suite.id}')">
               ${isRunning ? "Running..." : esc(suite.label)}
             </button>
@@ -8049,7 +8701,7 @@ function renderDeveloperDiagnosticsSheet() {
       </div>
 
       <div class="developer-diagnostics-mutation-note">
-        Display UI Integration creates and cleans TEST-UI-DISPLAY- records in TEST only and is never included in Run All Safe Checks.
+        Mutation diagnostics create isolated TEST records, require confirmation, clean exact generated records, and are never included in Run All Safe Checks.
       </div>
 
       ${diagnostics.loadingAvailability ? `
@@ -8133,10 +8785,11 @@ function getDeveloperDiagnosticStatusClass(status) {
   }[key] || "status-neutral";
 }
 
-async function runDeveloperDiagnosticSuiteFromAdmin(suiteId) {
+async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
   const suite = String(suiteId || "").trim();
-  const allowed = DEVELOPER_DIAGNOSTIC_UI_SUITES
-    .some(item => item.id === suite);
+  const suiteConfig = DEVELOPER_DIAGNOSTIC_UI_SUITES
+    .find(item => item.id === suite);
+  const allowed = !!suiteConfig;
 
   if (!allowed) {
     showToast("Invalid diagnostic suite", "error");
@@ -8155,6 +8808,11 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId) {
 
   if (suite === DISPLAY_UI_INTEGRATION_SUITE_ID) {
     confirmDisplayUiIntegrationDiagnosticFromAdmin();
+    return;
+  }
+
+  if (suiteConfig.mutation && !options.confirmed) {
+    confirmDeveloperDiagnosticMutationSuiteFromAdmin(suiteConfig);
     return;
   }
 
@@ -8180,6 +8838,50 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId) {
     diagnostics.runningSuite = "";
     renderDeveloperDiagnosticsSheet();
   }
+}
+
+function confirmDeveloperDiagnosticMutationSuiteFromAdmin(suite) {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.runningSuite) return;
+
+  const suiteId = String(suite && suite.id || "").trim();
+  const suiteLabel = String(suite && suite.label || "Diagnostic").trim();
+  const description = String(
+    suite && suite.mutationDescription ||
+    "This TEST-only diagnostic creates isolated records and cleans the exact generated records."
+  ).trim();
+
+  confirmSheet.setAttribute(
+    "aria-labelledby",
+    "developerDiagnosticMutationConfirmTitle"
+  );
+  confirmSheet.innerHTML = `
+    <h3 id="developerDiagnosticMutationConfirmTitle">${esc(suiteLabel)}</h3>
+    <div class="display-inventory-help">
+      ${esc(description)}
+    </div>
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closeDeveloperDiagnosticMutationConfirmation()">
+        Cancel
+      </button>
+      <button class="btn btn-primary" type="button"
+        onclick="executeDeveloperDiagnosticMutationSuiteFromAdmin('${escAttr(suiteId)}')">
+        Run ${esc(suiteLabel)}
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+}
+
+function closeDeveloperDiagnosticMutationConfirmation() {
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  closeOverlay(confirmSheet);
+}
+
+async function executeDeveloperDiagnosticMutationSuiteFromAdmin(suiteId) {
+  closeDeveloperDiagnosticMutationConfirmation();
+  await runDeveloperDiagnosticSuiteFromAdmin(suiteId, { confirmed: true });
 }
 
 function confirmDisplayUiIntegrationDiagnosticFromAdmin() {
