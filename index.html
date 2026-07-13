@@ -4536,6 +4536,7 @@ body[data-ux-foundation="true"] .billing-note-item-card{
  <div id="adminPartnersSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="adminPartnersSheetTitle" tabindex="-1"></div>
  <div id="adminPartnerCatalogSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="adminPartnerCatalogSheetTitle" tabindex="-1"></div>
  <div id="adminPartnerRequestsSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="adminPartnerRequestsSheetTitle" tabindex="-1"></div>
+ <div id="adminDeveloperDiagnosticsSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="adminDeveloperDiagnosticsSheetTitle" tabindex="-1"></div>
 
   
 <script>
@@ -4590,6 +4591,8 @@ const adminPartnerCatalogSheet =
   document.getElementById("adminPartnerCatalogSheet");
 const adminPartnerRequestsSheet =
   document.getElementById("adminPartnerRequestsSheet");
+const adminDeveloperDiagnosticsSheet =
+  document.getElementById("adminDeveloperDiagnosticsSheet");
 
 // ================= ADMIN UI REGISTRY =================
 // 🔒 รวม ref ฝั่ง admin ไว้จุดเดียว เพื่อให้เพิ่ม/ถอดเมนูในอนาคตง่ายขึ้น
@@ -4614,6 +4617,7 @@ const ADMIN_SHEETS = Object.freeze({
   partners: adminPartnersSheet,
   partnerCatalog: adminPartnerCatalogSheet,
   partnerRequests: adminPartnerRequestsSheet,
+  developerDiagnostics: adminDeveloperDiagnosticsSheet,
   bulkPending: bulkPendingDeliverySheet
 });
 
@@ -4762,6 +4766,10 @@ Object.assign(window, {
   updateDeliveryNotePoNote,
   openChangePasswordSheet,
   submitChangePassword,
+  openDeveloperDiagnosticsSheet,
+  closeDeveloperDiagnosticsSheet,
+  backToAdminMenuFromDeveloperDiagnostics,
+  runDeveloperDiagnosticSuiteFromAdmin,
   cancelAdminLogin,
   closeMainMenu,
   closeAddProduct,
@@ -5004,6 +5012,13 @@ const state = {
       convertError: "",
       error: "",
       view: "list"
+    },
+    developerDiagnostics: {
+      availability: null,
+      loadingAvailability: false,
+      runningSuite: "",
+      results: {},
+      error: ""
     },
     ui: {
       activeSheet: null
@@ -7257,6 +7272,287 @@ function adminPermissionAttrs(permission) {
   if (hasAdminPermission(permission)) return "";
 
   return `disabled aria-disabled="true" title="${escAttr(t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้"))}"`;
+}
+
+const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
+  {
+    id: "run_all_safe",
+    label: "Run All Safe Checks",
+    primary: true
+  },
+  {
+    id: "role_permission",
+    label: "Role / Permission"
+  },
+  {
+    id: "duplicate_po",
+    label: "Duplicate PO"
+  },
+  {
+    id: "inventory_transaction",
+    label: "Inventory Transaction"
+  },
+  {
+    id: "fulfillment_calculator",
+    label: "Fulfillment Calculator"
+  },
+  {
+    id: "public_smoke",
+    label: "Public Smoke"
+  },
+  {
+    id: "partner_smoke",
+    label: "Partner Smoke"
+  }
+]);
+
+function resetDeveloperDiagnosticsState() {
+  state.admin.developerDiagnostics.availability = null;
+  state.admin.developerDiagnostics.loadingAvailability = false;
+  state.admin.developerDiagnostics.runningSuite = "";
+  state.admin.developerDiagnostics.results = {};
+  state.admin.developerDiagnostics.error = "";
+}
+
+function isDeveloperDiagnosticsRoleAllowed() {
+  return String(state.admin?.role || "").trim() === "system_admin";
+}
+
+function isDeveloperDiagnosticsAvailable() {
+  const availability = state.admin?.developerDiagnostics?.availability;
+
+  return !!(
+    isDeveloperDiagnosticsRoleAllowed() &&
+    availability &&
+    availability.available === true &&
+    availability.environment === "TEST"
+  );
+}
+
+async function refreshDeveloperDiagnosticsAvailability() {
+  const diagnostics = state.admin.developerDiagnostics;
+
+  diagnostics.error = "";
+
+  if (
+    !state.admin.loggedIn ||
+    !state.admin.token ||
+    !isDeveloperDiagnosticsRoleAllowed()
+  ) {
+    diagnostics.availability = null;
+    return null;
+  }
+
+  diagnostics.loadingAvailability = true;
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "getDeveloperDiagnosticsAvailability");
+    form.append("token", state.admin.token);
+
+    const json = await postFormAction(form);
+    diagnostics.availability = json.data || null;
+    return diagnostics.availability;
+  } catch (err) {
+    diagnostics.availability = null;
+    diagnostics.error = err.message || "Developer diagnostics unavailable";
+    return null;
+  } finally {
+    diagnostics.loadingAvailability = false;
+  }
+}
+
+function renderDeveloperDiagnosticsMenuButton() {
+  if (!isDeveloperDiagnosticsAvailable()) return "";
+
+  return `
+    <button class="btn btn-secondary"
+      onclick="closeMainMenu(); openDeveloperDiagnosticsSheet();">
+      Developer Diagnostics
+    </button>
+  `;
+}
+
+function renderDeveloperDiagnosticsStockMenuButton() {
+  if (!isDeveloperDiagnosticsAvailable()) return "";
+
+  return `
+    <button class="btn btn-secondary"
+      onclick="closeStockMenuSheetThen(openDeveloperDiagnosticsSheet)">
+      Developer Diagnostics
+    </button>
+  `;
+}
+
+async function openDeveloperDiagnosticsSheet() {
+  if (!ensureAdminUiContext()) return;
+
+  if (!isDeveloperDiagnosticsRoleAllowed()) {
+    showToast(t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้"), "error");
+    return;
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  state.admin.ui.activeSheet = "developerDiagnostics";
+  renderDeveloperDiagnosticsSheet();
+  openOverlay(adminDeveloperDiagnosticsSheet);
+}
+
+function closeDeveloperDiagnosticsSheet() {
+  state.admin.ui.activeSheet = null;
+  closeOverlay(adminDeveloperDiagnosticsSheet);
+  scheduleAdminSheetViewportRepair();
+}
+
+function backToAdminMenuFromDeveloperDiagnostics() {
+  closeDeveloperDiagnosticsSheet();
+  openMainMenu(document.querySelector(".menu-btn"));
+}
+
+function renderDeveloperDiagnosticsSheet() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const availability = diagnostics.availability;
+  const canRun = isDeveloperDiagnosticsAvailable();
+  const runningSuite = diagnostics.runningSuite;
+
+  adminDeveloperDiagnosticsSheet.innerHTML = `
+    <div class="admin-sheet-topbar">
+      <button class="btn btn-outline back-btn"
+        onclick="backToAdminMenuFromDeveloperDiagnostics()">
+        ${t("backToMenu", "Back to menu")}
+      </button>
+      <h3 id="adminDeveloperDiagnosticsSheetTitle">
+        Developer Diagnostics
+      </h3>
+    </div>
+
+    <div class="card metric-card">
+      <div class="name">Environment</div>
+      <div class="price">${esc(availability?.environment || "-")}</div>
+      <div class="stock">Availability: ${canRun ? "READY" : "UNAVAILABLE"}</div>
+    </div>
+
+    ${diagnostics.error ? `
+      <div class="empty-state" style="color:#d93025">
+        ${esc(diagnostics.error)}
+      </div>
+    ` : ``}
+
+    <div class="action-row">
+      ${DEVELOPER_DIAGNOSTIC_UI_SUITES.map(suite => `
+        <button class="btn ${suite.primary ? "btn-primary" : "btn-secondary"}"
+          ${canRun && !runningSuite ? "" : "disabled"}
+          onclick="runDeveloperDiagnosticSuiteFromAdmin('${suite.id}')">
+          ${runningSuite === suite.id ? "Running..." : esc(suite.label)}
+        </button>
+      `).join("")}
+    </div>
+
+    ${diagnostics.loadingAvailability ? `
+      <div class="loading has-lottie">${renderLottieLoading(t("loadingData", "Loading data"))}</div>
+    ` : ``}
+
+    <div class="admin-detail-section">
+      <div class="admin-detail-title">Suite Results</div>
+      ${DEVELOPER_DIAGNOSTIC_UI_SUITES.map(renderDeveloperDiagnosticResultCard).join("")}
+    </div>
+  `;
+}
+
+function renderDeveloperDiagnosticResultCard(suite) {
+  const result = state.admin.developerDiagnostics.results[suite.id];
+  const checks = Array.isArray(result?.checks) ? result.checks : [];
+
+  return `
+    <div class="card admin-card">
+      <div class="admin-card-meta">
+        <span class="name">${esc(suite.label)}</span>
+        <span class="status-badge compact ${getDeveloperDiagnosticStatusClass(result?.status)}">
+          ${esc(result?.status || "NOT RUN")}
+        </span>
+      </div>
+      <div class="stock">Started: ${esc(result?.startedAt || "-")}</div>
+      <div class="stock">Duration: ${Number(result?.durationMs || 0)} ms</div>
+      <div class="stock">
+        Cleanup: ${esc(result?.cleanup?.required ? result.cleanup.status : "NOT_REQUIRED")}
+      </div>
+      <details>
+        <summary>Details</summary>
+        ${
+          checks.length
+            ? checks.map(check => `
+                <div class="admin-card-meta">
+                  <span>${esc(check.name || "-")}</span>
+                  <span>${esc(check.status || "-")}</span>
+                </div>
+                <div class="stock">${esc(check.summary || "-")}</div>
+              `).join("")
+            : `<div class="stock">No result yet</div>`
+        }
+      </details>
+    </div>
+  `;
+}
+
+function getDeveloperDiagnosticStatusClass(status) {
+  return {
+    PASS: "status-approved",
+    FAIL: "status-rejected",
+    PARTIAL: "status-pending",
+    BLOCKED: "status-pending"
+  }[String(status || "").trim().toUpperCase()] || "status-neutral";
+}
+
+async function runDeveloperDiagnosticSuiteFromAdmin(suiteId) {
+  const suite = String(suiteId || "").trim();
+  const allowed = DEVELOPER_DIAGNOSTIC_UI_SUITES
+    .some(item => item.id === suite);
+
+  if (!allowed) {
+    showToast("Invalid diagnostic suite", "error");
+    return;
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  const diagnostics = state.admin.developerDiagnostics;
+  diagnostics.runningSuite = suite;
+  diagnostics.error = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "runDeveloperDiagnosticSuite");
+    form.append("token", state.admin.token);
+    form.append("suite", suite);
+
+    const json = await postFormAction(form, { timeout: 60000 });
+    const result = json.data || json;
+    diagnostics.results[suite] = result;
+    showToast(`Diagnostics ${result.status || "complete"}`, "info");
+  } catch (err) {
+    diagnostics.error = err.message || "Developer diagnostic failed";
+    showToast(diagnostics.error, "error");
+  } finally {
+    diagnostics.runningSuite = "";
+    renderDeveloperDiagnosticsSheet();
+  }
 }
 
  async function postFormAction(form, { timeout = 30000 } = {}) {
@@ -9959,6 +10255,7 @@ async function handleAdminLogin(btn){
 
     // ✅ SAVE SESSION (PERSIST)
     saveAdminSession(json);
+    await refreshDeveloperDiagnosticsAvailability();
 
     // 🧹 CLOSE LOGIN SHEET
     closeOverlay(adminLoginSheet);
@@ -10641,6 +10938,8 @@ function renderAdminMenuInStockSheet() {
         onclick="closeStockMenuSheetThen(leaveAdminMode)">
         ${t("backToViewer", "กลับสู่หน้าร้าน")}
       </button>
+
+      ${renderDeveloperDiagnosticsStockMenuButton()}
 
       <button class="btn btn-secondary"
         onclick="closeStockMenuSheetThen(openChangePasswordSheet)">
@@ -17732,6 +18031,8 @@ function openMainMenu(triggerEl){
                   onclick="closeMainMenu(); leaveAdminMode();">
                   ${t("backToViewer", "กลับสู่หน้าร้าน")}
                 </button>
+
+                ${renderDeveloperDiagnosticsMenuButton()}
 
                 <button class="btn btn-secondary"
                   onclick="closeMainMenu(); openChangePasswordSheet();">
@@ -25798,6 +26099,7 @@ function clearAdminSession(){
   state.admin.logs = [];
   state.admin.ui.activeSheet = null;
   state.admin.isSubmitting = false;
+  resetDeveloperDiagnosticsState();
   state.isSubmitting = false;
 }
 
@@ -25911,6 +26213,7 @@ async function restoreAdminSessionIfValid() {
       state.admin.expiredAt = sessionPayload.expiredAt;
       applyAdminAuthContext(sessionPayload);
       saveAdminSession(sessionPayload);
+      await refreshDeveloperDiagnosticsAvailability();
 
       // ❗ ไม่ set state.mode ที่นี่ (กันกระทบ flow)
       return true;
@@ -26098,6 +26401,7 @@ const __domReady = new Promise((resolve) => {
           state.admin.expiredAt = sessionPayload.expiredAt;
           applyAdminAuthContext(sessionPayload);
           saveAdminSession(sessionPayload);
+          await refreshDeveloperDiagnosticsAvailability();
 
           adminRestored = true;
         }
