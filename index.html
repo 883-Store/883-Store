@@ -1419,6 +1419,172 @@ body[data-theme="cute"] .shop-subtitle{
     max-width:100%;
   }
 
+  #adminSourceableWorkspaceSheet{
+    --sourceable-bg:var(--ds-background, #f8fafc);
+    --sourceable-card:var(--ds-surface, #ffffff);
+    --sourceable-border:var(--ds-border, #e5e7eb);
+    --sourceable-text:var(--ds-neutral, #1f2937);
+    --sourceable-muted:var(--ds-neutral-light, #6b7280);
+    --sourceable-primary:var(--ds-primary, #6366f1);
+    --sourceable-secondary:var(--ds-secondary, #ec4899);
+    --sourceable-success:var(--ds-success, #22c55e);
+    --sourceable-warning:var(--ds-warning, #f59e0b);
+    --sourceable-error:var(--ds-error, #ef4444);
+    background:var(--sourceable-bg);
+    color:var(--sourceable-text);
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-panel{
+    display:grid;
+    gap:16px;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-help,
+  #adminSourceableWorkspaceSheet .sourceable-workspace-meta{
+    color:var(--sourceable-muted);
+    font-size:12px;
+    line-height:1.5;
+    overflow-wrap:anywhere;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-title,
+  #adminSourceableWorkspaceSheet .sourceable-workspace-section-title{
+    color:var(--sourceable-text);
+    font-weight:800;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-summary{
+    display:grid;
+    grid-template-columns:repeat(5, minmax(0, 1fr));
+    gap:10px;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-summary .metric-card,
+  #adminSourceableWorkspaceSheet .sourceable-workspace-card,
+  #adminSourceableWorkspaceSheet .sourceable-workspace-row,
+  #adminSourceableWorkspaceSheet .sourceable-workspace-filters,
+  #adminSourceableWorkspaceSheet .sourceable-workspace-form{
+    background:var(--sourceable-card);
+    border:1px solid var(--sourceable-border);
+    border-radius:8px;
+    box-shadow:0 6px 16px rgba(31,41,55,.07);
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-summary .price{
+    background:none;
+    color:var(--sourceable-primary);
+    -webkit-text-fill-color:currentColor;
+    text-shadow:none;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-tabs,
+  #adminSourceableWorkspaceSheet .sourceable-workspace-actions,
+  #adminSourceableWorkspaceSheet .sourceable-workspace-row-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-tabs .btn{
+    min-height:42px;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-tabs .active{
+    background:var(--sourceable-primary);
+    border-color:var(--sourceable-primary);
+    color:#ffffff;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-filters,
+  #adminSourceableWorkspaceSheet .sourceable-workspace-form,
+  #adminSourceableWorkspaceSheet .sourceable-workspace-row{
+    display:grid;
+    gap:10px;
+    padding:12px;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-filter-grid,
+  #adminSourceableWorkspaceSheet .sourceable-workspace-form-grid,
+  #adminSourceableWorkspaceSheet .sourceable-workspace-data-grid{
+    display:grid;
+    gap:10px;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-data-grid{
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-stat{
+    background:#f1f5f9;
+    border-radius:8px;
+    display:grid;
+    gap:2px;
+    min-width:0;
+    padding:8px 10px;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-stat span{
+    color:var(--sourceable-muted);
+    font-size:12px;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-stat strong{
+    color:var(--sourceable-text);
+    font-size:16px;
+    line-height:1.25;
+    overflow-wrap:anywhere;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-list{
+    display:grid;
+    gap:10px;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-row-head{
+    align-items:flex-start;
+    display:flex;
+    gap:10px;
+    justify-content:space-between;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-badge-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-error,
+  #adminSourceableWorkspaceSheet .sourceable-workspace-success,
+  #adminSourceableWorkspaceSheet .sourceable-workspace-warning{
+    border-radius:8px;
+    padding:10px;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-error{
+    background:#fee2e2;
+    border:1px solid #fca5a5;
+    color:#7f1d1d;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-success{
+    background:#dcfce7;
+    border:1px solid #86efac;
+    color:#14532d;
+  }
+
+  #adminSourceableWorkspaceSheet .sourceable-workspace-warning{
+    background:#fef3c7;
+    border:1px solid #fbbf24;
+    color:#713f12;
+  }
+
+  #adminSourceableWorkspaceSheet input,
+  #adminSourceableWorkspaceSheet select,
+  #adminSourceableWorkspaceSheet textarea{
+    max-width:100%;
+  }
+
   @media (max-width:768px){
     #adminDeveloperDiagnosticsSheet .diagnostic-meta-grid{
       grid-template-columns:minmax(0, 1fr);
@@ -1427,7 +1593,11 @@ body[data-theme="cute"] .shop-subtitle{
     #adminDisplayInventorySheet .display-inventory-summary,
     #adminDisplayInventorySheet .display-inventory-filter-grid,
     #adminDisplayInventorySheet .display-inventory-form-grid,
-    #adminDisplayInventorySheet .display-inventory-qty-grid{
+    #adminDisplayInventorySheet .display-inventory-qty-grid,
+    #adminSourceableWorkspaceSheet .sourceable-workspace-summary,
+    #adminSourceableWorkspaceSheet .sourceable-workspace-filter-grid,
+    #adminSourceableWorkspaceSheet .sourceable-workspace-form-grid,
+    #adminSourceableWorkspaceSheet .sourceable-workspace-data-grid{
       grid-template-columns:minmax(0, 1fr);
     }
   }
@@ -1456,13 +1626,25 @@ body[data-theme="cute"] .shop-subtitle{
       padding-right:max(12px, env(safe-area-inset-right, 0px));
     }
 
+    #adminSourceableWorkspaceSheet{
+      padding-left:max(12px, env(safe-area-inset-left, 0px));
+      padding-right:max(12px, env(safe-area-inset-right, 0px));
+    }
+
     #adminDisplayInventorySheet .display-inventory-row-head{
+      flex-direction:column;
+    }
+
+    #adminSourceableWorkspaceSheet .sourceable-workspace-row-head{
       flex-direction:column;
     }
 
     #adminDisplayInventorySheet .display-inventory-actions .btn,
     #adminDisplayInventorySheet .display-inventory-row-actions .btn,
-    #adminDisplayInventorySheet .display-inventory-mode-tabs .btn{
+    #adminDisplayInventorySheet .display-inventory-mode-tabs .btn,
+    #adminSourceableWorkspaceSheet .sourceable-workspace-actions .btn,
+    #adminSourceableWorkspaceSheet .sourceable-workspace-row-actions .btn,
+    #adminSourceableWorkspaceSheet .sourceable-workspace-tabs .btn{
       flex:1 1 100%;
     }
   }
@@ -5708,6 +5890,7 @@ body[data-ux-foundation="true"] .bulk-product-picker-thumb{
  <div id="adminPartnerCatalogSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="adminPartnerCatalogSheetTitle" tabindex="-1"></div>
  <div id="adminPartnerRequestsSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="adminPartnerRequestsSheetTitle" tabindex="-1"></div>
  <div id="adminDisplayInventorySheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="adminDisplayInventorySheetTitle" tabindex="-1"></div>
+ <div id="adminSourceableWorkspaceSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="adminSourceableWorkspaceSheetTitle" tabindex="-1"></div>
  <div id="adminDeveloperDiagnosticsSheet" class="sheet" role="dialog" aria-modal="true" aria-labelledby="adminDeveloperDiagnosticsSheetTitle" tabindex="-1"></div>
 
   
@@ -5765,6 +5948,8 @@ const adminPartnerRequestsSheet =
   document.getElementById("adminPartnerRequestsSheet");
 const adminDisplayInventorySheet =
   document.getElementById("adminDisplayInventorySheet");
+const adminSourceableWorkspaceSheet =
+  document.getElementById("adminSourceableWorkspaceSheet");
 const adminDeveloperDiagnosticsSheet =
   document.getElementById("adminDeveloperDiagnosticsSheet");
 
@@ -5792,6 +5977,7 @@ const ADMIN_SHEETS = Object.freeze({
   partnerCatalog: adminPartnerCatalogSheet,
   partnerRequests: adminPartnerRequestsSheet,
   displayInventory: adminDisplayInventorySheet,
+  sourceableWorkspace: adminSourceableWorkspaceSheet,
   developerDiagnostics: adminDeveloperDiagnosticsSheet,
   bulkPending: bulkPendingDeliverySheet
 });
@@ -5908,6 +6094,28 @@ Object.assign(window, {
   confirmDisplayInventoryMovement,
   submitConfirmedDisplayInventoryMovement,
   cancelDisplayInventoryConfirmation,
+  openSourceableWorkspaceSheet,
+  closeSourceableWorkspaceSheet,
+  backToAdminMenuFromSourceableWorkspace,
+  setSourceableWorkspaceTab,
+  refreshSourceableWorkspace,
+  updateSourceableWorkspaceFilter,
+  clearSourceableWorkspaceFilters,
+  updateSourceableWorkspaceForm,
+  resetSourceableWorkspaceForm,
+  editSourceableWorkspaceSource,
+  submitSourceableWorkspaceSource,
+  editSourceableWorkspaceAvailability,
+  submitSourceableWorkspaceAvailability,
+  prefillSourceableWorkspaceAllocation,
+  editSourceableWorkspaceAllocation,
+  submitSourceableWorkspaceAllocation,
+  confirmSourceableWorkspaceAllocation,
+  cancelSourceableWorkspaceAllocation,
+  releaseSourceableWorkspaceAllocation,
+  submitSourceableWorkspaceFulfillment,
+  openSourceableWorkspaceCostConfirmation,
+  submitSourceableWorkspaceCostConfirmation,
   downloadBulkProductTemplate,
   handleBulkProductFileUpload,
   copyBulkProductHeader,
@@ -6229,6 +6437,99 @@ const state = {
       submitting: false,
       pendingAction: null,
       lastResult: null
+    },
+    sourceableWorkspace: {
+      activeTab: "sources",
+      loading: false,
+      submitting: false,
+      error: "",
+      message: "",
+      sources: [],
+      generalSources: [],
+      availability: [],
+      allocations: [],
+      fulfillments: [],
+      summaries: {
+        availability: null,
+        allocation: null,
+        fulfillment: null
+      },
+      filters: {
+        sources: {
+          keyword: "",
+          active: "all"
+        },
+        availability: {
+          productId: "",
+          sourceId: "",
+          active: "all",
+          freshnessStatus: "",
+          keyword: ""
+        },
+        allocation: {
+          orderId: "",
+          productId: "",
+          sourceId: "",
+          status: "",
+          releaseStatus: ""
+        },
+        fulfillment: {
+          sourceAllocationId: "",
+          orderId: "",
+          productId: "",
+          sourceId: "",
+          costStatus: "",
+          fulfillmentMode: ""
+        }
+      },
+      forms: {
+        source: {
+          sourceId: "",
+          sourceName: "",
+          contactName: "",
+          phone: "",
+          reliability: "MEDIUM",
+          active: true,
+          note: ""
+        },
+        availability: {
+          availabilityId: "",
+          productId: "",
+          sourceId: "",
+          estimatedQuantity: "",
+          latestQuotedUnitPrice: "",
+          lastPurchaseUnitPrice: "",
+          leadTimeMinDays: "",
+          leadTimeMaxDays: "",
+          reliability: "MEDIUM",
+          active: true,
+          lastCheckedAt: "",
+          note: ""
+        },
+        allocation: {
+          sourceAllocationId: "",
+          orderId: "",
+          productId: "",
+          sourceId: "",
+          availabilityId: "",
+          plannedQuantity: "",
+          note: ""
+        },
+        fulfillment: {
+          sourceAllocationId: "",
+          fulfilledQuantity: "",
+          fulfillmentMode: "PURCHASED_BY_COMPANY",
+          costStatus: "COST_PENDING",
+          actualUnitCost: "",
+          reference: "",
+          note: ""
+        },
+        cost: {
+          sourceFulfillmentId: "",
+          actualUnitCost: "",
+          note: ""
+        }
+      }
     },
     developerDiagnostics: {
       availability: null,
@@ -19819,10 +20120,9 @@ function openMainMenu(triggerEl){
                   ${t("displayStock", "สต๊อกตัวโชว์")}
                 </button>
 
-                <button class="btn btn-secondary" type="button" disabled
-                  aria-disabled="true"
-                  title="${t("backendRequired", "ต้องรอ Backend ในเฟสถัดไป")}">
-                  ${t("sourceableStock", "Sourceable Stock")} · ${t("comingLater", "รอเฟสถัดไป")}
+                <button class="btn btn-secondary" ${adminPermissionAttrs("sourceable.view")}
+                  onclick="closeMainMenu(); openSourceableWorkspaceSheet();">
+                  ${t("sourceableWorkspace", "หาเพิ่ม")}
                 </button>
               </div>
 
@@ -26032,6 +26332,1743 @@ function renderDisplayInventorySheet() {
 
       <div class="display-inventory-section-title">${t("displayInventoryRows", "รายการตัวโชว์")}</div>
       ${renderDisplayInventoryList()}
+    </div>
+  `;
+}
+
+const SOURCEABLE_WORKSPACE_TABS = Object.freeze([
+  { id: "sources", label: "แหล่งจัดหา" },
+  { id: "availability", label: "จำนวนที่หาได้" },
+  { id: "allocation", label: "แผนจัดหา" },
+  { id: "fulfillment", label: "การส่งจริง" }
+]);
+
+const SOURCEABLE_RELIABILITY_OPTIONS = Object.freeze(["HIGH", "MEDIUM", "LOW"]);
+const SOURCEABLE_ALLOCATION_STATUSES = Object.freeze([
+  "PLANNED",
+  "CONFIRMED",
+  "NEEDS_RECONFIRM",
+  "PARTIALLY_FULFILLED",
+  "FULFILLED",
+  "CANCELLED",
+  "RELEASE_PENDING",
+  "RELEASED"
+]);
+const SOURCEABLE_RELEASE_STATUSES = Object.freeze(["RELEASE_PENDING", "RELEASED"]);
+const SOURCEABLE_FULFILLMENT_MODES = Object.freeze([
+  "PURCHASED_BY_COMPANY",
+  "COORDINATED_DELIVERY"
+]);
+const SOURCEABLE_COST_STATUSES = Object.freeze(["COST_PENDING", "COST_CONFIRMED"]);
+
+function getSourceableWorkspaceState() {
+  return state.admin.sourceableWorkspace;
+}
+
+function ensureAdminSessionForSourceableWorkspace() {
+  if (
+    state.mode !== "admin" ||
+    !state.admin.loggedIn ||
+    !state.admin.token ||
+    isAdminSessionExpired()
+  ) {
+    showToast(t("sessionExpiredLoginAgain", "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง"), "warning");
+    exitAdmin();
+    return false;
+  }
+
+  if (!hasAdminPermission("sourceable.view")) {
+    showToast(t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้"), "error");
+    return false;
+  }
+
+  return true;
+}
+
+function openSourceableWorkspaceSheet() {
+  if (!ensureAdminSessionForSourceableWorkspace()) return;
+
+  const workspace = getSourceableWorkspaceState();
+  workspace.error = "";
+  workspace.message = "";
+  state.admin.ui.activeSheet = "sourceableWorkspace";
+  renderSourceableWorkspaceSheet();
+  openOverlay(adminSourceableWorkspaceSheet);
+  refreshSourceableWorkspace({ silent: true });
+}
+
+function closeSourceableWorkspaceSheet() {
+  state.admin.ui.activeSheet = null;
+  closeOverlay(adminSourceableWorkspaceSheet);
+  scheduleAdminSheetViewportRepair();
+}
+
+function backToAdminMenuFromSourceableWorkspace() {
+  closeSourceableWorkspaceSheet();
+  syncOverlayBackdropState();
+  requestAnimationFrame(() => {
+    openMainMenu();
+    syncOverlayBackdropState();
+  });
+}
+
+function setSourceableWorkspaceTab(tabId) {
+  const tab = SOURCEABLE_WORKSPACE_TABS.find(item => item.id === tabId);
+  if (!tab) return;
+  const workspace = getSourceableWorkspaceState();
+  workspace.activeTab = tab.id;
+  workspace.error = "";
+  workspace.message = "";
+  renderSourceableWorkspaceSheet();
+}
+
+function sourceableWorkspaceAppendFormValue(form, key, value) {
+  if (value === undefined || value === null) return;
+  form.append(key, String(value));
+}
+
+async function sourceableWorkspaceApi(action, params = {}, options = {}) {
+  const form = new URLSearchParams();
+  form.append("action", action);
+  form.append("token", state.admin.token);
+  Object.keys(params || {}).forEach(key => {
+    sourceableWorkspaceAppendFormValue(form, key, params[key]);
+  });
+  return await postFormAction(form, { timeout: options.timeout || 45000 });
+}
+
+async function ensureSourceableWorkspaceProductSnapshot() {
+  if (Array.isArray(state.products) && state.products.length) return;
+  try {
+    await refreshProducts();
+  } catch (err) {
+    console.warn("Sourceable workspace product snapshot failed", err);
+  }
+}
+
+async function refreshSourceableWorkspace(options = {}) {
+  if (!ensureAdminSessionForSourceableWorkspace()) return;
+  const workspace = getSourceableWorkspaceState();
+  if (workspace.loading) return;
+
+  workspace.loading = true;
+  workspace.error = "";
+  if (!options.silent) workspace.message = "";
+  renderSourceableWorkspaceSheet();
+
+  try {
+    await ensureSourceableWorkspaceProductSnapshot();
+    await Promise.all([
+      fetchSourceableWorkspaceSources(),
+      fetchSourceableWorkspaceAvailability(),
+      fetchSourceableWorkspaceAllocations(),
+      fetchSourceableWorkspaceFulfillments()
+    ]);
+    if (!options.silent) {
+      workspace.message = t("sourceableWorkspaceRefreshed", "อัปเดตข้อมูลหาเพิ่มแล้ว");
+    }
+  } catch (err) {
+    console.error(err);
+    workspace.error = getSourceableWorkspaceReadableError(err);
+  } finally {
+    workspace.loading = false;
+    renderSourceableWorkspaceSheet();
+  }
+}
+
+async function fetchSourceableWorkspaceSources() {
+  const workspace = getSourceableWorkspaceState();
+  const filters = workspace.filters.sources;
+  const supplierResult = await sourceableWorkspaceApi("listSources", {
+    sourceType: "SUPPLIER",
+    active: filters.active || "all",
+    keyword: filters.keyword || ""
+  });
+  workspace.sources = Array.isArray(supplierResult.data?.sources)
+    ? supplierResult.data.sources
+    : [];
+
+  const generalResult = await sourceableWorkspaceApi("listSources", {
+    sourceType: "GENERAL",
+    active: "all"
+  });
+  workspace.generalSources = Array.isArray(generalResult.data?.sources)
+    ? generalResult.data.sources
+    : [];
+}
+
+async function fetchSourceableWorkspaceAvailability() {
+  const workspace = getSourceableWorkspaceState();
+  const filters = workspace.filters.availability;
+  const productId = normalizeSourceableWorkspaceProductId(filters.productId);
+  const result = await sourceableWorkspaceApi("listSourceableAvailability", {
+    productId,
+    sourceId: filters.sourceId || "",
+    active: filters.active || "all",
+    freshnessStatus: filters.freshnessStatus || "",
+    keyword: filters.keyword || ""
+  });
+  workspace.availability = Array.isArray(result.data?.availability)
+    ? result.data.availability
+    : Array.isArray(result.data?.items)
+      ? result.data.items
+      : [];
+
+  if (productId) {
+    const summaryResult = await sourceableWorkspaceApi(
+      "getSourceableSummaryByProduct",
+      { productId }
+    );
+    workspace.summaries.availability = summaryResult.data || null;
+  } else {
+    workspace.summaries.availability = null;
+  }
+}
+
+async function fetchSourceableWorkspaceAllocations() {
+  const workspace = getSourceableWorkspaceState();
+  const filters = workspace.filters.allocation;
+  const result = await sourceableWorkspaceApi("listSourceAllocations", {
+    orderId: filters.orderId || "",
+    productId: normalizeSourceableWorkspaceProductId(filters.productId),
+    sourceId: filters.sourceId || "",
+    status: filters.status || ""
+  });
+  const rows = Array.isArray(result.data?.allocations)
+    ? result.data.allocations
+    : [];
+  workspace.allocations = filters.releaseStatus
+    ? rows.filter(row => String(row.releaseStatus || "") === filters.releaseStatus)
+    : rows;
+
+  const summaryResult = await sourceableWorkspaceApi(
+    "getSourceAllocationSummary",
+    {
+      orderId: filters.orderId || "",
+      productId: normalizeSourceableWorkspaceProductId(filters.productId)
+    }
+  );
+  workspace.summaries.allocation = summaryResult.data || null;
+}
+
+async function fetchSourceableWorkspaceFulfillments() {
+  const workspace = getSourceableWorkspaceState();
+  const filters = workspace.filters.fulfillment;
+  const result = await sourceableWorkspaceApi("listSourceFulfillments", {
+    sourceAllocationId: filters.sourceAllocationId || "",
+    orderId: filters.orderId || "",
+    productId: normalizeSourceableWorkspaceProductId(filters.productId),
+    sourceId: filters.sourceId || "",
+    costStatus: filters.costStatus || "",
+    fulfillmentMode: filters.fulfillmentMode || ""
+  });
+  workspace.fulfillments = Array.isArray(result.data?.fulfillments)
+    ? result.data.fulfillments
+    : [];
+
+  const summaryResult = await sourceableWorkspaceApi(
+    "getSourceFulfillmentSummary",
+    {
+      sourceAllocationId: filters.sourceAllocationId || "",
+      orderId: filters.orderId || "",
+      productId: normalizeSourceableWorkspaceProductId(filters.productId)
+    }
+  );
+  workspace.summaries.fulfillment = summaryResult.data || null;
+}
+
+function updateSourceableWorkspaceFilter(group, field, value) {
+  const workspace = getSourceableWorkspaceState();
+  const filters = workspace.filters[group];
+  if (!filters || !Object.prototype.hasOwnProperty.call(filters, field)) return;
+  filters[field] = field === "productId"
+    ? normalizeSourceableWorkspaceProductId(value)
+    : String(value || "");
+}
+
+function clearSourceableWorkspaceFilters(group) {
+  const workspace = getSourceableWorkspaceState();
+  if (group === "sources") {
+    workspace.filters.sources = { keyword: "", active: "all" };
+  } else if (group === "availability") {
+    workspace.filters.availability = {
+      productId: "",
+      sourceId: "",
+      active: "all",
+      freshnessStatus: "",
+      keyword: ""
+    };
+  } else if (group === "allocation") {
+    workspace.filters.allocation = {
+      orderId: "",
+      productId: "",
+      sourceId: "",
+      status: "",
+      releaseStatus: ""
+    };
+  } else if (group === "fulfillment") {
+    workspace.filters.fulfillment = {
+      sourceAllocationId: "",
+      orderId: "",
+      productId: "",
+      sourceId: "",
+      costStatus: "",
+      fulfillmentMode: ""
+    };
+  }
+  refreshSourceableWorkspace({ silent: true });
+}
+
+function updateSourceableWorkspaceForm(formName, field, value) {
+  const workspace = getSourceableWorkspaceState();
+  const form = workspace.forms[formName];
+  if (!form || !Object.prototype.hasOwnProperty.call(form, field)) return;
+
+  if (field === "productId") {
+    form[field] = normalizeSourceableWorkspaceProductId(value);
+  } else if (field === "active") {
+    form[field] = !!value;
+  } else {
+    form[field] = String(value || "");
+  }
+
+  if (formName === "allocation" && field === "availabilityId") {
+    const availability = getSourceableWorkspaceAvailabilityById(form.availabilityId);
+    if (availability) {
+      form.productId = availability.productId || "";
+      form.sourceId = availability.sourceId || "";
+    }
+  }
+
+  if (formName === "fulfillment" && field === "costStatus" && form.costStatus === "COST_PENDING") {
+    form.actualUnitCost = "";
+    renderSourceableWorkspaceSheet();
+  }
+}
+
+function resetSourceableWorkspaceForm(formName) {
+  const workspace = getSourceableWorkspaceState();
+  if (formName === "source") {
+    workspace.forms.source = {
+      sourceId: "",
+      sourceName: "",
+      contactName: "",
+      phone: "",
+      reliability: "MEDIUM",
+      active: true,
+      note: ""
+    };
+  } else if (formName === "availability") {
+    workspace.forms.availability = {
+      availabilityId: "",
+      productId: "",
+      sourceId: "",
+      estimatedQuantity: "",
+      latestQuotedUnitPrice: "",
+      lastPurchaseUnitPrice: "",
+      leadTimeMinDays: "",
+      leadTimeMaxDays: "",
+      reliability: "MEDIUM",
+      active: true,
+      lastCheckedAt: "",
+      note: ""
+    };
+  } else if (formName === "allocation") {
+    workspace.forms.allocation = {
+      sourceAllocationId: "",
+      orderId: "",
+      productId: "",
+      sourceId: "",
+      availabilityId: "",
+      plannedQuantity: "",
+      note: ""
+    };
+  } else if (formName === "fulfillment") {
+    workspace.forms.fulfillment = {
+      sourceAllocationId: "",
+      fulfilledQuantity: "",
+      fulfillmentMode: "PURCHASED_BY_COMPANY",
+      costStatus: "COST_PENDING",
+      actualUnitCost: "",
+      reference: "",
+      note: ""
+    };
+  }
+  renderSourceableWorkspaceSheet();
+}
+
+function normalizeSourceableWorkspaceProductId(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function normalizeSourceableWorkspaceOptionalNumber(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return "";
+  const numberValue = Number(text);
+  return Number.isFinite(numberValue) ? String(numberValue) : text;
+}
+
+function formatSourceableWorkspaceQty(value) {
+  if (value === null || value === undefined || value === "") return "-";
+  const qty = Number(value);
+  if (!Number.isFinite(qty)) return "-";
+  return qty.toLocaleString("th-TH");
+}
+
+function formatSourceableWorkspaceMoney(value) {
+  if (value === null || value === undefined || value === "") return "-";
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return "-";
+  return amount.toLocaleString("th-TH", {
+    minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function formatSourceableWorkspaceDate(value) {
+  if (!value) return "-";
+  return formatThaiDate(value);
+}
+
+function getSourceableWorkspaceReadableError(err) {
+  const raw = String(err?.message || err || "").trim();
+  const text = raw || t("unexpectedError", "เกิดข้อผิดพลาด");
+  if (isAuthError(text)) {
+    return t("sessionExpiredLoginAgain", "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
+  }
+  if (isPermissionDeniedError(text)) {
+    return t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้");
+  }
+  return text;
+}
+
+function sourceableWorkspaceStatusClass(value) {
+  const key = String(value || "").trim().toUpperCase();
+  if (["ACTIVE", "TRUE", "FRESH", "HIGH", "CONFIRMED", "FULFILLED", "COST_CONFIRMED", "RELEASED"].includes(key)) {
+    return "status-approved";
+  }
+  if (["STALE", "LOW", "NEEDS_RECONFIRM", "RELEASE_PENDING", "COST_PENDING"].includes(key)) {
+    return "status-partial";
+  }
+  if (["INACTIVE", "FALSE", "CANCELLED"].includes(key)) {
+    return "status-rejected";
+  }
+  if (["PLANNED", "MEDIUM", "PARTIALLY_FULFILLED"].includes(key)) {
+    return "status-neutral";
+  }
+  return "status-neutral";
+}
+
+function renderSourceableWorkspaceBadge(label, value) {
+  return `
+    <span class="status-badge compact ${sourceableWorkspaceStatusClass(value || label)}">
+      ${esc(label)}
+    </span>
+  `;
+}
+
+function renderSourceableWorkspaceSelectOptions(values, selectedValue, emptyLabel = "") {
+  return `
+    ${emptyLabel ? `<option value="">${esc(emptyLabel)}</option>` : ""}
+    ${values.map(value => `
+      <option value="${escAttr(value)}" ${String(selectedValue || "") === value ? "selected" : ""}>
+        ${esc(value)}
+      </option>
+    `).join("")}
+  `;
+}
+
+function getSourceableWorkspaceSourceById(sourceId) {
+  const target = String(sourceId || "").trim();
+  return getSourceableWorkspaceState().sources.find(source =>
+    String(source.sourceId || "").trim() === target
+  ) || getSourceableWorkspaceState().generalSources.find(source =>
+    String(source.sourceId || "").trim() === target
+  ) || null;
+}
+
+function getSourceableWorkspaceSourceName(sourceId) {
+  const source = getSourceableWorkspaceSourceById(sourceId);
+  return source?.sourceName || sourceId || "-";
+}
+
+function getSourceableWorkspaceAvailabilityById(availabilityId) {
+  const target = String(availabilityId || "").trim();
+  return getSourceableWorkspaceState().availability.find(item =>
+    String(item.availabilityId || "").trim() === target
+  ) || null;
+}
+
+function getSourceableWorkspaceAllocationById(sourceAllocationId) {
+  const target = String(sourceAllocationId || "").trim();
+  return getSourceableWorkspaceState().allocations.find(item =>
+    String(item.sourceAllocationId || "").trim() === target
+  ) || null;
+}
+
+function getSourceableWorkspaceFulfillmentById(sourceFulfillmentId) {
+  const target = String(sourceFulfillmentId || "").trim();
+  return getSourceableWorkspaceState().fulfillments.find(item =>
+    String(item.sourceFulfillmentId || "").trim() === target
+  ) || null;
+}
+
+function renderSourceableWorkspaceSourceOptions(selectedValue, options = {}) {
+  const sources = getSourceableWorkspaceState().sources
+    .filter(source => !options.activeOnly || source.active)
+    .slice()
+    .sort((left, right) =>
+      String(left.sourceName || "").localeCompare(String(right.sourceName || ""), "th", {
+        numeric: true,
+        sensitivity: "base"
+      })
+    );
+
+  return `
+    <option value="">${esc(options.emptyLabel || "เลือก Source")}</option>
+    ${sources.map(source => `
+      <option value="${escAttr(source.sourceId)}" ${String(selectedValue || "") === source.sourceId ? "selected" : ""}>
+        ${esc(source.sourceName || source.sourceId)} (${esc(source.sourceId)})
+      </option>
+    `).join("")}
+  `;
+}
+
+function renderSourceableWorkspaceAvailabilityOptions(selectedValue, options = {}) {
+  const items = getSourceableWorkspaceState().availability
+    .filter(item => !options.activeOnly || item.active)
+    .filter(item => !options.productId || item.productId === options.productId)
+    .slice()
+    .sort((left, right) =>
+      String(left.productId || "").localeCompare(String(right.productId || "")) ||
+      String(left.sourceName || "").localeCompare(String(right.sourceName || ""))
+    );
+
+  return `
+    <option value="">${esc(options.emptyLabel || "เลือก Availability")}</option>
+    ${items.map(item => `
+      <option value="${escAttr(item.availabilityId)}" ${String(selectedValue || "") === item.availabilityId ? "selected" : ""}>
+        ${esc(item.productId)} · ${esc(item.sourceName || item.sourceId)} · ใช้ได้ ${formatSourceableWorkspaceQty(item.availableToAllocate)}
+      </option>
+    `).join("")}
+  `;
+}
+
+function renderSourceableWorkspaceProductDatalistOptions() {
+  const products = Array.isArray(state.products) ? state.products : [];
+  return products.map(product => `
+    <option value="${escAttr(product.productId || "")}">
+      ${esc(product.displayName || product.name || product.productId || "")}
+    </option>
+  `).join("");
+}
+
+function getEligibleSourceableWorkspaceAllocations() {
+  return getSourceableWorkspaceState().allocations.filter(allocation =>
+    ["CONFIRMED", "NEEDS_RECONFIRM", "PARTIALLY_FULFILLED"].includes(String(allocation.status || "")) &&
+    Number(allocation.remainingQuantity || 0) > 0
+  );
+}
+
+function renderSourceableWorkspaceAllocationOptions(selectedValue) {
+  const allocations = getEligibleSourceableWorkspaceAllocations();
+  return `
+    <option value="">เลือก Allocation</option>
+    ${allocations.map(allocation => `
+      <option value="${escAttr(allocation.sourceAllocationId)}" ${String(selectedValue || "") === allocation.sourceAllocationId ? "selected" : ""}>
+        ${esc(allocation.sourceAllocationId)} · ${esc(allocation.orderId)} · ${esc(allocation.productId)} · คงเหลือ ${formatSourceableWorkspaceQty(allocation.remainingQuantity)}
+      </option>
+    `).join("")}
+  `;
+}
+
+function renderSourceableWorkspaceSummary() {
+  const workspace = getSourceableWorkspaceState();
+  const availabilitySummary = workspace.summaries.availability;
+  const allocationSummary = workspace.summaries.allocation;
+  const fulfillmentSummary = workspace.summaries.fulfillment;
+  const activeSupplierCount = workspace.sources.filter(source => source.active).length;
+
+  return `
+    <div class="sourceable-workspace-summary">
+      <div class="card metric-card">
+        <div class="name">Supplier Sources</div>
+        <div class="price">${formatSourceableWorkspaceQty(activeSupplierCount)}</div>
+        <div class="stock">Active Supplier Source</div>
+      </div>
+      <div class="card metric-card">
+        <div class="name">Sourceable Total</div>
+        <div class="price">${availabilitySummary ? formatSourceableWorkspaceQty(availabilitySummary.sourceableTotal) : "-"}</div>
+        <div class="stock">${availabilitySummary ? esc(availabilitySummary.productId || "") : "เลือก Product ID"}</div>
+      </div>
+      <div class="card metric-card">
+        <div class="name">Available to Allocate</div>
+        <div class="price">${availabilitySummary ? formatSourceableWorkspaceQty(availabilitySummary.availableToAllocateTotal) : "-"}</div>
+        <div class="stock">Backend summary only</div>
+      </div>
+      <div class="card metric-card">
+        <div class="name">Allocations</div>
+        <div class="price">${allocationSummary ? formatSourceableWorkspaceQty(allocationSummary.allocationCount) : "-"}</div>
+        <div class="stock">Remaining ${allocationSummary ? formatSourceableWorkspaceQty(allocationSummary.remainingTotal) : "-"}</div>
+      </div>
+      <div class="card metric-card">
+        <div class="name">Pending Costs</div>
+        <div class="price">${fulfillmentSummary ? formatSourceableWorkspaceQty(fulfillmentSummary.pendingCostCount) : "-"}</div>
+        <div class="stock">COST_PENDING ไม่ใช่ 0</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderSourceableWorkspaceTabs() {
+  const activeTab = getSourceableWorkspaceState().activeTab;
+  return `
+    <div class="sourceable-workspace-tabs" role="tablist" aria-label="Sourceable workspace">
+      ${SOURCEABLE_WORKSPACE_TABS.map(tab => `
+        <button class="btn btn-outline ${activeTab === tab.id ? "active" : ""}"
+          type="button"
+          role="tab"
+          aria-selected="${activeTab === tab.id ? "true" : "false"}"
+          onclick="setSourceableWorkspaceTab('${escAttr(tab.id)}')">
+          ${esc(tab.label)}
+        </button>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderSourceableWorkspaceFilters(group, fieldsHtml) {
+  return `
+    <div class="sourceable-workspace-filters">
+      <div class="sourceable-workspace-section-title">${t("filters", "ตัวกรอง")}</div>
+      <div class="sourceable-workspace-filter-grid">
+        ${fieldsHtml}
+      </div>
+      <div class="sourceable-workspace-actions">
+        <button class="btn btn-primary" type="button" onclick="refreshSourceableWorkspace()">
+          ${t("search", "ค้นหา")}
+        </button>
+        <button class="btn btn-outline" type="button" onclick="refreshSourceableWorkspace()">
+          ${t("refresh", "รีเฟรช")}
+        </button>
+        <button class="btn btn-outline" type="button" onclick="clearSourceableWorkspaceFilters('${escAttr(group)}')">
+          ${t("clearFilters", "ล้างตัวกรอง")}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderSourceableWorkspaceSourcesTab() {
+  const workspace = getSourceableWorkspaceState();
+  const filters = workspace.filters.sources;
+
+  if (!hasAdminPermission("source.view")) {
+    return `<div class="sourceable-workspace-warning">${t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้")}</div>`;
+  }
+
+  return `
+    ${renderSourceableWorkspaceFilters("sources", `
+      <div class="form-group">
+        <label for="sourceableWorkspaceSourceKeyword">Source search</label>
+        <input id="sourceableWorkspaceSourceKeyword" type="search"
+          value="${escAttr(filters.keyword || "")}"
+          placeholder="Supplier name / phone / note"
+          oninput="updateSourceableWorkspaceFilter('sources', 'keyword', this.value)"
+          onkeydown="if(event.key === 'Enter') refreshSourceableWorkspace()">
+      </div>
+      <div class="form-group">
+        <label for="sourceableWorkspaceSourceActive">Active</label>
+        <select id="sourceableWorkspaceSourceActive"
+          onchange="updateSourceableWorkspaceFilter('sources', 'active', this.value); refreshSourceableWorkspace()">
+          <option value="all" ${filters.active === "all" ? "selected" : ""}>All</option>
+          <option value="true" ${filters.active === "true" ? "selected" : ""}>Active</option>
+          <option value="false" ${filters.active === "false" ? "selected" : ""}>Inactive</option>
+        </select>
+      </div>
+    `)}
+    ${renderSourceableWorkspaceSourceForm()}
+    <div class="sourceable-workspace-card sourceable-workspace-form">
+      <div class="sourceable-workspace-section-title">GENERAL Source</div>
+      <div class="sourceable-workspace-help">GENERAL Source is read-only here and remains separate from Supplier Sources.</div>
+      ${workspace.generalSources.length
+        ? workspace.generalSources.map(renderSourceableWorkspaceSourceRow).join("")
+        : `<div class="empty-state">GENERAL Source not listed</div>`}
+    </div>
+    <div class="sourceable-workspace-section-title">Supplier Sources</div>
+    ${workspace.sources.length
+      ? `<div class="sourceable-workspace-list">${workspace.sources.map(renderSourceableWorkspaceSourceRow).join("")}</div>`
+      : `<div class="empty-state">ยังไม่มี Supplier Source ตามเงื่อนไขนี้</div>`}
+  `;
+}
+
+function renderSourceableWorkspaceSourceForm() {
+  if (!hasAdminPermission("source.manage")) {
+    return `<div class="sourceable-workspace-warning">บัญชีนี้ดู Source ได้ แต่ยังไม่มีสิทธิ์สร้างหรือแก้ไข Supplier Source</div>`;
+  }
+  const form = getSourceableWorkspaceState().forms.source;
+  const editing = !!form.sourceId;
+
+  return `
+    <div class="sourceable-workspace-form">
+      <div class="sourceable-workspace-section-title">${editing ? "แก้ไข Supplier Source" : "เพิ่ม Supplier Source"}</div>
+      <div class="sourceable-workspace-form-grid">
+        <div class="form-group">
+          <label for="sourceableWorkspaceSourceName">Source name *</label>
+          <input id="sourceableWorkspaceSourceName"
+            value="${escAttr(form.sourceName || "")}"
+            oninput="updateSourceableWorkspaceForm('source', 'sourceName', this.value)">
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceSourceContact">Contact</label>
+          <input id="sourceableWorkspaceSourceContact"
+            value="${escAttr(form.contactName || "")}"
+            oninput="updateSourceableWorkspaceForm('source', 'contactName', this.value)">
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceSourcePhone">Phone</label>
+          <input id="sourceableWorkspaceSourcePhone"
+            value="${escAttr(form.phone || "")}"
+            oninput="updateSourceableWorkspaceForm('source', 'phone', this.value)">
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceSourceReliability">Reliability</label>
+          <select id="sourceableWorkspaceSourceReliability"
+            onchange="updateSourceableWorkspaceForm('source', 'reliability', this.value)">
+            ${renderSourceableWorkspaceSelectOptions(SOURCEABLE_RELIABILITY_OPTIONS, form.reliability)}
+          </select>
+        </div>
+      </div>
+      <label class="sourceable-workspace-help">
+        <input type="checkbox" ${form.active ? "checked" : ""}
+          onchange="updateSourceableWorkspaceForm('source', 'active', this.checked)">
+        Active Supplier Source
+      </label>
+      <div class="form-group">
+        <label for="sourceableWorkspaceSourceNote">${t("note", "หมายเหตุ")}</label>
+        <textarea id="sourceableWorkspaceSourceNote" rows="2"
+          oninput="updateSourceableWorkspaceForm('source', 'note', this.value)">${esc(form.note || "")}</textarea>
+      </div>
+      <div class="sourceable-workspace-actions">
+        <button class="btn btn-primary" type="button"
+          ${getSourceableWorkspaceState().submitting ? "disabled" : ""}
+          onclick="submitSourceableWorkspaceSource()">
+          ${editing ? t("save", "บันทึก") : t("add", "เพิ่ม")}
+        </button>
+        <button class="btn btn-outline" type="button" onclick="resetSourceableWorkspaceForm('source')">
+          ${t("clear", "ล้าง")}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderSourceableWorkspaceSourceRow(source) {
+  return `
+    <div class="sourceable-workspace-row">
+      <div class="sourceable-workspace-row-head">
+        <div>
+          <div class="sourceable-workspace-title">${esc(source.sourceName || source.sourceId || "-")}</div>
+          <div class="sourceable-workspace-meta">${esc(source.sourceId || "-")} · ${esc(source.sourceType || "-")}</div>
+        </div>
+        <div class="sourceable-workspace-badge-row">
+          ${renderSourceableWorkspaceBadge(source.active ? "ACTIVE" : "INACTIVE", source.active ? "ACTIVE" : "INACTIVE")}
+          ${renderSourceableWorkspaceBadge(source.reliability || "-", source.reliability)}
+        </div>
+      </div>
+      <div class="sourceable-workspace-data-grid">
+        <div class="sourceable-workspace-stat"><span>Contact</span><strong>${esc(source.contactName || "-")}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Phone</span><strong>${esc(source.phone || "-")}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Updated</span><strong>${esc(formatSourceableWorkspaceDate(source.updatedAt))}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Note</span><strong>${esc(source.note || "-")}</strong></div>
+      </div>
+      ${source.sourceType === "SUPPLIER" && hasAdminPermission("source.manage") ? `
+        <div class="sourceable-workspace-row-actions">
+          <button class="btn btn-outline" type="button"
+            onclick="editSourceableWorkspaceSource(${toInlineJsStringLiteral(source.sourceId)})">
+            ${t("edit", "แก้ไข")}
+          </button>
+        </div>
+      ` : ""}
+    </div>
+  `;
+}
+
+function editSourceableWorkspaceSource(sourceId) {
+  const source = getSourceableWorkspaceSourceById(sourceId);
+  if (!source || source.sourceType !== "SUPPLIER") return;
+  const workspace = getSourceableWorkspaceState();
+  workspace.forms.source = {
+    sourceId: source.sourceId || "",
+    sourceName: source.sourceName || "",
+    contactName: source.contactName || "",
+    phone: source.phone || "",
+    reliability: source.reliability || "MEDIUM",
+    active: source.active !== false,
+    note: source.note || ""
+  };
+  renderSourceableWorkspaceSheet();
+}
+
+async function submitSourceableWorkspaceSource() {
+  if (!ensureAdminSessionForSourceableWorkspace() || !hasAdminPermission("source.manage")) return;
+  const workspace = getSourceableWorkspaceState();
+  if (workspace.submitting) return;
+  const form = workspace.forms.source;
+  const sourceName = String(form.sourceName || "").trim();
+  if (!sourceName) {
+    showToast("Source name is required", "warning");
+    return;
+  }
+
+  workspace.submitting = true;
+  workspace.error = "";
+  renderSourceableWorkspaceSheet();
+
+  try {
+    const action = form.sourceId ? "updateSource" : "createSource";
+    await sourceableWorkspaceApi(action, {
+      sourceId: form.sourceId || "",
+      sourceType: "SUPPLIER",
+      sourceName,
+      contactName: form.contactName || "",
+      phone: form.phone || "",
+      reliability: form.reliability || "MEDIUM",
+      active: form.active ? "true" : "false",
+      note: form.note || ""
+    });
+    resetSourceableWorkspaceForm("source");
+    workspace.message = "Supplier Source saved";
+    await refreshSourceableWorkspace({ silent: true });
+  } catch (err) {
+    workspace.error = getSourceableWorkspaceReadableError(err);
+    showToast(workspace.error, "error");
+  } finally {
+    workspace.submitting = false;
+    renderSourceableWorkspaceSheet();
+  }
+}
+
+function renderSourceableWorkspaceAvailabilityTab() {
+  const workspace = getSourceableWorkspaceState();
+  const filters = workspace.filters.availability;
+
+  return `
+    ${renderSourceableWorkspaceFilters("availability", `
+      <div class="form-group">
+        <label for="sourceableWorkspaceAvailabilityProduct">Product ID</label>
+        <input id="sourceableWorkspaceAvailabilityProduct" list="sourceableWorkspaceAvailabilityProductOptions"
+          value="${escAttr(filters.productId || "")}"
+          placeholder="SKU"
+          oninput="updateSourceableWorkspaceFilter('availability', 'productId', this.value)"
+          onkeydown="if(event.key === 'Enter') refreshSourceableWorkspace()">
+      </div>
+      <div class="form-group">
+        <label for="sourceableWorkspaceAvailabilitySource">Source</label>
+        <select id="sourceableWorkspaceAvailabilitySource"
+          onchange="updateSourceableWorkspaceFilter('availability', 'sourceId', this.value); refreshSourceableWorkspace()">
+          ${renderSourceableWorkspaceSourceOptions(filters.sourceId, { emptyLabel: "All Sources" })}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="sourceableWorkspaceAvailabilityActive">Active</label>
+        <select id="sourceableWorkspaceAvailabilityActive"
+          onchange="updateSourceableWorkspaceFilter('availability', 'active', this.value); refreshSourceableWorkspace()">
+          <option value="all" ${filters.active === "all" ? "selected" : ""}>All</option>
+          <option value="true" ${filters.active === "true" ? "selected" : ""}>Active</option>
+          <option value="false" ${filters.active === "false" ? "selected" : ""}>Inactive</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="sourceableWorkspaceAvailabilityFreshness">Freshness</label>
+        <select id="sourceableWorkspaceAvailabilityFreshness"
+          onchange="updateSourceableWorkspaceFilter('availability', 'freshnessStatus', this.value); refreshSourceableWorkspace()">
+          <option value="" ${!filters.freshnessStatus ? "selected" : ""}>All</option>
+          <option value="FRESH" ${filters.freshnessStatus === "FRESH" ? "selected" : ""}>FRESH</option>
+          <option value="STALE" ${filters.freshnessStatus === "STALE" ? "selected" : ""}>STALE</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="sourceableWorkspaceAvailabilityKeyword">Keyword</label>
+        <input id="sourceableWorkspaceAvailabilityKeyword" type="search"
+          value="${escAttr(filters.keyword || "")}"
+          oninput="updateSourceableWorkspaceFilter('availability', 'keyword', this.value)"
+          onkeydown="if(event.key === 'Enter') refreshSourceableWorkspace()">
+      </div>
+    `)}
+    <datalist id="sourceableWorkspaceAvailabilityProductOptions">${renderSourceableWorkspaceProductDatalistOptions()}</datalist>
+    ${renderSourceableWorkspaceAvailabilityForm()}
+    <div class="sourceable-workspace-section-title">Availability</div>
+    ${workspace.availability.length
+      ? `<div class="sourceable-workspace-list">${workspace.availability.map(renderSourceableWorkspaceAvailabilityRow).join("")}</div>`
+      : `<div class="empty-state">ยังไม่มี Availability ตามเงื่อนไขนี้</div>`}
+  `;
+}
+
+function renderSourceableWorkspaceAvailabilityForm() {
+  if (!hasAdminPermission("sourceable.manage")) {
+    return `<div class="sourceable-workspace-warning">บัญชีนี้ดู Availability ได้ แต่ยังไม่มีสิทธิ์จัดการ</div>`;
+  }
+  const form = getSourceableWorkspaceState().forms.availability;
+  const editing = !!form.availabilityId;
+
+  return `
+    <div class="sourceable-workspace-form">
+      <div class="sourceable-workspace-section-title">${editing ? "แก้ไข Availability" : "เพิ่ม Availability"}</div>
+      <div class="sourceable-workspace-help">Availability คือค่าประมาณจาก Source ไม่ใช่ Physical Stock</div>
+      <div class="sourceable-workspace-form-grid">
+        <div class="form-group">
+          <label for="sourceableWorkspaceAvailabilityFormProduct">Product ID *</label>
+          <input id="sourceableWorkspaceAvailabilityFormProduct" list="sourceableWorkspaceAvailabilityProductOptions"
+            value="${escAttr(form.productId || "")}"
+            ${editing ? "disabled" : ""}
+            oninput="updateSourceableWorkspaceForm('availability', 'productId', this.value)">
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceAvailabilityFormSource">Source *</label>
+          <select id="sourceableWorkspaceAvailabilityFormSource" ${editing ? "disabled" : ""}
+            onchange="updateSourceableWorkspaceForm('availability', 'sourceId', this.value)">
+            ${renderSourceableWorkspaceSourceOptions(form.sourceId, { activeOnly: !editing, emptyLabel: "เลือก Supplier Source" })}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceAvailabilityEstimated">Estimated quantity *</label>
+          <input id="sourceableWorkspaceAvailabilityEstimated" type="number" min="0" step="1"
+            value="${escAttr(form.estimatedQuantity || "")}"
+            oninput="updateSourceableWorkspaceForm('availability', 'estimatedQuantity', this.value)">
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceAvailabilityReliability">Reliability</label>
+          <select id="sourceableWorkspaceAvailabilityReliability"
+            onchange="updateSourceableWorkspaceForm('availability', 'reliability', this.value)">
+            ${renderSourceableWorkspaceSelectOptions(SOURCEABLE_RELIABILITY_OPTIONS, form.reliability)}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceAvailabilityQuote">Latest quote</label>
+          <input id="sourceableWorkspaceAvailabilityQuote" type="number" min="0" step="0.01"
+            value="${escAttr(form.latestQuotedUnitPrice || "")}"
+            oninput="updateSourceableWorkspaceForm('availability', 'latestQuotedUnitPrice', this.value)">
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceAvailabilityPurchase">Last purchase</label>
+          <input id="sourceableWorkspaceAvailabilityPurchase" type="number" min="0" step="0.01"
+            value="${escAttr(form.lastPurchaseUnitPrice || "")}"
+            oninput="updateSourceableWorkspaceForm('availability', 'lastPurchaseUnitPrice', this.value)">
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceAvailabilityLeadMin">Lead min days</label>
+          <input id="sourceableWorkspaceAvailabilityLeadMin" type="number" min="0" step="1"
+            value="${escAttr(form.leadTimeMinDays || "")}"
+            oninput="updateSourceableWorkspaceForm('availability', 'leadTimeMinDays', this.value)">
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceAvailabilityLeadMax">Lead max days</label>
+          <input id="sourceableWorkspaceAvailabilityLeadMax" type="number" min="0" step="1"
+            value="${escAttr(form.leadTimeMaxDays || "")}"
+            oninput="updateSourceableWorkspaceForm('availability', 'leadTimeMaxDays', this.value)">
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceAvailabilityCheckedAt">Last checked at</label>
+          <input id="sourceableWorkspaceAvailabilityCheckedAt" type="datetime-local"
+            value="${escAttr(form.lastCheckedAt || "")}"
+            oninput="updateSourceableWorkspaceForm('availability', 'lastCheckedAt', this.value)">
+        </div>
+      </div>
+      <label class="sourceable-workspace-help">
+        <input type="checkbox" ${form.active ? "checked" : ""}
+          onchange="updateSourceableWorkspaceForm('availability', 'active', this.checked)">
+        Active Availability
+      </label>
+      <div class="form-group">
+        <label for="sourceableWorkspaceAvailabilityNote">${t("note", "หมายเหตุ")}</label>
+        <textarea id="sourceableWorkspaceAvailabilityNote" rows="2"
+          oninput="updateSourceableWorkspaceForm('availability', 'note', this.value)">${esc(form.note || "")}</textarea>
+      </div>
+      <div class="sourceable-workspace-actions">
+        <button class="btn btn-primary" type="button"
+          ${getSourceableWorkspaceState().submitting ? "disabled" : ""}
+          onclick="submitSourceableWorkspaceAvailability()">
+          ${editing ? t("save", "บันทึก") : t("add", "เพิ่ม")}
+        </button>
+        <button class="btn btn-outline" type="button" onclick="resetSourceableWorkspaceForm('availability')">
+          ${t("clear", "ล้าง")}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderSourceableWorkspaceAvailabilityRow(item) {
+  return `
+    <div class="sourceable-workspace-row">
+      <div class="sourceable-workspace-row-head">
+        <div>
+          <div class="sourceable-workspace-title">${esc(item.productId || "-")} · ${esc(item.productName || "-")}</div>
+          <div class="sourceable-workspace-meta">${esc(item.sourceName || item.sourceId || "-")} · ${esc(item.availabilityId || "-")}</div>
+        </div>
+        <div class="sourceable-workspace-badge-row">
+          ${renderSourceableWorkspaceBadge(item.active ? "ACTIVE" : "INACTIVE", item.active ? "ACTIVE" : "INACTIVE")}
+          ${renderSourceableWorkspaceBadge(item.freshnessStatus || "-", item.freshnessStatus)}
+          ${item.sourceActive ? "" : renderSourceableWorkspaceBadge("SOURCE INACTIVE", "INACTIVE")}
+        </div>
+      </div>
+      <div class="sourceable-workspace-data-grid">
+        <div class="sourceable-workspace-stat"><span>Estimated</span><strong>${formatSourceableWorkspaceQty(item.estimatedQuantity)}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Allocated</span><strong>${formatSourceableWorkspaceQty(item.allocatedQuantity)}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Available</span><strong>${formatSourceableWorkspaceQty(item.availableToAllocate)}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Age</span><strong>${formatSourceableWorkspaceQty(item.ageDays)} days</strong></div>
+        <div class="sourceable-workspace-stat"><span>Latest quote</span><strong>${formatSourceableWorkspaceMoney(item.latestQuotedUnitPrice)}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Last purchase</span><strong>${formatSourceableWorkspaceMoney(item.lastPurchaseUnitPrice)}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Lead time</span><strong>${formatSourceableWorkspaceQty(item.leadTimeMinDays)}-${formatSourceableWorkspaceQty(item.leadTimeMaxDays)}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Reliability</span><strong>${esc(item.reliability || "-")}</strong></div>
+      </div>
+      <div class="sourceable-workspace-meta">
+        Last checked: ${esc(formatSourceableWorkspaceDate(item.lastCheckedAt))} · Updated: ${esc(formatSourceableWorkspaceDate(item.updatedAt))}<br>
+        ${t("note", "หมายเหตุ")}: ${esc(item.note || "-")}
+      </div>
+      <div class="sourceable-workspace-row-actions">
+        ${hasAdminPermission("sourceable.manage") ? `
+          <button class="btn btn-outline" type="button"
+            onclick="editSourceableWorkspaceAvailability(${toInlineJsStringLiteral(item.availabilityId)})">
+            ${t("edit", "แก้ไข")}
+          </button>
+        ` : ""}
+        ${hasAdminPermission("sourceable.allocate") && item.active && item.sourceActive ? `
+          <button class="btn btn-outline" type="button"
+            onclick="prefillSourceableWorkspaceAllocation(${toInlineJsStringLiteral(item.availabilityId)})">
+            สร้าง Allocation
+          </button>
+        ` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function editSourceableWorkspaceAvailability(availabilityId) {
+  const item = getSourceableWorkspaceAvailabilityById(availabilityId);
+  if (!item) return;
+  const workspace = getSourceableWorkspaceState();
+  workspace.forms.availability = {
+    availabilityId: item.availabilityId || "",
+    productId: item.productId || "",
+    sourceId: item.sourceId || "",
+    estimatedQuantity: item.estimatedQuantity ?? "",
+    latestQuotedUnitPrice: item.latestQuotedUnitPrice ?? "",
+    lastPurchaseUnitPrice: item.lastPurchaseUnitPrice ?? "",
+    leadTimeMinDays: item.leadTimeMinDays ?? "",
+    leadTimeMaxDays: item.leadTimeMaxDays ?? "",
+    reliability: item.reliability || "MEDIUM",
+    active: item.active !== false,
+    lastCheckedAt: "",
+    note: item.note || ""
+  };
+  renderSourceableWorkspaceSheet();
+}
+
+async function submitSourceableWorkspaceAvailability() {
+  if (!ensureAdminSessionForSourceableWorkspace() || !hasAdminPermission("sourceable.manage")) return;
+  const workspace = getSourceableWorkspaceState();
+  if (workspace.submitting) return;
+  const form = workspace.forms.availability;
+  const editing = !!form.availabilityId;
+  const estimatedQuantity = Number(form.estimatedQuantity);
+  if (!editing && (!form.productId || !form.sourceId)) {
+    showToast("Product ID and Source are required", "warning");
+    return;
+  }
+  if (!Number.isInteger(estimatedQuantity) || estimatedQuantity < 0) {
+    showToast("Estimated quantity must be a nonnegative integer", "warning");
+    return;
+  }
+
+  workspace.submitting = true;
+  workspace.error = "";
+  renderSourceableWorkspaceSheet();
+
+  try {
+    const params = {
+      availabilityId: form.availabilityId || "",
+      estimatedQuantity: String(estimatedQuantity),
+      latestQuotedUnitPrice: normalizeSourceableWorkspaceOptionalNumber(form.latestQuotedUnitPrice),
+      lastPurchaseUnitPrice: normalizeSourceableWorkspaceOptionalNumber(form.lastPurchaseUnitPrice),
+      leadTimeMinDays: normalizeSourceableWorkspaceOptionalNumber(form.leadTimeMinDays),
+      leadTimeMaxDays: normalizeSourceableWorkspaceOptionalNumber(form.leadTimeMaxDays),
+      reliability: form.reliability || "MEDIUM",
+      active: form.active ? "true" : "false",
+      note: form.note || ""
+    };
+    if (String(form.lastCheckedAt || "").trim()) {
+      params.lastCheckedAt = form.lastCheckedAt;
+    }
+    if (!editing) {
+      params.productId = form.productId;
+      params.sourceId = form.sourceId;
+    }
+    await sourceableWorkspaceApi(
+      editing ? "updateSourceableAvailability" : "createSourceableAvailability",
+      params
+    );
+    resetSourceableWorkspaceForm("availability");
+    workspace.message = "Availability saved";
+    await refreshSourceableWorkspace({ silent: true });
+  } catch (err) {
+    workspace.error = getSourceableWorkspaceReadableError(err);
+    showToast(workspace.error, "error");
+  } finally {
+    workspace.submitting = false;
+    renderSourceableWorkspaceSheet();
+  }
+}
+
+function renderSourceableWorkspaceAllocationTab() {
+  const workspace = getSourceableWorkspaceState();
+  const filters = workspace.filters.allocation;
+
+  return `
+    ${renderSourceableWorkspaceFilters("allocation", `
+      <div class="form-group">
+        <label for="sourceableWorkspaceAllocationOrder">Order ID</label>
+        <input id="sourceableWorkspaceAllocationOrder"
+          value="${escAttr(filters.orderId || "")}"
+          oninput="updateSourceableWorkspaceFilter('allocation', 'orderId', this.value)"
+          onkeydown="if(event.key === 'Enter') refreshSourceableWorkspace()">
+      </div>
+      <div class="form-group">
+        <label for="sourceableWorkspaceAllocationProduct">Product ID</label>
+        <input id="sourceableWorkspaceAllocationProduct" list="sourceableWorkspaceAllocationProductOptions"
+          value="${escAttr(filters.productId || "")}"
+          oninput="updateSourceableWorkspaceFilter('allocation', 'productId', this.value)"
+          onkeydown="if(event.key === 'Enter') refreshSourceableWorkspace()">
+      </div>
+      <div class="form-group">
+        <label for="sourceableWorkspaceAllocationSource">Source</label>
+        <select id="sourceableWorkspaceAllocationSource"
+          onchange="updateSourceableWorkspaceFilter('allocation', 'sourceId', this.value); refreshSourceableWorkspace()">
+          ${renderSourceableWorkspaceSourceOptions(filters.sourceId, { emptyLabel: "All Sources" })}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="sourceableWorkspaceAllocationStatus">Status</label>
+        <select id="sourceableWorkspaceAllocationStatus"
+          onchange="updateSourceableWorkspaceFilter('allocation', 'status', this.value); refreshSourceableWorkspace()">
+          ${renderSourceableWorkspaceSelectOptions(SOURCEABLE_ALLOCATION_STATUSES, filters.status, "All")}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="sourceableWorkspaceAllocationReleaseStatus">Release status</label>
+        <select id="sourceableWorkspaceAllocationReleaseStatus"
+          onchange="updateSourceableWorkspaceFilter('allocation', 'releaseStatus', this.value); refreshSourceableWorkspace()">
+          ${renderSourceableWorkspaceSelectOptions(SOURCEABLE_RELEASE_STATUSES, filters.releaseStatus, "All")}
+        </select>
+      </div>
+    `)}
+    <datalist id="sourceableWorkspaceAllocationProductOptions">${renderSourceableWorkspaceProductDatalistOptions()}</datalist>
+    ${renderSourceableWorkspaceAllocationForm()}
+    <div class="sourceable-workspace-section-title">Allocations</div>
+    ${workspace.allocations.length
+      ? `<div class="sourceable-workspace-list">${workspace.allocations.map(renderSourceableWorkspaceAllocationRow).join("")}</div>`
+      : `<div class="empty-state">ยังไม่มี Allocation ตามเงื่อนไขนี้</div>`}
+  `;
+}
+
+function renderSourceableWorkspaceAllocationForm() {
+  if (!hasAdminPermission("sourceable.allocate")) {
+    return `<div class="sourceable-workspace-warning">บัญชีนี้ดู Allocation ได้ แต่ยังไม่มีสิทธิ์จัดสรร Source</div>`;
+  }
+  const form = getSourceableWorkspaceState().forms.allocation;
+  const editing = !!form.sourceAllocationId;
+  const selectedAvailability = getSourceableWorkspaceAvailabilityById(form.availabilityId);
+
+  return `
+    <div class="sourceable-workspace-form">
+      <div class="sourceable-workspace-section-title">${editing ? "แก้ไข Allocation" : "สร้าง Allocation"}</div>
+      <div class="sourceable-workspace-help">พนักงานเลือก Source เอง ระบบไม่เลือกถูกที่สุด เร็วที่สุด หรือเชื่อถือที่สุดให้อัตโนมัติ</div>
+      <div class="sourceable-workspace-form-grid">
+        <div class="form-group">
+          <label for="sourceableWorkspaceAllocationFormOrder">Order ID *</label>
+          <input id="sourceableWorkspaceAllocationFormOrder"
+            value="${escAttr(form.orderId || "")}"
+            ${editing ? "disabled" : ""}
+            oninput="updateSourceableWorkspaceForm('allocation', 'orderId', this.value)">
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceAllocationFormProduct">Product ID *</label>
+          <input id="sourceableWorkspaceAllocationFormProduct" list="sourceableWorkspaceAllocationProductOptions"
+            value="${escAttr(form.productId || "")}"
+            ${editing ? "disabled" : ""}
+            oninput="updateSourceableWorkspaceForm('allocation', 'productId', this.value)">
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceAllocationFormAvailability">Availability *</label>
+          <select id="sourceableWorkspaceAllocationFormAvailability"
+            onchange="updateSourceableWorkspaceForm('allocation', 'availabilityId', this.value); renderSourceableWorkspaceSheet()">
+            ${renderSourceableWorkspaceAvailabilityOptions(form.availabilityId, {
+              activeOnly: true,
+              productId: form.productId || "",
+              emptyLabel: "เลือก Availability"
+            })}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceAllocationFormSource">Source *</label>
+          <select id="sourceableWorkspaceAllocationFormSource"
+            onchange="updateSourceableWorkspaceForm('allocation', 'sourceId', this.value)">
+            ${renderSourceableWorkspaceSourceOptions(form.sourceId, { activeOnly: true, emptyLabel: "เลือก Source" })}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceAllocationPlanned">Planned quantity *</label>
+          <input id="sourceableWorkspaceAllocationPlanned" type="number" min="1" step="1"
+            value="${escAttr(form.plannedQuantity || "")}"
+            oninput="updateSourceableWorkspaceForm('allocation', 'plannedQuantity', this.value)">
+        </div>
+      </div>
+      ${selectedAvailability ? `
+        <div class="sourceable-workspace-warning">
+          Selected Availability: ${esc(selectedAvailability.productId)} · ${esc(selectedAvailability.sourceName || selectedAvailability.sourceId)} · availableToAllocate ${formatSourceableWorkspaceQty(selectedAvailability.availableToAllocate)}
+        </div>
+      ` : ""}
+      <div class="form-group">
+        <label for="sourceableWorkspaceAllocationNote">${t("note", "หมายเหตุ")}</label>
+        <textarea id="sourceableWorkspaceAllocationNote" rows="2"
+          oninput="updateSourceableWorkspaceForm('allocation', 'note', this.value)">${esc(form.note || "")}</textarea>
+      </div>
+      <div class="sourceable-workspace-actions">
+        <button class="btn btn-primary" type="button"
+          ${getSourceableWorkspaceState().submitting ? "disabled" : ""}
+          onclick="submitSourceableWorkspaceAllocation()">
+          ${editing ? t("save", "บันทึก") : "สร้าง Allocation"}
+        </button>
+        <button class="btn btn-outline" type="button" onclick="resetSourceableWorkspaceForm('allocation')">
+          ${t("clear", "ล้าง")}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderSourceableWorkspaceAllocationRow(allocation) {
+  return `
+    <div class="sourceable-workspace-row">
+      <div class="sourceable-workspace-row-head">
+        <div>
+          <div class="sourceable-workspace-title">${esc(allocation.orderId || "-")} · ${esc(allocation.productId || "-")}</div>
+          <div class="sourceable-workspace-meta">${esc(allocation.sourceAllocationId || "-")} · ${esc(allocation.sourceName || allocation.sourceId || "-")}</div>
+        </div>
+        <div class="sourceable-workspace-badge-row">
+          ${renderSourceableWorkspaceBadge(allocation.status || "-", allocation.status)}
+          ${allocation.releaseStatus ? renderSourceableWorkspaceBadge(allocation.releaseStatus, allocation.releaseStatus) : ""}
+          ${allocation.staleAvailabilityWarning ? renderSourceableWorkspaceBadge("STALE Availability", "STALE") : ""}
+          ${allocation.inactiveSourceWarning ? renderSourceableWorkspaceBadge("SOURCE INACTIVE", "INACTIVE") : ""}
+        </div>
+      </div>
+      <div class="sourceable-workspace-data-grid">
+        <div class="sourceable-workspace-stat"><span>Planned</span><strong>${formatSourceableWorkspaceQty(allocation.plannedQuantity)}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Fulfilled</span><strong>${formatSourceableWorkspaceQty(allocation.fulfilledQuantity)}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Remaining</span><strong>${formatSourceableWorkspaceQty(allocation.remainingQuantity)}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Available now</span><strong>${formatSourceableWorkspaceQty(allocation.currentAvailability?.availableToAllocate)}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Quote snapshot</span><strong>${formatSourceableWorkspaceMoney(allocation.quotedUnitPriceSnapshot)}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Purchase snapshot</span><strong>${formatSourceableWorkspaceMoney(allocation.lastPurchaseUnitPriceSnapshot)}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Lead snapshot</span><strong>${formatSourceableWorkspaceQty(allocation.leadTimeMinDaysSnapshot)}-${formatSourceableWorkspaceQty(allocation.leadTimeMaxDaysSnapshot)}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Reliability</span><strong>${esc(allocation.reliabilitySnapshot || "-")}</strong></div>
+      </div>
+      <div class="sourceable-workspace-meta">
+        Selected: ${esc(formatSourceableWorkspaceDate(allocation.selectedAt))} · Confirmed: ${esc(formatSourceableWorkspaceDate(allocation.confirmedAt))}<br>
+        ${t("note", "หมายเหตุ")}: ${esc(allocation.note || "-")}
+      </div>
+      ${renderSourceableWorkspaceAllocationActions(allocation)}
+    </div>
+  `;
+}
+
+function renderSourceableWorkspaceAllocationActions(allocation) {
+  if (!hasAdminPermission("sourceable.allocate")) return "";
+  const status = String(allocation.status || "");
+  const releaseStatus = String(allocation.releaseStatus || "");
+  return `
+    <div class="sourceable-workspace-row-actions">
+      ${["PLANNED", "CONFIRMED", "NEEDS_RECONFIRM", "PARTIALLY_FULFILLED"].includes(status) ? `
+        <button class="btn btn-outline" type="button"
+          onclick="editSourceableWorkspaceAllocation(${toInlineJsStringLiteral(allocation.sourceAllocationId)})">
+          ${t("edit", "แก้ไข")}
+        </button>
+      ` : ""}
+      ${["PLANNED", "NEEDS_RECONFIRM"].includes(status) ? `
+        <button class="btn btn-primary" type="button"
+          onclick="confirmSourceableWorkspaceAllocation(${toInlineJsStringLiteral(allocation.sourceAllocationId)})">
+          ${status === "NEEDS_RECONFIRM" ? "Reconfirm" : "Confirm"}
+        </button>
+      ` : ""}
+      ${["PLANNED", "CONFIRMED", "NEEDS_RECONFIRM", "PARTIALLY_FULFILLED"].includes(status) ? `
+        <button class="btn btn-outline" type="button"
+          onclick="cancelSourceableWorkspaceAllocation(${toInlineJsStringLiteral(allocation.sourceAllocationId)})">
+          Cancel
+        </button>
+      ` : ""}
+      ${(status === "CANCELLED" || status === "RELEASE_PENDING" || releaseStatus === "RELEASE_PENDING") ? `
+        <button class="btn btn-outline" type="button"
+          onclick="releaseSourceableWorkspaceAllocation(${toInlineJsStringLiteral(allocation.sourceAllocationId)})">
+          Release
+        </button>
+      ` : ""}
+    </div>
+  `;
+}
+
+function prefillSourceableWorkspaceAllocation(availabilityId) {
+  const availability = getSourceableWorkspaceAvailabilityById(availabilityId);
+  if (!availability) return;
+  const workspace = getSourceableWorkspaceState();
+  workspace.activeTab = "allocation";
+  workspace.forms.allocation = {
+    sourceAllocationId: "",
+    orderId: "",
+    productId: availability.productId || "",
+    sourceId: availability.sourceId || "",
+    availabilityId: availability.availabilityId || "",
+    plannedQuantity: "",
+    note: ""
+  };
+  renderSourceableWorkspaceSheet();
+}
+
+function editSourceableWorkspaceAllocation(sourceAllocationId) {
+  const allocation = getSourceableWorkspaceAllocationById(sourceAllocationId);
+  if (!allocation) return;
+  const workspace = getSourceableWorkspaceState();
+  workspace.forms.allocation = {
+    sourceAllocationId: allocation.sourceAllocationId || "",
+    orderId: allocation.orderId || "",
+    productId: allocation.productId || "",
+    sourceId: allocation.sourceId || "",
+    availabilityId: allocation.availabilityId || "",
+    plannedQuantity: allocation.plannedQuantity ?? "",
+    note: allocation.note || ""
+  };
+  renderSourceableWorkspaceSheet();
+}
+
+async function submitSourceableWorkspaceAllocation() {
+  if (!ensureAdminSessionForSourceableWorkspace() || !hasAdminPermission("sourceable.allocate")) return;
+  const workspace = getSourceableWorkspaceState();
+  if (workspace.submitting) return;
+  const form = workspace.forms.allocation;
+  const editing = !!form.sourceAllocationId;
+  const plannedQuantity = Number(form.plannedQuantity);
+  if (!editing && (!form.orderId || !form.productId || !form.sourceId || !form.availabilityId)) {
+    showToast("Order, Product, Source, and Availability are required", "warning");
+    return;
+  }
+  if (!Number.isInteger(plannedQuantity) || plannedQuantity <= 0) {
+    showToast("plannedQuantity must be a positive integer", "warning");
+    return;
+  }
+
+  workspace.submitting = true;
+  workspace.error = "";
+  renderSourceableWorkspaceSheet();
+
+  try {
+    const params = {
+      sourceAllocationId: form.sourceAllocationId || "",
+      availabilityId: form.availabilityId || "",
+      sourceId: form.sourceId || "",
+      plannedQuantity: String(plannedQuantity),
+      note: form.note || ""
+    };
+    if (!editing) {
+      params.orderId = form.orderId || "";
+      params.productId = form.productId || "";
+    }
+    await sourceableWorkspaceApi(
+      editing ? "updateSourceAllocation" : "createSourceAllocation",
+      params
+    );
+    resetSourceableWorkspaceForm("allocation");
+    workspace.message = "Allocation saved";
+    await refreshSourceableWorkspace({ silent: true });
+  } catch (err) {
+    workspace.error = getSourceableWorkspaceReadableError(err);
+    showToast(workspace.error, "error");
+  } finally {
+    workspace.submitting = false;
+    renderSourceableWorkspaceSheet();
+  }
+}
+
+async function runSourceableWorkspaceAllocationMutation(action, sourceAllocationId, confirmation, successMessage) {
+  if (!ensureAdminSessionForSourceableWorkspace() || !hasAdminPermission("sourceable.allocate")) return;
+  if (confirmation && !window.confirm(confirmation)) return;
+  const workspace = getSourceableWorkspaceState();
+  if (workspace.submitting) return;
+  workspace.submitting = true;
+  workspace.error = "";
+  renderSourceableWorkspaceSheet();
+  try {
+    await sourceableWorkspaceApi(action, { sourceAllocationId });
+    workspace.message = successMessage;
+    await refreshSourceableWorkspace({ silent: true });
+  } catch (err) {
+    workspace.error = getSourceableWorkspaceReadableError(err);
+    showToast(workspace.error, "error");
+  } finally {
+    workspace.submitting = false;
+    renderSourceableWorkspaceSheet();
+  }
+}
+
+function confirmSourceableWorkspaceAllocation(sourceAllocationId) {
+  runSourceableWorkspaceAllocationMutation(
+    "confirmSourceAllocation",
+    sourceAllocationId,
+    "Confirm this Source Allocation?",
+    "Allocation confirmed"
+  );
+}
+
+function cancelSourceableWorkspaceAllocation(sourceAllocationId) {
+  runSourceableWorkspaceAllocationMutation(
+    "cancelSourceAllocation",
+    sourceAllocationId,
+    "Cancel this Source Allocation? Reserved quantity will not be released until explicit Release.",
+    "Allocation cancelled; release remains pending"
+  );
+}
+
+function releaseSourceableWorkspaceAllocation(sourceAllocationId) {
+  runSourceableWorkspaceAllocationMutation(
+    "releaseSourceAllocation",
+    sourceAllocationId,
+    "Release the unfulfilled reserved quantity exactly once?",
+    "Allocation released"
+  );
+}
+
+function renderSourceableWorkspaceFulfillmentTab() {
+  const workspace = getSourceableWorkspaceState();
+  const filters = workspace.filters.fulfillment;
+
+  return `
+    ${renderSourceableWorkspaceFilters("fulfillment", `
+      <div class="form-group">
+        <label for="sourceableWorkspaceFulfillmentAllocation">Allocation ID</label>
+        <input id="sourceableWorkspaceFulfillmentAllocation"
+          value="${escAttr(filters.sourceAllocationId || "")}"
+          oninput="updateSourceableWorkspaceFilter('fulfillment', 'sourceAllocationId', this.value)"
+          onkeydown="if(event.key === 'Enter') refreshSourceableWorkspace()">
+      </div>
+      <div class="form-group">
+        <label for="sourceableWorkspaceFulfillmentOrder">Order ID</label>
+        <input id="sourceableWorkspaceFulfillmentOrder"
+          value="${escAttr(filters.orderId || "")}"
+          oninput="updateSourceableWorkspaceFilter('fulfillment', 'orderId', this.value)"
+          onkeydown="if(event.key === 'Enter') refreshSourceableWorkspace()">
+      </div>
+      <div class="form-group">
+        <label for="sourceableWorkspaceFulfillmentProduct">Product ID</label>
+        <input id="sourceableWorkspaceFulfillmentProduct" list="sourceableWorkspaceFulfillmentProductOptions"
+          value="${escAttr(filters.productId || "")}"
+          oninput="updateSourceableWorkspaceFilter('fulfillment', 'productId', this.value)"
+          onkeydown="if(event.key === 'Enter') refreshSourceableWorkspace()">
+      </div>
+      <div class="form-group">
+        <label for="sourceableWorkspaceFulfillmentSource">Source</label>
+        <select id="sourceableWorkspaceFulfillmentSource"
+          onchange="updateSourceableWorkspaceFilter('fulfillment', 'sourceId', this.value); refreshSourceableWorkspace()">
+          ${renderSourceableWorkspaceSourceOptions(filters.sourceId, { emptyLabel: "All Sources" })}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="sourceableWorkspaceFulfillmentCostStatus">Cost status</label>
+        <select id="sourceableWorkspaceFulfillmentCostStatus"
+          onchange="updateSourceableWorkspaceFilter('fulfillment', 'costStatus', this.value); refreshSourceableWorkspace()">
+          ${renderSourceableWorkspaceSelectOptions(SOURCEABLE_COST_STATUSES, filters.costStatus, "All")}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="sourceableWorkspaceFulfillmentMode">Mode</label>
+        <select id="sourceableWorkspaceFulfillmentMode"
+          onchange="updateSourceableWorkspaceFilter('fulfillment', 'fulfillmentMode', this.value); refreshSourceableWorkspace()">
+          ${renderSourceableWorkspaceSelectOptions(SOURCEABLE_FULFILLMENT_MODES, filters.fulfillmentMode, "All")}
+        </select>
+      </div>
+    `)}
+    <datalist id="sourceableWorkspaceFulfillmentProductOptions">${renderSourceableWorkspaceProductDatalistOptions()}</datalist>
+    ${renderSourceableWorkspaceFulfillmentForm()}
+    <div class="sourceable-workspace-section-title">Fulfillments</div>
+    ${workspace.fulfillments.length
+      ? `<div class="sourceable-workspace-list">${workspace.fulfillments.map(renderSourceableWorkspaceFulfillmentRow).join("")}</div>`
+      : `<div class="empty-state">ยังไม่มี Fulfillment ตามเงื่อนไขนี้</div>`}
+  `;
+}
+
+function renderSourceableWorkspaceFulfillmentForm() {
+  if (!hasAdminPermission("sourceable.fulfill")) {
+    return `<div class="sourceable-workspace-warning">บัญชีนี้ดู Fulfillment ได้ แต่ยังไม่มีสิทธิ์บันทึกส่งจริงหรือยืนยันต้นทุน</div>`;
+  }
+  const form = getSourceableWorkspaceState().forms.fulfillment;
+  const selectedAllocation = getSourceableWorkspaceAllocationById(form.sourceAllocationId);
+  const costPending = form.costStatus === "COST_PENDING";
+
+  return `
+    <div class="sourceable-workspace-form">
+      <div class="sourceable-workspace-section-title">บันทึก Fulfillment</div>
+      <div class="sourceable-workspace-help">Fulfillment ไม่เปลี่ยนคลังจริง, ตัวโชว์, สถานะออเดอร์ หรือ estimatedQuantity</div>
+      <div class="sourceable-workspace-form-grid">
+        <div class="form-group">
+          <label for="sourceableWorkspaceFulfillmentFormAllocation">Allocation *</label>
+          <select id="sourceableWorkspaceFulfillmentFormAllocation"
+            onchange="updateSourceableWorkspaceForm('fulfillment', 'sourceAllocationId', this.value); renderSourceableWorkspaceSheet()">
+            ${renderSourceableWorkspaceAllocationOptions(form.sourceAllocationId)}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceFulfillmentQuantity">Fulfilled quantity *</label>
+          <input id="sourceableWorkspaceFulfillmentQuantity" type="number" min="1" step="1"
+            value="${escAttr(form.fulfilledQuantity || "")}"
+            oninput="updateSourceableWorkspaceForm('fulfillment', 'fulfilledQuantity', this.value)">
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceFulfillmentModeForm">Fulfillment mode</label>
+          <select id="sourceableWorkspaceFulfillmentModeForm"
+            onchange="updateSourceableWorkspaceForm('fulfillment', 'fulfillmentMode', this.value)">
+            ${renderSourceableWorkspaceSelectOptions(SOURCEABLE_FULFILLMENT_MODES, form.fulfillmentMode)}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceFulfillmentCostStatusForm">Cost status</label>
+          <select id="sourceableWorkspaceFulfillmentCostStatusForm"
+            onchange="updateSourceableWorkspaceForm('fulfillment', 'costStatus', this.value)">
+            ${renderSourceableWorkspaceSelectOptions(SOURCEABLE_COST_STATUSES, form.costStatus)}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceFulfillmentActualCost">Actual unit cost</label>
+          <input id="sourceableWorkspaceFulfillmentActualCost" type="number" min="0" step="0.01"
+            value="${escAttr(costPending ? "" : form.actualUnitCost || "")}"
+            ${costPending ? "disabled" : ""}
+            oninput="updateSourceableWorkspaceForm('fulfillment', 'actualUnitCost', this.value)">
+        </div>
+        <div class="form-group">
+          <label for="sourceableWorkspaceFulfillmentReference">Reference *</label>
+          <input id="sourceableWorkspaceFulfillmentReference"
+            value="${escAttr(form.reference || "")}"
+            oninput="updateSourceableWorkspaceForm('fulfillment', 'reference', this.value)">
+        </div>
+      </div>
+      ${selectedAllocation ? `
+        <div class="sourceable-workspace-warning">
+          Selected Allocation: ${esc(selectedAllocation.orderId)} · ${esc(selectedAllocation.productId)} · remaining ${formatSourceableWorkspaceQty(selectedAllocation.remainingQuantity)}
+        </div>
+      ` : ""}
+      <div class="form-group">
+        <label for="sourceableWorkspaceFulfillmentNote">${t("note", "หมายเหตุ")}</label>
+        <textarea id="sourceableWorkspaceFulfillmentNote" rows="2"
+          oninput="updateSourceableWorkspaceForm('fulfillment', 'note', this.value)">${esc(form.note || "")}</textarea>
+      </div>
+      <div class="sourceable-workspace-actions">
+        <button class="btn btn-primary" type="button"
+          ${getSourceableWorkspaceState().submitting ? "disabled" : ""}
+          onclick="submitSourceableWorkspaceFulfillment()">
+          บันทึก Fulfillment
+        </button>
+        <button class="btn btn-outline" type="button" onclick="resetSourceableWorkspaceForm('fulfillment')">
+          ${t("clear", "ล้าง")}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderSourceableWorkspaceFulfillmentRow(fulfillment) {
+  return `
+    <div class="sourceable-workspace-row">
+      <div class="sourceable-workspace-row-head">
+        <div>
+          <div class="sourceable-workspace-title">${esc(fulfillment.reference || fulfillment.sourceFulfillmentId || "-")}</div>
+          <div class="sourceable-workspace-meta">${esc(fulfillment.sourceAllocationId || "-")} · ${esc(fulfillment.orderId || "-")} · ${esc(fulfillment.productId || "-")}</div>
+        </div>
+        <div class="sourceable-workspace-badge-row">
+          ${renderSourceableWorkspaceBadge(fulfillment.costStatus || "-", fulfillment.costStatus)}
+          ${renderSourceableWorkspaceBadge(fulfillment.fulfillmentMode || "-", fulfillment.fulfillmentMode)}
+          ${fulfillment.inactiveSourceWarning ? renderSourceableWorkspaceBadge("SOURCE INACTIVE", "INACTIVE") : ""}
+        </div>
+      </div>
+      <div class="sourceable-workspace-data-grid">
+        <div class="sourceable-workspace-stat"><span>Fulfilled</span><strong>${formatSourceableWorkspaceQty(fulfillment.fulfilledQuantity)}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Actual unit cost</span><strong>${formatSourceableWorkspaceMoney(fulfillment.actualUnitCost)}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Allocation status</span><strong>${esc(fulfillment.allocationStatus || "-")}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Allocation remaining</span><strong>${formatSourceableWorkspaceQty(fulfillment.allocationRemainingQuantity)}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Source</span><strong>${esc(fulfillment.sourceName || fulfillment.sourceId || "-")}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Fulfilled at</span><strong>${esc(formatSourceableWorkspaceDate(fulfillment.fulfilledAt))}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Cost confirmed</span><strong>${esc(formatSourceableWorkspaceDate(fulfillment.costConfirmedAt))}</strong></div>
+        <div class="sourceable-workspace-stat"><span>Recorded by</span><strong>${esc(fulfillment.recordedBy || "-")}</strong></div>
+      </div>
+      <div class="sourceable-workspace-meta">${t("note", "หมายเหตุ")}: ${esc(fulfillment.note || "-")}</div>
+      ${hasAdminPermission("sourceable.fulfill") && fulfillment.costStatus === "COST_PENDING" ? `
+        <div class="sourceable-workspace-row-actions">
+          <button class="btn btn-outline" type="button"
+            onclick="openSourceableWorkspaceCostConfirmation(${toInlineJsStringLiteral(fulfillment.sourceFulfillmentId)})">
+            Confirm cost
+          </button>
+        </div>
+      ` : ""}
+    </div>
+  `;
+}
+
+async function submitSourceableWorkspaceFulfillment() {
+  if (!ensureAdminSessionForSourceableWorkspace() || !hasAdminPermission("sourceable.fulfill")) return;
+  const workspace = getSourceableWorkspaceState();
+  if (workspace.submitting) return;
+  const form = workspace.forms.fulfillment;
+  const fulfilledQuantity = Number(form.fulfilledQuantity);
+  if (!form.sourceAllocationId || !Number.isInteger(fulfilledQuantity) || fulfilledQuantity <= 0 || !form.reference) {
+    showToast("Allocation, positive fulfilled quantity, and reference are required", "warning");
+    return;
+  }
+  if (form.costStatus === "COST_CONFIRMED" && String(form.actualUnitCost || "").trim() === "") {
+    showToast("actualUnitCost is required when cost is confirmed", "warning");
+    return;
+  }
+  if (form.costStatus === "COST_PENDING" && String(form.actualUnitCost || "").trim() !== "") {
+    showToast("actualUnitCost must remain blank while cost is pending", "warning");
+    return;
+  }
+
+  workspace.submitting = true;
+  workspace.error = "";
+  renderSourceableWorkspaceSheet();
+
+  try {
+    await sourceableWorkspaceApi("createSourceFulfillment", {
+      sourceAllocationId: form.sourceAllocationId || "",
+      fulfilledQuantity: String(fulfilledQuantity),
+      fulfillmentMode: form.fulfillmentMode || "PURCHASED_BY_COMPANY",
+      costStatus: form.costStatus || "COST_PENDING",
+      actualUnitCost: form.costStatus === "COST_PENDING"
+        ? ""
+        : normalizeSourceableWorkspaceOptionalNumber(form.actualUnitCost),
+      reference: form.reference || "",
+      note: form.note || ""
+    });
+    resetSourceableWorkspaceForm("fulfillment");
+    workspace.message = "Fulfillment saved";
+    await refreshSourceableWorkspace({ silent: true });
+  } catch (err) {
+    workspace.error = getSourceableWorkspaceReadableError(err);
+    showToast(workspace.error, "error");
+  } finally {
+    workspace.submitting = false;
+    renderSourceableWorkspaceSheet();
+  }
+}
+
+function openSourceableWorkspaceCostConfirmation(sourceFulfillmentId) {
+  const fulfillment = getSourceableWorkspaceFulfillmentById(sourceFulfillmentId);
+  if (!fulfillment) return;
+  const workspace = getSourceableWorkspaceState();
+  workspace.forms.cost = {
+    sourceFulfillmentId,
+    actualUnitCost: "",
+    note: fulfillment.note || ""
+  };
+
+  confirmSheet.setAttribute("aria-labelledby", "sourceableWorkspaceCostConfirmTitle");
+  confirmSheet.innerHTML = `
+    <h3 id="sourceableWorkspaceCostConfirmTitle">Confirm Fulfillment Cost</h3>
+    <div class="sourceable-workspace-help">
+      ${esc(fulfillment.reference || fulfillment.sourceFulfillmentId)} · COST_PENDING must not be treated as zero.
+    </div>
+    <div class="form-group">
+      <label for="sourceableWorkspaceCostActualUnitCost">Actual unit cost *</label>
+      <input id="sourceableWorkspaceCostActualUnitCost" type="number" min="0" step="0.01"
+        value=""
+        oninput="updateSourceableWorkspaceForm('cost', 'actualUnitCost', this.value)">
+    </div>
+    <div class="form-group">
+      <label for="sourceableWorkspaceCostNote">${t("note", "หมายเหตุ")}</label>
+      <textarea id="sourceableWorkspaceCostNote" rows="2"
+        oninput="updateSourceableWorkspaceForm('cost', 'note', this.value)">${esc(workspace.forms.cost.note || "")}</textarea>
+    </div>
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="confirmSheet.setAttribute('aria-labelledby', 'confirmSheetTitle'); closeOverlay(confirmSheet)">
+        Cancel
+      </button>
+      <button class="btn btn-primary" type="button" onclick="submitSourceableWorkspaceCostConfirmation()">
+        Confirm Cost
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+}
+
+async function submitSourceableWorkspaceCostConfirmation() {
+  if (!ensureAdminSessionForSourceableWorkspace() || !hasAdminPermission("sourceable.fulfill")) return;
+  const workspace = getSourceableWorkspaceState();
+  if (workspace.submitting) return;
+  const form = workspace.forms.cost;
+  if (!form.sourceFulfillmentId || String(form.actualUnitCost || "").trim() === "") {
+    showToast("Actual unit cost is required", "warning");
+    return;
+  }
+
+  workspace.submitting = true;
+  try {
+    await sourceableWorkspaceApi("confirmSourceFulfillmentCost", {
+      sourceFulfillmentId: form.sourceFulfillmentId,
+      actualUnitCost: normalizeSourceableWorkspaceOptionalNumber(form.actualUnitCost),
+      note: form.note || ""
+    });
+    closeOverlay(confirmSheet);
+    confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+    workspace.message = "Fulfillment cost confirmed";
+    await refreshSourceableWorkspace({ silent: true });
+  } catch (err) {
+    workspace.error = getSourceableWorkspaceReadableError(err);
+    showToast(workspace.error, "error");
+  } finally {
+    workspace.submitting = false;
+    renderSourceableWorkspaceSheet();
+  }
+}
+
+function renderSourceableWorkspaceContent() {
+  const activeTab = getSourceableWorkspaceState().activeTab;
+  if (activeTab === "sources") return renderSourceableWorkspaceSourcesTab();
+  if (activeTab === "availability") return renderSourceableWorkspaceAvailabilityTab();
+  if (activeTab === "allocation") return renderSourceableWorkspaceAllocationTab();
+  if (activeTab === "fulfillment") return renderSourceableWorkspaceFulfillmentTab();
+  return "";
+}
+
+function renderSourceableWorkspaceSheet() {
+  const workspace = getSourceableWorkspaceState();
+  adminSourceableWorkspaceSheet.innerHTML = `
+    <div class="sourceable-workspace-panel">
+      <div class="sheet-topbar">
+        <button class="btn btn-outline sheet-nav-btn"
+          onclick="backToAdminMenuFromSourceableWorkspace()"
+          aria-label="${t("backToAdminMenu", "กลับเมนูแอดมิน")}">←</button>
+        <h3 id="adminSourceableWorkspaceSheetTitle">${t("sourceableWorkspace", "หาเพิ่ม")}</h3>
+        <button class="btn btn-outline sheet-nav-btn"
+          onclick="closeSourceableWorkspaceSheet()"
+          aria-label="${t("close", "ปิด")}">×</button>
+      </div>
+
+      <div class="sourceable-workspace-help">
+        Sourceable คือการหาเพิ่มจาก Source: Availability เป็นค่าประมาณ, Allocation คือการกันแผน, Fulfillment คือการส่งจริง และทั้งหมดไม่ใช่ Physical Stock
+      </div>
+
+      ${workspace.message ? `<div class="sourceable-workspace-success" role="status">${esc(workspace.message)}</div>` : ""}
+      ${workspace.error ? `<div class="sourceable-workspace-error" role="alert">${esc(workspace.error)}</div>` : ""}
+      ${workspace.loading ? `<div class="loading has-lottie">${renderLottieLoading(t("loadingData", "กำลังโหลดข้อมูล"))}</div>` : ""}
+
+      ${renderSourceableWorkspaceSummary()}
+      ${renderSourceableWorkspaceTabs()}
+      ${renderSourceableWorkspaceContent()}
     </div>
   `;
 }
