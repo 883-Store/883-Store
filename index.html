@@ -8494,6 +8494,7 @@ function adminPermissionAttrs(permission) {
 const DISPLAY_UI_INTEGRATION_SUITE_ID = "display_ui_integration";
 const SOURCE_MASTER_SUITE_ID = "source_master";
 const SOURCEABLE_AVAILABILITY_SUITE_ID = "sourceable_availability";
+const SOURCE_ALLOCATION_SUITE_ID = "source_allocation";
 const DISPLAY_UI_INTEGRATION_TEST_PREFIX = "TEST-UI-DISPLAY-";
 
 const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
@@ -8529,6 +8530,12 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     label: "Sourceable Availability",
     mutation: true,
     mutationDescription: "Run after Source Master. Creates isolated TEST-DIAG Product, Source, and Availability records, verifies Sourceable Availability behavior, then cleans the exact generated rows."
+  },
+  {
+    id: SOURCE_ALLOCATION_SUITE_ID,
+    label: "Source Allocation",
+    mutation: true,
+    mutationDescription: "Run after Source Master and Sourceable Availability. Creates isolated TEST-DIAG Product, Order, Source, Availability, and Allocation records, verifies reservation, release, and cleanup behavior, then cleans the exact generated rows."
   },
   {
     id: DISPLAY_UI_INTEGRATION_SUITE_ID,
