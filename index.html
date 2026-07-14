@@ -9142,6 +9142,7 @@ const SOURCE_MASTER_SUITE_ID = "source_master";
 const SOURCEABLE_AVAILABILITY_SUITE_ID = "sourceable_availability";
 const SOURCE_ALLOCATION_SUITE_ID = "source_allocation";
 const SOURCE_FULFILLMENT_SUITE_ID = "source_fulfillment";
+const BILLING_CUSTOMER_FOUNDATION_SUITE_ID = "billing_customer_foundation";
 const CUSTOMER_CONTACT_FOUNDATION_SUITE_ID = "customer_contact_foundation";
 const DISPLAY_UI_INTEGRATION_TEST_PREFIX = "TEST-UI-DISPLAY-";
 
@@ -9190,6 +9191,12 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     label: "Source Fulfillment",
     mutation: true,
     mutationDescription: "Run after Source Master, Sourceable Availability, and Source Allocation PASS. Creates isolated TEST-DIAG Product, Order, Source, Availability, Allocation, and Fulfillment records, verifies fulfillment and cost behavior, then cleans the exact generated rows."
+  },
+  {
+    id: BILLING_CUSTOMER_FOUNDATION_SUITE_ID,
+    label: "Billing Customer Foundation",
+    mutation: true,
+    mutationDescription: "Temporarily updates TEST billing settings, creates one isolated TEST-DIAG Customer, restores the original billing settings exactly, then cleans the exact generated Customer record."
   },
   {
     id: CUSTOMER_CONTACT_FOUNDATION_SUITE_ID,
