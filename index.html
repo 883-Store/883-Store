@@ -1585,6 +1585,243 @@ body[data-theme="cute"] .shop-subtitle{
     max-width:100%;
   }
 
+  #adminDashboardSheet .business-dashboard-panel{
+    display:grid;
+    gap:16px;
+    padding-bottom:max(24px, env(safe-area-inset-bottom, 0px));
+  }
+
+  #adminDashboardSheet .business-dashboard-topbar{
+    align-items:flex-start;
+    gap:12px;
+  }
+
+  #adminDashboardSheet .business-dashboard-title-wrap{
+    min-width:0;
+    display:grid;
+    gap:2px;
+  }
+
+  #adminDashboardSheet .business-dashboard-title-wrap h3{
+    margin:0;
+  }
+
+  #adminDashboardSheet .business-dashboard-subtitle,
+  #adminDashboardSheet .business-dashboard-meta,
+  #adminDashboardSheet .business-dashboard-note{
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.5;
+  }
+
+  #adminDashboardSheet .business-dashboard-toolbar,
+  #adminDashboardSheet .business-dashboard-range,
+  #adminDashboardSheet .business-dashboard-panel-actions,
+  #adminDashboardSheet .business-dashboard-row-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    align-items:center;
+  }
+
+  #adminDashboardSheet .business-dashboard-toolbar{
+    justify-content:space-between;
+    padding:12px;
+    background:#F9FAFB;
+    border:1px solid var(--ds-border, var(--border));
+    border-radius:8px;
+  }
+
+  #adminDashboardSheet .business-dashboard-range .btn.active{
+    background:var(--ds-primary, var(--primary));
+    border-color:var(--ds-primary, var(--primary));
+    color:#FFFFFF;
+  }
+
+  #adminDashboardSheet .business-dashboard-kpi-grid,
+  #adminDashboardSheet .business-dashboard-main-grid,
+  #adminDashboardSheet .business-dashboard-inventory-grid,
+  #adminDashboardSheet .business-dashboard-sourceable-grid,
+  #adminDashboardSheet .business-dashboard-pending-grid{
+    display:grid;
+    gap:12px;
+    min-width:0;
+  }
+
+  #adminDashboardSheet .business-dashboard-kpi-grid{
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+  }
+
+  #adminDashboardSheet .business-dashboard-main-grid{
+    grid-template-columns:minmax(0, 1.35fr) minmax(260px, .65fr);
+  }
+
+  #adminDashboardSheet .business-dashboard-inventory-grid,
+  #adminDashboardSheet .business-dashboard-sourceable-grid{
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+  }
+
+  #adminDashboardSheet .business-dashboard-pending-grid{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+
+  #adminDashboardSheet .business-dashboard-card,
+  #adminDashboardSheet .business-dashboard-panel-card,
+  #adminDashboardSheet .business-dashboard-list-card{
+    min-width:0;
+    background:#FFFFFF;
+    border:1px solid var(--ds-border, var(--border));
+    border-radius:8px;
+    box-shadow:var(--ds-shadow-card, var(--shadow-card));
+    color:var(--ds-neutral, var(--text));
+  }
+
+  #adminDashboardSheet .business-dashboard-card{
+    padding:14px;
+    border-top:4px solid var(--ds-primary, var(--primary));
+  }
+
+  #adminDashboardSheet .business-dashboard-panel-card,
+  #adminDashboardSheet .business-dashboard-list-card{
+    padding:14px;
+  }
+
+  #adminDashboardSheet .business-dashboard-kpi-label,
+  #adminDashboardSheet .business-dashboard-panel-title{
+    color:var(--ds-neutral, var(--text));
+    font-weight:700;
+    overflow-wrap:anywhere;
+  }
+
+  #adminDashboardSheet .business-dashboard-kpi-value{
+    margin-top:6px;
+    color:var(--ds-primary, var(--primary));
+    font-size:24px;
+    font-weight:700;
+    line-height:1.2;
+    overflow-wrap:anywhere;
+  }
+
+  #adminDashboardSheet .business-dashboard-kpi-meta{
+    margin-top:4px;
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.5;
+  }
+
+  #adminDashboardSheet .business-dashboard-section-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:10px;
+  }
+
+  #adminDashboardSheet .business-dashboard-chart{
+    display:flex;
+    align-items:flex-end;
+    gap:8px;
+    min-height:188px;
+    padding:12px 4px 4px;
+    overflow-x:auto;
+  }
+
+  #adminDashboardSheet .business-dashboard-bar-wrap{
+    flex:1 0 44px;
+    min-width:44px;
+    display:grid;
+    gap:6px;
+    align-content:end;
+    text-align:center;
+  }
+
+  #adminDashboardSheet .business-dashboard-bar{
+    width:100%;
+    min-height:8px;
+    border-radius:6px 6px 2px 2px;
+    background:linear-gradient(180deg, var(--ds-primary, var(--primary)), var(--ds-info, #3B82F6));
+  }
+
+  #adminDashboardSheet .business-dashboard-bar-value,
+  #adminDashboardSheet .business-dashboard-bar-label,
+  #adminDashboardSheet .business-dashboard-status-count{
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.35;
+  }
+
+  #adminDashboardSheet .business-dashboard-status-row,
+  #adminDashboardSheet .business-dashboard-top-product-row,
+  #adminDashboardSheet .business-dashboard-list-row{
+    display:grid;
+    gap:6px;
+    padding:10px 0;
+    border-bottom:1px solid var(--ds-border, var(--border));
+    min-width:0;
+  }
+
+  #adminDashboardSheet .business-dashboard-status-row:last-child,
+  #adminDashboardSheet .business-dashboard-top-product-row:last-child,
+  #adminDashboardSheet .business-dashboard-list-row:last-child{
+    border-bottom:0;
+  }
+
+  #adminDashboardSheet .business-dashboard-status-head,
+  #adminDashboardSheet .business-dashboard-list-head{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    min-width:0;
+  }
+
+  #adminDashboardSheet .business-dashboard-status-track{
+    height:8px;
+    overflow:hidden;
+    border-radius:999px;
+    background:#EEF2FF;
+  }
+
+  #adminDashboardSheet .business-dashboard-status-fill{
+    height:100%;
+    border-radius:inherit;
+    background:var(--ds-primary, var(--primary));
+  }
+
+  #adminDashboardSheet .business-dashboard-list-title,
+  #adminDashboardSheet .business-dashboard-product-title{
+    min-width:0;
+    font-weight:700;
+    color:var(--ds-neutral, var(--text));
+    overflow-wrap:anywhere;
+  }
+
+  #adminDashboardSheet .business-dashboard-list-meta,
+  #adminDashboardSheet .business-dashboard-product-meta{
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.45;
+    overflow-wrap:anywhere;
+  }
+
+  #adminDashboardSheet .business-dashboard-unavailable{
+    color:#92400E;
+  }
+
+  @media (max-width:1024px){
+    #adminDashboardSheet .business-dashboard-kpi-grid{
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+    }
+
+    #adminDashboardSheet .business-dashboard-main-grid,
+    #adminDashboardSheet .business-dashboard-pending-grid{
+      grid-template-columns:minmax(0, 1fr);
+    }
+
+    #adminDashboardSheet .business-dashboard-inventory-grid,
+    #adminDashboardSheet .business-dashboard-sourceable-grid{
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+    }
+  }
   @media (max-width:768px){
     #adminDeveloperDiagnosticsSheet .diagnostic-meta-grid{
       grid-template-columns:minmax(0, 1fr);
@@ -1597,7 +1834,10 @@ body[data-theme="cute"] .shop-subtitle{
     #adminSourceableWorkspaceSheet .sourceable-workspace-summary,
     #adminSourceableWorkspaceSheet .sourceable-workspace-filter-grid,
     #adminSourceableWorkspaceSheet .sourceable-workspace-form-grid,
-    #adminSourceableWorkspaceSheet .sourceable-workspace-data-grid{
+    #adminSourceableWorkspaceSheet .sourceable-workspace-data-grid,
+    #adminDashboardSheet .business-dashboard-kpi-grid,
+    #adminDashboardSheet .business-dashboard-inventory-grid,
+    #adminDashboardSheet .business-dashboard-sourceable-grid{
       grid-template-columns:minmax(0, 1fr);
     }
   }
@@ -6167,6 +6407,11 @@ Object.assign(window, {
   closeDeveloperDiagnosticsSheet,
   backToAdminMenuFromDeveloperDiagnostics,
   runDeveloperDiagnosticSuiteFromAdmin,
+  setBusinessDashboardRange,
+  refreshBusinessDashboard,
+  openBusinessDashboardPendingDeliveries,
+  openBusinessDashboardPartnerRequests,
+  openBusinessDashboardSourceableWorkspace,
   cancelAdminLogin,
   closeMainMenu,
   closeAddProduct,
@@ -6230,6 +6475,15 @@ const state = {
       dashboardTo: "",
       poQuery: "",
       poQueryDraft: ""
+    },
+    businessDashboard: {
+      range: "today",
+      loading: false,
+      requestId: 0,
+      lastRefreshAt: "",
+      datasets: {},
+      loadingKeys: {},
+      errors: {}
     },
     deliveryNote: {
       poInput: "",
@@ -6582,8 +6836,8 @@ const UI_TEXT = {
     password: "รหัสผ่าน",
     login: "เข้าสู่ระบบ",
     mainMenu: "เมนูหลัก",
-    dashboard: "แดชบอร์ดแอดมิน",
-    dashboardShort: "แดชบอร์ด",
+    dashboard: "ภาพรวมธุรกิจ",
+    dashboardShort: "ภาพรวมธุรกิจ",
     pendingOrders: "ออเดอร์รออนุมัติ",
     productCode: "รหัส",
     productGroup: "กลุ่ม",
@@ -7326,8 +7580,8 @@ const UI_TEXT = {
     password: "Password",
     login: "Login",
     mainMenu: "Main Menu",
-    dashboard: "Admin Dashboard",
-    dashboardShort: "Dashboard",
+    dashboard: "Business Dashboard",
+    dashboardShort: "Business Dashboard",
     pendingOrders: "Pending Orders",
     productCode: "Code",
     productGroup: "Group",
@@ -12547,72 +12801,872 @@ function isOrderInRange(order, fromYmd, toYmd) {
   return true;
 }
 
-function getDashboardProductCostMap() {
-  return new Map(
-    (Array.isArray(state.products) ? state.products : []).map(p => [
-      String(p.productId || "").trim(),
-      Number(p.costPrice || 0)
-    ])
-  );
+function getBusinessDashboardState() {
+  if (!state.admin.businessDashboard) {
+    state.admin.businessDashboard = {
+      range: "today",
+      loading: false,
+      requestId: 0,
+      lastRefreshAt: "",
+      datasets: {},
+      loadingKeys: {},
+      errors: {}
+    };
+  }
+  return state.admin.businessDashboard;
 }
 
-function calculateDashboardSummary(orders) {
-  const safeOrders = Array.isArray(orders) ? orders : [];
-  const productCostMap = getDashboardProductCostMap();
+const BUSINESS_DASHBOARD_RANGES = Object.freeze({
+  today: { days: 1, label: "วันนี้" },
+  seven: { days: 7, label: "7 วัน" },
+  thirty: { days: 30, label: "30 วัน" }
+});
 
-  let totalSales = 0;
-  let totalCost = 0;
-  let totalProfit = 0;
-  let totalQty = 0;
+function getBusinessDashboardRangeConfig() {
+  const dashboard = getBusinessDashboardState();
+  return BUSINESS_DASHBOARD_RANGES[dashboard.range] || BUSINESS_DASHBOARD_RANGES.today;
+}
 
-  safeOrders.forEach(order => {
-    const items = Array.isArray(order.items) ? order.items : [];
-
-    items.forEach(item => {
-      const qty = Number(item.qty || 0);
-      const sellPrice = Number(item.price || 0);
-      const fallbackCost = productCostMap.get(String(item.productId || "").trim()) || 0;
-      const costPrice = Number(
-        item.costPrice ?? item.unitCost ?? fallbackCost
-      );
-
-      const lineSales = sellPrice * qty;
-      const lineCost = costPrice * qty;
-
-      totalSales += lineSales;
-      totalCost += lineCost;
-      totalProfit += (lineSales - lineCost);
-      totalQty += qty;
-    });
-  });
-
+function getBusinessDashboardDateWindow() {
+  const config = getBusinessDashboardRangeConfig();
+  const end = new Date();
+  const start = new Date(end);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - Math.max(0, Number(config.days || 1) - 1));
   return {
-    orderCount: safeOrders.length,
-    totalQty,
-    totalSales,
-    totalCost,
-    totalProfit
+    from: toYmdLocal(start),
+    to: toYmdLocal(end),
+    label: config.label
   };
 }
 
+function isBusinessDashboardDateInRange(value, fromYmd, toYmd) {
+  if (!value) return false;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return false;
+  const ymd = toYmdLocal(parsed);
+  if (fromYmd && ymd < fromYmd) return false;
+  if (toYmd && ymd > toYmd) return false;
+  return true;
+}
+
+function setBusinessDashboardRange(range) {
+  const dashboard = getBusinessDashboardState();
+  dashboard.range = BUSINESS_DASHBOARD_RANGES[range] ? range : "today";
+  renderBusinessDashboardSheet();
+}
+
+function formatBusinessDashboardNumber(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "-";
+  return number.toLocaleString("th-TH");
+}
+
+function formatBusinessDashboardMoney(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "-";
+  return `฿${number.toLocaleString("th-TH")}`;
+}
+
+function getBusinessDashboardDataset(key, fallback = []) {
+  const dashboard = getBusinessDashboardState();
+  return Object.prototype.hasOwnProperty.call(dashboard.datasets, key)
+    ? dashboard.datasets[key]
+    : fallback;
+}
+
+function isBusinessDashboardDatasetLoading(key) {
+  return !!getBusinessDashboardState().loadingKeys[key];
+}
+
+function getBusinessDashboardDatasetError(key) {
+  return getBusinessDashboardState().errors[key] || "";
+}
+
+function hasBusinessDashboardPermission(permission) {
+  return !permission || hasAdminPermission(permission);
+}
+
+async function fetchBusinessDashboardReadAction(action, params = {}, options = {}) {
+  const form = new URLSearchParams();
+  form.append("action", action);
+  form.append("token", state.admin.token);
+  Object.keys(params || {}).forEach(key => {
+    const value = params[key];
+    if (value !== undefined && value !== null) form.append(key, String(value));
+  });
+  return await postFormAction(form, { timeout: options.timeout || 45000 });
+}
+
+function getBusinessDashboardReadableError(error) {
+  const message = String(error?.message || error || "").trim();
+  if (isPermissionDeniedError(message)) {
+    return t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้");
+  }
+  if (isAuthError(message)) {
+    return t("sessionExpiredLoginAgain", "Session หมดอายุ กรุณา login ใหม่");
+  }
+  return message || "โหลดข้อมูลไม่สำเร็จ";
+}
+
+function getBusinessDashboardDataLoaders() {
+  return [
+    {
+      key: "orders",
+      permission: "order.view",
+      loader: async () => {
+        const orders = await fetchOrders();
+        return Array.isArray(orders) ? orders : [];
+      }
+    },
+    {
+      key: "products",
+      permission: "product.view",
+      loader: async () => {
+        const products = await fetchAdminProducts();
+        state.products = sortProducts(Array.isArray(products) ? products : []);
+        return state.products;
+      }
+    },
+    {
+      key: "displayInventory",
+      permission: "stock.view",
+      loader: async () => {
+        const result = await fetchAllDisplayInventoryRows();
+        return result.rows || [];
+      }
+    },
+    {
+      key: "pendingDeliveries",
+      permission: "delivery.view",
+      loader: async () => await fetchPendingDeliveries()
+    },
+    {
+      key: "partnerRequests",
+      permission: "partner_request.view",
+      loader: async () => {
+        const json = await fetchBusinessDashboardReadAction("listPartnerRequests", {
+          status: "new",
+          limit: "5",
+          offset: "0"
+        });
+        return {
+          items: Array.isArray(json.data?.requests) ? json.data.requests : [],
+          total: Number(json.data?.total || 0)
+        };
+      }
+    },
+    {
+      key: "sources",
+      permission: "source.view",
+      loader: async () => {
+        const json = await fetchBusinessDashboardReadAction("listSources", {
+          sourceType: "SUPPLIER",
+          active: "all"
+        });
+        return Array.isArray(json.data?.sources) ? json.data.sources : [];
+      }
+    },
+    {
+      key: "sourceableAvailability",
+      permission: "sourceable.view",
+      loader: async () => {
+        const json = await fetchBusinessDashboardReadAction("listSourceableAvailability", {
+          active: "all"
+        });
+        return Array.isArray(json.data?.availability)
+          ? json.data.availability
+          : Array.isArray(json.data?.items)
+            ? json.data.items
+            : [];
+      }
+    },
+    {
+      key: "sourceAllocations",
+      permission: "sourceable.view",
+      loader: async () => {
+        const json = await fetchBusinessDashboardReadAction("listSourceAllocations");
+        return Array.isArray(json.data?.allocations) ? json.data.allocations : [];
+      }
+    },
+    {
+      key: "sourceFulfillments",
+      permission: "sourceable.view",
+      loader: async () => {
+        const json = await fetchBusinessDashboardReadAction("listSourceFulfillments", {
+          costStatus: "COST_PENDING"
+        });
+        return Array.isArray(json.data?.fulfillments) ? json.data.fulfillments : [];
+      }
+    },
+    {
+      key: "allocationSummary",
+      permission: "sourceable.view",
+      loader: async () => {
+        const json = await fetchBusinessDashboardReadAction("getSourceAllocationSummary");
+        return json.data || null;
+      }
+    },
+    {
+      key: "fulfillmentSummary",
+      permission: "sourceable.view",
+      loader: async () => {
+        const json = await fetchBusinessDashboardReadAction("getSourceFulfillmentSummary");
+        return json.data || null;
+      }
+    }
+  ];
+}
+
+async function refreshBusinessDashboard() {
+  const dashboard = getBusinessDashboardState();
+  if (dashboard.loading) return;
+  if (!ensureAdminUiContext()) return;
+
+  dashboard.loading = true;
+  dashboard.requestId += 1;
+  dashboard.errors = {};
+  dashboard.loadingKeys = {};
+  const requestId = dashboard.requestId;
+  const loaders = getBusinessDashboardDataLoaders();
+
+  loaders.forEach(def => {
+    if (hasBusinessDashboardPermission(def.permission)) {
+      dashboard.loadingKeys[def.key] = true;
+    } else {
+      delete dashboard.datasets[def.key];
+    }
+  });
+  renderBusinessDashboardSheet();
+
+  await Promise.allSettled(loaders.map(async def => {
+    if (!hasBusinessDashboardPermission(def.permission)) return;
+    try {
+      const data = await def.loader();
+      if (requestId !== dashboard.requestId) return;
+      dashboard.datasets[def.key] = data;
+      dashboard.errors[def.key] = "";
+    } catch (err) {
+      if (requestId !== dashboard.requestId) return;
+      dashboard.errors[def.key] = getBusinessDashboardReadableError(err);
+      delete dashboard.datasets[def.key];
+      if (isAuthError(err?.message)) {
+        exitAdmin({ silent: true });
+      }
+    } finally {
+      if (requestId === dashboard.requestId) {
+        dashboard.loadingKeys[def.key] = false;
+        renderBusinessDashboardSheet();
+      }
+    }
+  }));
+
+  if (requestId !== dashboard.requestId) return;
+  dashboard.loading = false;
+  dashboard.lastRefreshAt = new Date().toISOString();
+  renderBusinessDashboardSheet();
+}
+
+function isBusinessOrderStatus(status) {
+  return ["APPROVED"].includes(String(status || "").trim().toUpperCase());
+}
+
+function isPendingOrderStatus(status) {
+  return String(status || "").trim().toUpperCase() === "PENDING";
+}
+
+function hasSafeOrderTotal(order) {
+  if (!Object.prototype.hasOwnProperty.call(order || {}, "total")) return false;
+  const number = Number(order.total);
+  return Number.isFinite(number);
+}
+
+function getBusinessDashboardModel() {
+  const windowRange = getBusinessDashboardDateWindow();
+  const orders = Array.isArray(getBusinessDashboardDataset("orders"))
+    ? getBusinessDashboardDataset("orders")
+    : [];
+  const products = Array.isArray(getBusinessDashboardDataset("products"))
+    ? getBusinessDashboardDataset("products")
+    : [];
+  const displayRows = Array.isArray(getBusinessDashboardDataset("displayInventory"))
+    ? getBusinessDashboardDataset("displayInventory")
+    : [];
+  const deliveries = Array.isArray(getBusinessDashboardDataset("pendingDeliveries"))
+    ? getBusinessDashboardDataset("pendingDeliveries")
+    : [];
+  const partnerRequests = getBusinessDashboardDataset("partnerRequests", { items: [], total: 0 }) || { items: [], total: 0 };
+  const sources = Array.isArray(getBusinessDashboardDataset("sources"))
+    ? getBusinessDashboardDataset("sources")
+    : [];
+  const availability = Array.isArray(getBusinessDashboardDataset("sourceableAvailability"))
+    ? getBusinessDashboardDataset("sourceableAvailability")
+    : [];
+  const allocations = Array.isArray(getBusinessDashboardDataset("sourceAllocations"))
+    ? getBusinessDashboardDataset("sourceAllocations")
+    : [];
+  const fulfillments = Array.isArray(getBusinessDashboardDataset("sourceFulfillments"))
+    ? getBusinessDashboardDataset("sourceFulfillments")
+    : [];
+  const allocationSummary = getBusinessDashboardDataset("allocationSummary", null);
+  const fulfillmentSummary = getBusinessDashboardDataset("fulfillmentSummary", null);
+
+  const periodOrders = orders.filter(order =>
+    isBusinessDashboardDateInRange(getOrderDateValue(order), windowRange.from, windowRange.to)
+  );
+  const approvedPeriodOrders = periodOrders.filter(order => isBusinessOrderStatus(order.status));
+  const revenueSupported = approvedPeriodOrders.every(hasSafeOrderTotal);
+  const periodRevenue = revenueSupported
+    ? approvedPeriodOrders.reduce((total, order) => total + Number(order.total || 0), 0)
+    : null;
+  const pendingOrders = orders.filter(order => isPendingOrderStatus(order.status));
+  const productMap = new Map(products.map(product => [
+    String(product.productId || "").trim(),
+    product
+  ]));
+  const mainWarehouseUnits = products.reduce(
+    (total, product) => total + (Number(product.stock) || 0),
+    0
+  );
+  const outOfStockProducts = products.filter(product => Number(product.stock || 0) <= 0).length;
+  const lowStockProducts = products.filter(product => {
+    const stock = Number(product.stock || 0);
+    return stock > 0 && stock <= 5;
+  }).length;
+  const displayUnits = displayRows.reduce(
+    (total, row) => total + (Number(row.quantity || 0) || 0),
+    0
+  );
+  const openDeliveries = deliveries.filter(item =>
+    String(item.status || "").trim().toUpperCase() !== "CLOSED"
+  );
+  const activeSources = sources.filter(source => source.active === true).length;
+  const activeAvailability = availability.filter(item => item.active === true);
+  const staleAvailability = activeAvailability.filter(item =>
+    String(item.freshnessStatus || "").toUpperCase() === "STALE"
+  );
+  const sourceableEstimate = activeAvailability.reduce(
+    (total, item) => total + (Number(item.estimatedQuantity || 0) || 0),
+    0
+  );
+  const activeAllocationRows = allocations.filter(item => [
+    "PLANNED",
+    "CONFIRMED",
+    "NEEDS_RECONFIRM",
+    "PARTIALLY_FULFILLED"
+  ].includes(String(item.status || "").toUpperCase()));
+  const pendingCostCount = fulfillmentSummary && Number.isFinite(Number(fulfillmentSummary.pendingCostCount))
+    ? Number(fulfillmentSummary.pendingCostCount)
+    : fulfillments.length;
+
+  return {
+    windowRange,
+    orders,
+    periodOrders,
+    approvedPeriodOrders,
+    revenueSupported,
+    periodRevenue,
+    pendingOrders,
+    products,
+    productMap,
+    mainWarehouseUnits,
+    outOfStockProducts,
+    lowStockProducts,
+    displayRows,
+    displayUnits,
+    deliveries,
+    openDeliveries,
+    partnerRequests,
+    sources,
+    activeSources,
+    availability,
+    activeAvailability,
+    staleAvailability,
+    sourceableEstimate,
+    allocations,
+    activeAllocationRows,
+    allocationSummary,
+    fulfillments,
+    fulfillmentSummary,
+    pendingCostCount
+  };
+}
+
+function isBusinessDashboardLoadingAny(keys) {
+  return keys.some(key => isBusinessDashboardDatasetLoading(key));
+}
+
+function getBusinessDashboardFirstError(keys) {
+  return keys.map(getBusinessDashboardDatasetError).find(Boolean) || "";
+}
+
+function renderBusinessDashboardKpiCard(config) {
+  if (config.permission && !hasAdminPermission(config.permission)) return "";
+  const keys = config.keys || [];
+  const loading = isBusinessDashboardLoadingAny(keys);
+  const error = getBusinessDashboardFirstError(keys);
+  const value = loading
+    ? "..."
+    : error
+      ? "ไม่พร้อม"
+      : config.value;
+  const meta = loading
+    ? "กำลังโหลด"
+    : error
+      ? error
+      : config.meta;
+
+  return `
+    <div class="business-dashboard-card">
+      <div class="business-dashboard-kpi-label">${esc(config.label)}</div>
+      <div class="business-dashboard-kpi-value ${error ? "business-dashboard-unavailable" : ""}">${esc(value)}</div>
+      <div class="business-dashboard-kpi-meta">${esc(meta || "")}</div>
+      ${config.badge ? `<span class="status-badge compact ${escAttr(config.badgeClass || "status-neutral")}">${esc(config.badge)}</span>` : ""}
+    </div>
+  `;
+}
+
+function renderBusinessDashboardKpis(model) {
+  const revenueValue = model.revenueSupported
+    ? formatBusinessDashboardMoney(model.periodRevenue || 0)
+    : "ไม่พร้อม";
+  const revenueMeta = model.revenueSupported
+    ? `${model.windowRange.label} | APPROVED ${formatBusinessDashboardNumber(model.approvedPeriodOrders.length)} orders`
+    : "Order total ไม่ครบ จึงไม่คำนวณยอดขาย";
+
+  return `
+    <div class="business-dashboard-kpi-grid">
+      ${renderBusinessDashboardKpiCard({
+        permission: "order.view",
+        keys: ["orders"],
+        label: "ยอดขายตามช่วง",
+        value: revenueValue,
+        meta: revenueMeta,
+        badge: "Period",
+        badgeClass: "status-approved"
+      })}
+      ${renderBusinessDashboardKpiCard({
+        permission: "order.view",
+        keys: ["orders"],
+        label: "Order รอดำเนินการ",
+        value: formatBusinessDashboardNumber(model.pendingOrders.length),
+        meta: "สถานะ PENDING ปัจจุบัน",
+        badge: "Current",
+        badgeClass: "status-pending"
+      })}
+      ${renderBusinessDashboardKpiCard({
+        permission: "product.view",
+        keys: ["products"],
+        label: "สินค้าในคลังหลัก",
+        value: formatBusinessDashboardNumber(model.mainWarehouseUnits),
+        meta: "คลังหลัก | Products.stock",
+        badge: "Physical",
+        badgeClass: "status-approved"
+      })}
+      ${renderBusinessDashboardKpiCard({
+        permission: "stock.view",
+        keys: ["displayInventory"],
+        label: "สินค้าตัวโชว์",
+        value: formatBusinessDashboardNumber(model.displayUnits),
+        meta: "Display balance คู่ค้า/สินค้า",
+        badge: "Physical",
+        badgeClass: "status-approved"
+      })}
+      ${renderBusinessDashboardKpiCard({
+        permission: "delivery.view",
+        keys: ["pendingDeliveries"],
+        label: "งานรอจัดส่ง",
+        value: formatBusinessDashboardNumber(model.openDeliveries.length),
+        meta: "รายการที่ยังไม่ปิดส่ง",
+        badge: "Current",
+        badgeClass: "status-pending"
+      })}
+      ${renderBusinessDashboardKpiCard({
+        permission: "sourceable.view",
+        keys: ["fulfillmentSummary", "sourceFulfillments"],
+        label: "รายการรอยืนยันต้นทุน",
+        value: formatBusinessDashboardNumber(model.pendingCostCount),
+        meta: "COST_PENDING ไม่ถูกนับเป็นศูนย์บาท",
+        badge: "Cost",
+        badgeClass: "status-pending"
+      })}
+    </div>
+  `;
+}
+
+function renderBusinessDashboardPanel(title, keys, permission, contentHtml, emptyMessage = "ยังไม่มีข้อมูล") {
+  if (permission && !hasAdminPermission(permission)) return "";
+  const loading = isBusinessDashboardLoadingAny(keys || []);
+  const error = getBusinessDashboardFirstError(keys || []);
+  return `
+    <div class="business-dashboard-panel-card">
+      <div class="business-dashboard-section-head">
+        <div class="business-dashboard-panel-title">${esc(title)}</div>
+      </div>
+      ${loading ? `<div class="loading has-lottie">${renderLottieLoading(t("loadingData", "กำลังโหลดข้อมูล"), { size: 72 })}</div>` : ""}
+      ${!loading && error ? `<div class="empty-state business-dashboard-unavailable">${esc(error)}</div>` : ""}
+      ${!loading && !error ? (contentHtml || `<div class="empty-state">${esc(emptyMessage)}</div>`) : ""}
+    </div>
+  `;
+}
+
+function getBusinessDashboardTrendPoints(model) {
+  const days = getBusinessDashboardRangeConfig().days;
+  const end = new Date();
+  const points = [];
+  for (let offset = Math.max(0, days - 1); offset >= 0; offset--) {
+    const date = new Date(end);
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() - offset);
+    const ymd = toYmdLocal(date);
+    const dayOrders = model.approvedPeriodOrders.filter(order => {
+      const raw = getOrderDateValue(order);
+      if (!raw) return false;
+      const parsed = new Date(raw);
+      return !Number.isNaN(parsed.getTime()) && toYmdLocal(parsed) === ymd;
+    });
+    points.push({
+      ymd,
+      label: date.toLocaleDateString("th-TH", { day: "2-digit", month: "2-digit" }),
+      orderCount: dayOrders.length,
+      revenue: model.revenueSupported
+        ? dayOrders.reduce((total, order) => total + Number(order.total || 0), 0)
+        : null
+    });
+  }
+  return points;
+}
+
+function renderBusinessDashboardTrend(model) {
+  const points = getBusinessDashboardTrendPoints(model);
+  const useRevenue = model.revenueSupported;
+  const values = points.map(point => useRevenue ? point.revenue : point.orderCount);
+  const max = Math.max(...values, 1);
+  const html = points.map(point => {
+    const value = useRevenue ? point.revenue : point.orderCount;
+    const height = Math.max(8, Math.round((Number(value || 0) / max) * 150));
+    return `
+      <div class="business-dashboard-bar-wrap" title="${escAttr(point.label)}">
+        <div class="business-dashboard-bar-value">${esc(useRevenue ? formatBusinessDashboardMoney(value) : formatBusinessDashboardNumber(value))}</div>
+        <div class="business-dashboard-bar" style="height:${height}px"></div>
+        <div class="business-dashboard-bar-label">${esc(point.label)}</div>
+      </div>
+    `;
+  }).join("");
+
+  return renderBusinessDashboardPanel(
+    useRevenue ? "Revenue trend" : "Order count trend",
+    ["orders"],
+    "order.view",
+    points.some(point => (useRevenue ? point.revenue : point.orderCount) > 0)
+      ? `<div class="business-dashboard-note">${esc(model.windowRange.label)} | APPROVED orders only</div><div class="business-dashboard-chart">${html}</div>`
+      : `<div class="empty-state">ยังไม่มี Order APPROVED ในช่วงนี้</div>`
+  );
+}
+
+function renderBusinessDashboardStatusPanel(model) {
+  const statuses = ["PENDING", "APPROVED", "REJECTED"];
+  const counts = statuses.map(status => ({
+    status,
+    count: model.periodOrders.filter(order =>
+      String(order.status || "").trim().toUpperCase() === status
+    ).length
+  }));
+  const total = counts.reduce((sum, item) => sum + item.count, 0);
+  const content = counts.map(item => {
+    const pct = total ? Math.round((item.count / total) * 100) : 0;
+    return `
+      <div class="business-dashboard-status-row">
+        <div class="business-dashboard-status-head">
+          <span class="status-badge compact ${getAdminOrderStatusClass(item.status)}">${esc(getAdminOrderStatusLabel(item.status))}</span>
+          <span class="business-dashboard-status-count">${formatBusinessDashboardNumber(item.count)} | ${pct}%</span>
+        </div>
+        <div class="business-dashboard-status-track">
+          <div class="business-dashboard-status-fill" style="width:${pct}%"></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  return renderBusinessDashboardPanel(
+    "Order status",
+    ["orders"],
+    "order.view",
+    total ? content : `<div class="empty-state">ยังไม่มี Order ในช่วงนี้</div>`
+  );
+}
+
+function getBusinessDashboardTopProducts(model) {
+  const top = new Map();
+  model.approvedPeriodOrders.forEach(order => {
+    const items = Array.isArray(order.items) ? order.items : [];
+    items.forEach(item => {
+      const productId = String(item.productId || "").trim();
+      const qty = Number(item.qty || 0);
+      if (!productId || !Number.isFinite(qty) || qty <= 0) return;
+      const current = top.get(productId) || { productId, qty: 0 };
+      current.qty += qty;
+      top.set(productId, current);
+    });
+  });
+  return Array.from(top.values())
+    .sort((a, b) => b.qty - a.qty || a.productId.localeCompare(b.productId))
+    .slice(0, 5)
+    .map(item => ({
+      ...item,
+      productName: model.productMap.get(item.productId)?.name || ""
+    }));
+}
+
+function renderBusinessDashboardTopProducts(model) {
+  const rows = getBusinessDashboardTopProducts(model);
+  const content = rows.map(row => `
+    <div class="business-dashboard-top-product-row">
+      <div class="business-dashboard-product-title">${esc(row.productName || row.productId)}</div>
+      <div class="business-dashboard-product-meta">${esc(row.productId)} | จำนวนที่สั่ง ${formatBusinessDashboardNumber(row.qty)}</div>
+    </div>
+  `).join("");
+
+  return renderBusinessDashboardPanel(
+    "Top products",
+    ["orders"],
+    "order.view",
+    content || `<div class="empty-state">Order item data ไม่พอสำหรับจัดอันดับสินค้าในช่วงนี้</div>`
+  );
+}
+
+function renderBusinessDashboardMiniMetric(label, value, meta) {
+  return `
+    <div class="business-dashboard-card">
+      <div class="business-dashboard-kpi-label">${esc(label)}</div>
+      <div class="business-dashboard-kpi-value">${formatBusinessDashboardNumber(value)}</div>
+      <div class="business-dashboard-kpi-meta">${esc(meta)}</div>
+    </div>
+  `;
+}
+
+function renderBusinessDashboardInventoryPanel(model) {
+  const content = `
+    <div class="business-dashboard-inventory-grid">
+      ${hasAdminPermission("product.view") ? renderBusinessDashboardMiniMetric("คลังหลัก", model.mainWarehouseUnits, "Products.stock") : ""}
+      ${hasAdminPermission("stock.view") ? renderBusinessDashboardMiniMetric("Display", model.displayUnits, "Partner/Product balance") : ""}
+      ${hasAdminPermission("product.view") ? renderBusinessDashboardMiniMetric("คงเหลือ 1-5", model.lowStockProducts, "เกณฑ์ MVP จาก stock") : ""}
+      ${hasAdminPermission("product.view") ? renderBusinessDashboardMiniMetric("หมดสต๊อก", model.outOfStockProducts, "stock <= 0") : ""}
+    </div>
+    <div class="business-dashboard-note">Sourceable แยกจาก Physical Stock และไม่ถูกรวมในคลังหลักหรือ Display</div>
+  `;
+
+  return renderBusinessDashboardPanel(
+    "Inventory snapshot",
+    ["products", "displayInventory"],
+    null,
+    content
+  );
+}
+
+function renderBusinessDashboardPendingList(title, keys, permission, rows, actionHtml) {
+  const content = rows.length
+    ? `
+        ${rows.join("")}
+        ${actionHtml ? `<div class="business-dashboard-row-actions">${actionHtml}</div>` : ""}
+      `
+    : `<div class="empty-state">ยังไม่มีรายการ</div>`;
+  return renderBusinessDashboardPanel(title, keys, permission, content);
+}
+
+function renderBusinessDashboardPendingWork(model) {
+  const deliveryRows = model.openDeliveries.slice(0, 5).map(item => `
+    <div class="business-dashboard-list-row">
+      <div class="business-dashboard-list-head">
+        <div class="business-dashboard-list-title">${esc(item.orderId || item.pendingId || "-")}</div>
+        <span class="status-badge compact status-pending">${esc(item.status || "OPEN")}</span>
+      </div>
+      <div class="business-dashboard-list-meta">PO ${esc(item.poNumber || "-")} | ${esc(item.productId || "-")} | Qty ${formatBusinessDashboardNumber(item.qty || item.orderedQty || 0)}</div>
+    </div>
+  `);
+  const requestItems = Array.isArray(model.partnerRequests.items) ? model.partnerRequests.items : [];
+  const partnerRequestRows = requestItems.slice(0, 5).map(item => `
+    <div class="business-dashboard-list-row">
+      <div class="business-dashboard-list-head">
+        <div class="business-dashboard-list-title">${esc(item.partnerNameSnapshot || item.partnerId || item.requestId || "-")}</div>
+        <span class="status-badge compact status-pending">${esc(item.status || "new")}</span>
+      </div>
+      <div class="business-dashboard-list-meta">${esc(item.requestId || "-")} | ${esc(item.contactName || item.contactPhone || "-")}</div>
+    </div>
+  `);
+  const allocationRows = model.activeAllocationRows.slice(0, 5).map(item => `
+    <div class="business-dashboard-list-row">
+      <div class="business-dashboard-list-head">
+        <div class="business-dashboard-list-title">${esc(item.orderId || item.sourceAllocationId || "-")}</div>
+        <span class="status-badge compact ${sourceableWorkspaceStatusClass(item.status)}">${esc(item.status || "-")}</span>
+      </div>
+      <div class="business-dashboard-list-meta">${esc(item.productName || item.productId || "-")} | ${esc(item.sourceName || item.sourceId || "-")} | Remaining ${formatBusinessDashboardNumber(item.remainingQuantity)}</div>
+    </div>
+  `);
+  const fulfillmentRows = model.fulfillments.slice(0, 5).map(item => `
+    <div class="business-dashboard-list-row">
+      <div class="business-dashboard-list-head">
+        <div class="business-dashboard-list-title">${esc(item.reference || item.sourceFulfillmentId || "-")}</div>
+        <span class="status-badge compact status-pending">COST_PENDING</span>
+      </div>
+      <div class="business-dashboard-list-meta">${esc(item.orderId || "-")} | ${esc(item.productId || "-")} | Qty ${formatBusinessDashboardNumber(item.fulfilledQuantity)}</div>
+    </div>
+  `);
+  const staleRows = model.staleAvailability.slice(0, 5).map(item => `
+    <div class="business-dashboard-list-row">
+      <div class="business-dashboard-list-head">
+        <div class="business-dashboard-list-title">${esc(item.productName || item.productId || "-")}</div>
+        <span class="status-badge compact status-pending">STALE</span>
+      </div>
+      <div class="business-dashboard-list-meta">${esc(item.sourceName || item.sourceId || "-")} | Estimate ${formatBusinessDashboardNumber(item.estimatedQuantity)} | Age ${formatBusinessDashboardNumber(item.ageDays)} days</div>
+    </div>
+  `);
+
+  return `
+    <div class="business-dashboard-pending-grid">
+      ${renderBusinessDashboardPendingList(
+        "งานรอจัดส่ง",
+        ["pendingDeliveries"],
+        "delivery.view",
+        deliveryRows,
+        `<button class="btn btn-outline" type="button" onclick="openBusinessDashboardPendingDeliveries()">ดูทั้งหมด</button>`
+      )}
+      ${renderBusinessDashboardPendingList(
+        "คำขอคู่ค้ารอตรวจ",
+        ["partnerRequests"],
+        "partner_request.view",
+        partnerRequestRows,
+        `<button class="btn btn-outline" type="button" onclick="openBusinessDashboardPartnerRequests()">ดูทั้งหมด</button>`
+      )}
+      ${renderBusinessDashboardPendingList(
+        "Allocation ที่ยังเหลือ",
+        ["sourceAllocations"],
+        "sourceable.view",
+        allocationRows,
+        `<button class="btn btn-outline" type="button" onclick="openBusinessDashboardSourceableWorkspace()">ดูทั้งหมด</button>`
+      )}
+      ${renderBusinessDashboardPendingList(
+        "Fulfillment รอยืนยันต้นทุน",
+        ["sourceFulfillments"],
+        "sourceable.view",
+        fulfillmentRows,
+        `<button class="btn btn-outline" type="button" onclick="openBusinessDashboardSourceableWorkspace()">ดูทั้งหมด</button>`
+      )}
+      ${renderBusinessDashboardPendingList(
+        "Sourceable ข้อมูลเก่า",
+        ["sourceableAvailability"],
+        "sourceable.view",
+        staleRows,
+        `<button class="btn btn-outline" type="button" onclick="openBusinessDashboardSourceableWorkspace()">ดูทั้งหมด</button>`
+      )}
+    </div>
+  `;
+}
+
+function renderBusinessDashboardSourceablePanel(model) {
+  const allocationRemaining = model.allocationSummary
+    ? Number(model.allocationSummary.remainingTotal || 0)
+    : model.activeAllocationRows.reduce((total, item) => total + Number(item.remainingQuantity || 0), 0);
+  const content = `
+    <div class="business-dashboard-sourceable-grid">
+      ${hasAdminPermission("source.view") ? renderBusinessDashboardMiniMetric("Active Sources", model.activeSources, "Supplier Sources") : ""}
+      ${renderBusinessDashboardMiniMetric("Active Availability", model.activeAvailability.length, "Rows count")}
+      ${renderBusinessDashboardMiniMetric("STALE", model.staleAvailability.length, "ยังนับได้ แต่ต้องระวัง")}
+      ${renderBusinessDashboardMiniMetric("หาเพิ่มได้โดยประมาณ", model.sourceableEstimate, "ไม่ใช่ Physical Stock")}
+      ${renderBusinessDashboardMiniMetric("Allocation เหลือ", allocationRemaining, "Backend summary")}
+      ${renderBusinessDashboardMiniMetric("COST_PENDING", model.pendingCostCount, "ไม่คิดเป็น 0 บาท")}
+    </div>
+    <div class="business-dashboard-note">Sourceable เป็นการหาเพิ่มโดยประมาณ ไม่ใช่สินค้าพร้อมส่ง และไม่รวมกับคลังหลักหรือ Display</div>
+  `;
+
+  return renderBusinessDashboardPanel(
+    "Sourceable snapshot",
+    ["sources", "sourceableAvailability", "allocationSummary", "fulfillmentSummary"],
+    "sourceable.view",
+    content
+  );
+}
+
+function renderBusinessDashboardSheet() {
+  const dashboard = getBusinessDashboardState();
+  const model = getBusinessDashboardModel();
+  const role = state.admin.role || "-";
+  const lastRefresh = dashboard.lastRefreshAt
+    ? formatThaiDate(dashboard.lastRefreshAt)
+    : "ยังไม่อัปเดต";
+  const loading = dashboard.loading;
+
+  adminDashboardSheet.innerHTML = `
+    <div class="business-dashboard-panel">
+      <div class="admin-sheet-topbar business-dashboard-topbar">
+        <button class="btn btn-outline back-btn"
+          onclick="backToAdminMainMenu()">
+          ${t("backToMenu", "← กลับเมนู")}
+        </button>
+        <div class="business-dashboard-title-wrap">
+          <h3 id="adminDashboardSheetTitle">ภาพรวมธุรกิจ</h3>
+          <div class="business-dashboard-subtitle">Executive Dashboard MVP | Read-only</div>
+        </div>
+      </div>
+
+      <div class="business-dashboard-toolbar">
+        <div class="business-dashboard-range" role="group" aria-label="Dashboard date range">
+          ${Object.keys(BUSINESS_DASHBOARD_RANGES).map(range => `
+            <button class="btn btn-outline ${dashboard.range === range ? "active" : ""}" type="button"
+              onclick="setBusinessDashboardRange('${escAttr(range)}')">
+              ${esc(BUSINESS_DASHBOARD_RANGES[range].label)}
+            </button>
+          `).join("")}
+        </div>
+        <div class="business-dashboard-panel-actions">
+          <span class="status-badge compact status-approved">TEST</span>
+          <span class="status-badge compact status-neutral">Role: ${esc(role)}</span>
+          <button class="btn btn-primary" type="button" ${loading ? "disabled" : ""}
+            onclick="refreshBusinessDashboard()">
+            รีเฟรช
+          </button>
+        </div>
+        <div class="business-dashboard-meta">ช่วงข้อมูล: ${esc(model.windowRange.label)} | อัปเดตล่าสุด: ${esc(lastRefresh)}</div>
+      </div>
+
+      ${renderBusinessDashboardKpis(model)}
+
+      <div class="business-dashboard-main-grid">
+        ${renderBusinessDashboardTrend(model)}
+        ${renderBusinessDashboardStatusPanel(model)}
+      </div>
+
+      ${renderBusinessDashboardTopProducts(model)}
+      ${renderBusinessDashboardInventoryPanel(model)}
+      ${renderBusinessDashboardSourceablePanel(model)}
+      ${renderBusinessDashboardPendingWork(model)}
+    </div>
+  `;
+}
+
+function openBusinessDashboardPendingDeliveries() {
+  closeOverlay(adminDashboardSheet);
+  openPendingDeliverySheet();
+}
+
+function openBusinessDashboardPartnerRequests() {
+  closeOverlay(adminDashboardSheet);
+  openPartnerRequestsSheet();
+}
+
+function openBusinessDashboardSourceableWorkspace() {
+  closeOverlay(adminDashboardSheet);
+  openSourceableWorkspaceSheet();
+}
+
 function applyAdminDashboardRange() {
-  const from = document.getElementById("dashboardDateFrom")?.value || "";
-  const to = document.getElementById("dashboardDateTo")?.value || "";
-
-  state.admin.filters.dashboardFrom = from;
-  state.admin.filters.dashboardTo = to;
-
-  openAdminDashboard("SUMMARY", true);
+  setBusinessDashboardRange(getBusinessDashboardState().range || "today");
+  refreshBusinessDashboard();
 }
 
 function resetAdminDashboardRange() {
-  const today = toYmdLocal(new Date());
-  const firstDay = today.slice(0, 8) + "01";
-
-  state.admin.filters.dashboardFrom = firstDay;
-  state.admin.filters.dashboardTo = today;
-
-  openAdminDashboard("SUMMARY", true);
+  setBusinessDashboardRange("today");
+  refreshBusinessDashboard();
 }
 
 function getAdminOrderPoQuery() {
@@ -12746,52 +13800,22 @@ async function openAdminDashboard(mode = "SUMMARY", force = false) {
   closeOverlay(adminStockSheet);
   state.search = "";
 
-  const today = toYmdLocal(new Date());
-  const firstDay = today.slice(0, 8) + "01";
-
-  if (!state.admin.filters.dashboardFrom) {
-    state.admin.filters.dashboardFrom = firstDay;
-  }
-  if (!state.admin.filters.dashboardTo) {
-    state.admin.filters.dashboardTo = today;
+  if (mode !== "PENDING") {
+    renderBusinessDashboardSheet();
+    openOverlay(adminDashboardSheet);
+    refreshBusinessDashboard();
+    return;
   }
 
   adminDashboardSheet.innerHTML = `
-    <h3 id="adminDashboardSheetTitle">${t("dashboard", "แดชบอร์ดแอดมิน")}</h3>
+    <h3 id="adminDashboardSheetTitle">${t("pendingOrders", "ออร์เดอร์รออนุมัติ")}</h3>
     <div class="loading has-lottie">${renderLottieLoading(t("loadingData", "กำลังโหลดข้อมูล"))}</div>
   `;
 
   openOverlay(adminDashboardSheet);
 
   try {
-    if (!Array.isArray(state.products) || state.products.length === 0) {
-      await refreshProducts();
-    }
-
     state.admin.orders = await fetchOrders();
-
-    const from = state.admin.filters.dashboardFrom || "";
-    const to = state.admin.filters.dashboardTo || "";
-
-    const approvedOrders = (Array.isArray(state.admin.orders)
-      ? state.admin.orders
-      : []
-    ).filter(o => {
-      const status = String(o.status || "").toUpperCase();
-      return status === "APPROVED" &&
-        isOrderInRange(o, from, to) &&
-        orderMatchesAdminPoQuery(o);
-    });
-
-   console.log(
-  "APPROVED ORDERS",
-  approvedOrders.map(o => ({
-    orderId: o.orderId,
-    status: o.status,
-    createdAt: o.createdAt
-  }))
-);
-
     const pendingOrders = (Array.isArray(state.admin.orders)
       ? state.admin.orders
       : []
@@ -12799,57 +13823,7 @@ async function openAdminDashboard(mode = "SUMMARY", force = false) {
       String(o.status || "").toUpperCase() === "PENDING" &&
       orderMatchesAdminPoQuery(o)
     );
-
-    const pendingCount = (Array.isArray(state.admin.orders)
-      ? state.admin.orders
-      : []
-    ).filter(o => String(o.status || "").toUpperCase() === "PENDING").length;
-
     const duplicatePoMap = getDuplicatePoOrderMap();
-    const summary = calculateDashboardSummary(approvedOrders);
-
-    if (mode === "PENDING") {
-      adminDashboardSheet.innerHTML = `
-        <div class="admin-sheet-topbar">
-          <button class="btn btn-outline back-btn"
-            onclick="backToAdminMainMenu()">
-            ${t("backToMenu", "← กลับเมนู")}
-          </button>
-          <h3 id="adminDashboardSheetTitle">${t("pendingOrders", "ออเดอร์รออนุมัติ")}</h3>
-        </div>
-
-        ${renderAdminOrderPoSearch()}
-
-        ${
-          pendingOrders.length
-            ? pendingOrders.map(o => `
-                <div class="card admin-card"
-                  role="button"
-                  tabindex="0"
-                  onclick="openAdminOrder(${toInlineJsStringLiteral(o.orderId)})"
-                  onkeydown="handleKeyboardActivation(event, this)">
-                  <div class="name">${esc(o.orderId)}</div>
-                  <div class="stock">PO: ${esc(o.poNumber || "-")}</div>
-                  ${renderDuplicatePoBadge(o, duplicatePoMap)}
-                  <div class="admin-card-meta">
-                    <span class="status-badge compact status-pending">${esc(getAdminOrderStatusLabel(o.status))}</span>
-                    <span>${t("total", "ยอดรวม")} ฿${Number(o.total || 0).toLocaleString("th-TH")}</span>
-                  </div>
-                  ${renderPartnerOrderSourceBadge(o, { compact: true })}
-                  <div class="price">฿${Number(o.total || 0).toLocaleString("th-TH")}</div>
-                  <div class="stock">
-                    ${t("date", "วันที่")}: ${esc(formatThaiDate(getOrderDateValue(o)))}
-                  </div>
-                </div>
-              `).join("")
-            : renderEmptyStateLottie(t("noPendingOrders", "ยังไม่มีออเดอร์รออนุมัติ"), "", {
-                className: "pending-orders-empty-state",
-                size: 118
-              })
-        }
-      `;
-      return;
-    }   
 
     adminDashboardSheet.innerHTML = `
       <div class="admin-sheet-topbar">
@@ -12857,93 +13831,37 @@ async function openAdminDashboard(mode = "SUMMARY", force = false) {
           onclick="backToAdminMainMenu()">
           ${t("backToMenu", "← กลับเมนู")}
         </button>
-        <h3 id="adminDashboardSheetTitle">
-          <span class="dashboard-title-main">${t("dashboard", "แดชบอร์ดแอดมิน")}</span>
-          <span class="dashboard-title-sub">(${t("approvedOnly", "เฉพาะ APPROVED")})</span>
-        </h3>
+        <h3 id="adminDashboardSheetTitle">${t("pendingOrders", "ออร์เดอร์รออนุมัติ")}</h3>
       </div>
 
-      <div class="dashboard-filter-wrap">
-        <div class="form-group">
-          <label>${t("fromDate", "ตั้งแต่วันที่")}</label>
-          <input id="dashboardDateFrom" type="date" value="${escAttr(from)}">
-        </div>
+      ${renderAdminOrderPoSearch()}
 
-        <div class="form-group">
-          <label>${t("toDate", "ถึงวันที่")}</label>
-          <input id="dashboardDateTo" type="date" value="${escAttr(to)}">
-        </div>
-
-        ${renderAdminOrderPoSearch()}
-      </div>
-
-      <div class="action-row">
-        <button class="btn btn-primary" onclick="applyAdminDashboardRange()">
-          ${t("showSummary", "ดูสรุป")}
-        </button>
-        <button class="btn btn-outline" onclick="resetAdminDashboardRange()">
-          ${t("reset", "รีเซ็ต")}
-        </button>
-      </div>
-
-      <div class="card metric-card">
-        <div class="name">${t("totalSales", "ยอดขายรวม")}</div>
-        <div class="price">฿${Number(summary.totalSales).toLocaleString("th-TH")}</div>
-        <div class="stock">${t("orderCount", "จำนวนออเดอร์")}: ${summary.orderCount}</div>
-      </div>
-
-      <div class="card metric-card">
-        <div class="name">${t("totalCost", "ต้นทุนรวม")}</div>
-        <div class="price">฿${Number(summary.totalCost).toLocaleString("th-TH")}</div>
-        <div class="stock">${t("soldQty", "จำนวนสินค้าที่ขาย")}: ${summary.totalQty}</div>
-      </div>
-
-      <div class="card metric-card">
-        <div class="name">${t("totalProfit", "กำไรรวม")}</div>
-        <div class="price">฿${Number(summary.totalProfit).toLocaleString("th-TH")}</div>
-        <div class="stock">${t("pendingOrdersCount", "Orders รอดำเนินการ")}: ${pendingCount}</div>
-      </div>
-
-      <h3 class="section-title">${t("approvedOrderListTitle", "รายการออเดอร์ APPROVED ที่นำมาคิด")}</h3>
-
-${
-  approvedOrders.length
-    ? approvedOrders
-        .slice()
-        .sort(
-          (a, b) =>
-            new Date(
-              getOrderDateValue(b)
-            ) -
-            new Date(
-              getOrderDateValue(a)
-            )
-        )
-        .map(o => `
-            <div class="card admin-card"
-              role="button"
-              tabindex="0"
-              onclick="openAdminOrder(${toInlineJsStringLiteral(o.orderId)})"
-              onkeydown="handleKeyboardActivation(event, this)">
-              <div class="name">${esc(o.orderId)}</div>
-              <div class="stock">PO: ${esc(o.poNumber || "-")}</div>
-              ${renderDuplicatePoBadge(o, duplicatePoMap)}
-              <div class="admin-card-meta">
-                <span class="status-badge compact status-approved">${esc(getAdminOrderStatusLabel(o.status))}</span>
-                <span>${t("total", "ยอดรวม")} ฿${Number(o.total || 0).toLocaleString("th-TH")}</span>
+      ${
+        pendingOrders.length
+          ? pendingOrders.map(o => `
+              <div class="card admin-card"
+                role="button"
+                tabindex="0"
+                onclick="openAdminOrder(${toInlineJsStringLiteral(o.orderId)})"
+                onkeydown="handleKeyboardActivation(event, this)">
+                <div class="name">${esc(o.orderId)}</div>
+                <div class="stock">PO: ${esc(o.poNumber || "-")}</div>
+                ${renderDuplicatePoBadge(o, duplicatePoMap)}
+                <div class="admin-card-meta">
+                  <span class="status-badge compact status-pending">${esc(getAdminOrderStatusLabel(o.status))}</span>
+                  <span>${t("total", "ยอดรวม")} ${formatBusinessDashboardMoney(o.total || 0)}</span>
+                </div>
+                ${renderPartnerOrderSourceBadge(o, { compact: true })}
+                <div class="price">${formatBusinessDashboardMoney(o.total || 0)}</div>
+                <div class="stock">
+                  ${t("date", "วันที่")}: ${esc(formatThaiDate(getOrderDateValue(o)))}
+                </div>
               </div>
-              ${renderPartnerOrderSourceBadge(o, { compact: true })}
-              <div class="price">฿${Number(o.total || 0).toLocaleString("th-TH")}</div>
-              <div class="stock">
-                ${t("date", "วันที่")}: ${esc(formatThaiDate(getOrderDateValue(o)))}
-              </div>
-            </div>
-          `).join("")
-          : `
-            <div class="empty-state">
-              ${t("noApprovedOrdersInRange", "ไม่มีออเดอร์สถานะ APPROVED ในช่วงวันที่ที่เลือก")}
-            </div>
-          `
+            `).join("")
+          : renderEmptyStateLottie(t("noPendingOrders", "ยังไม่มีออร์เดอร์รออนุมัติ"), "", {
+              className: "pending-orders-empty-state",
+              size: 118
+            })
       }
     `;
   } catch (err) {
@@ -12959,21 +13877,21 @@ ${
     }
 
     adminDashboardSheet.innerHTML = `
-      <h3 id="adminDashboardSheetTitle">${t("dashboard", "แดชบอร์ดแอดมิน")}</h3>
+      <h3 id="adminDashboardSheetTitle">${t("pendingOrders", "ออร์เดอร์รออนุมัติ")}</h3>
 
-      <div style="text-align:center;color:#d93025;margin-top:32px">
-        ${t("dashboardLoadError", "ไม่สามารถโหลดข้อมูลแดชบอร์ดได้")}
+      <div class="empty-state business-dashboard-unavailable">
+        ${esc(getBusinessDashboardReadableError(err))}
       </div>
 
       <button class="btn btn-primary"
         style="width:100%;margin-top:16px"
-        onclick="allowOpenOrders = true; openAdminDashboard('SUMMARY', true)">
+        onclick="allowOpenOrders = true; openAdminDashboard('PENDING', true)">
         ${t("retry", "ลองใหม่")}
       </button>
 
       <button class="btn btn-outline"
         style="width:100%;margin-top:8px"
-        onclick="finishAdminAction({ refresh:false })">
+        onclick="backToAdminMainMenu()">
         ${t("back", "กลับ")}
       </button>
     `;
@@ -13059,7 +13977,7 @@ function renderAdminMenuInStockSheet() {
       <div class="menu-section-label">${t("overview", "ภาพรวม")}</div>
       <button class="btn btn-primary"
         onclick="closeStockMenuSheetThen(handleOpenDashboard)">
-        ${t("dashboardShort", "แดชบอร์ด")}
+        ${t("dashboardShort", "ภาพรวมธุรกิจ")}
       </button>
 
       <button class="btn btn-secondary"
@@ -20097,9 +21015,9 @@ function openMainMenu(triggerEl){
             ? `
               <div class="menu-group">
                 <div class="menu-section-label">${t("overview", "ภาพรวม")}</div>
-                <button class="btn btn-primary" ${adminPermissionAttrs("order.view")}
+                <button class="btn btn-primary"
                   onclick="closeMainMenu(); handleOpenDashboard();">
-                  ${t("dashboardShort", "แดชบอร์ด")}
+                  ${t("dashboardShort", "ภาพรวมธุรกิจ")}
                 </button>
 
                 <button class="btn btn-secondary" ${adminPermissionAttrs("stock.view")}
