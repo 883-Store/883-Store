@@ -1587,8 +1587,11 @@ body[data-theme="cute"] .shop-subtitle{
 
   #adminDashboardSheet .business-dashboard-panel{
     display:grid;
-    gap:16px;
-    padding-bottom:max(24px, env(safe-area-inset-bottom, 0px));
+    gap:18px;
+    width:100%;
+    max-width:1360px;
+    margin:0 auto;
+    padding-bottom:max(28px, env(safe-area-inset-bottom, 0px));
   }
 
   #adminDashboardSheet .business-dashboard-topbar{
@@ -1609,9 +1612,9 @@ body[data-theme="cute"] .shop-subtitle{
   #adminDashboardSheet .business-dashboard-subtitle,
   #adminDashboardSheet .business-dashboard-meta,
   #adminDashboardSheet .business-dashboard-note{
-    color:var(--muted);
-    font-size:12px;
-    line-height:1.5;
+    color:var(--ds-neutral-light, #4B5563);
+    font-size:13px;
+    line-height:1.6;
   }
 
   #adminDashboardSheet .business-dashboard-toolbar,
@@ -1626,16 +1629,46 @@ body[data-theme="cute"] .shop-subtitle{
 
   #adminDashboardSheet .business-dashboard-toolbar{
     justify-content:space-between;
-    padding:12px;
+    padding:14px;
     background:#F9FAFB;
     border:1px solid var(--ds-border, var(--border));
     border-radius:8px;
+  }
+
+  #adminDashboardSheet .business-dashboard-range{
+    flex:0 1 auto;
+    flex-wrap:nowrap;
+    gap:4px;
+    max-width:100%;
+    padding:4px;
+    overflow-x:auto;
+    border:1px solid var(--ds-border, var(--border));
+    border-radius:8px;
+    background:#EEF2FF;
+    scrollbar-width:none;
+  }
+
+  #adminDashboardSheet .business-dashboard-range::-webkit-scrollbar{
+    display:none;
+  }
+
+  #adminDashboardSheet .business-dashboard-range .btn{
+    width:auto;
+    min-height:36px;
+    flex:0 0 auto;
+    padding:8px 12px;
+    border:1px solid transparent;
+    border-radius:6px;
+    background:transparent;
+    color:var(--ds-neutral-light, #4B5563);
+    white-space:nowrap;
   }
 
   #adminDashboardSheet .business-dashboard-range .btn.active{
     background:var(--ds-primary, var(--primary));
     border-color:var(--ds-primary, var(--primary));
     color:#FFFFFF;
+    box-shadow:0 6px 14px rgba(99,102,241,.18);
   }
 
   #adminDashboardSheet .business-dashboard-kpi-grid,
@@ -1677,13 +1710,13 @@ body[data-theme="cute"] .shop-subtitle{
   }
 
   #adminDashboardSheet .business-dashboard-card{
-    padding:14px;
+    padding:20px;
     border-top:4px solid var(--ds-primary, var(--primary));
   }
 
   #adminDashboardSheet .business-dashboard-panel-card,
   #adminDashboardSheet .business-dashboard-list-card{
-    padding:14px;
+    padding:18px;
   }
 
   #adminDashboardSheet .business-dashboard-kpi-label,
@@ -1694,19 +1727,19 @@ body[data-theme="cute"] .shop-subtitle{
   }
 
   #adminDashboardSheet .business-dashboard-kpi-value{
-    margin-top:6px;
+    margin-top:8px;
     color:var(--ds-primary, var(--primary));
-    font-size:24px;
-    font-weight:700;
-    line-height:1.2;
+    font-size:30px;
+    font-weight:800;
+    line-height:1.12;
     overflow-wrap:anywhere;
   }
 
   #adminDashboardSheet .business-dashboard-kpi-meta{
-    margin-top:4px;
-    color:var(--muted);
-    font-size:12px;
-    line-height:1.5;
+    margin-top:6px;
+    color:var(--ds-neutral-light, #4B5563);
+    font-size:13px;
+    line-height:1.6;
   }
 
   #adminDashboardSheet .business-dashboard-section-head{
@@ -1745,9 +1778,9 @@ body[data-theme="cute"] .shop-subtitle{
   #adminDashboardSheet .business-dashboard-bar-value,
   #adminDashboardSheet .business-dashboard-bar-label,
   #adminDashboardSheet .business-dashboard-status-count{
-    color:var(--muted);
-    font-size:12px;
-    line-height:1.35;
+    color:var(--ds-neutral-light, #4B5563);
+    font-size:13px;
+    line-height:1.4;
   }
 
   #adminDashboardSheet .business-dashboard-status-row,
@@ -1797,10 +1830,55 @@ body[data-theme="cute"] .shop-subtitle{
 
   #adminDashboardSheet .business-dashboard-list-meta,
   #adminDashboardSheet .business-dashboard-product-meta{
-    color:var(--muted);
-    font-size:12px;
-    line-height:1.45;
+    color:var(--ds-neutral-light, #4B5563);
+    font-size:13px;
+    line-height:1.55;
     overflow-wrap:anywhere;
+  }
+
+  #adminDashboardSheet .empty-state,
+  #adminDashboardSheet .loading.has-lottie{
+    margin:0;
+    padding:18px;
+    background:var(--ds-background, #F8FAFC);
+    border:1px dashed var(--ds-border, var(--border));
+    border-radius:8px;
+    color:var(--ds-neutral-light, #4B5563);
+    font-size:14px;
+    line-height:1.6;
+  }
+
+  #adminDashboardSheet .business-dashboard-refresh-btn{
+    width:auto;
+    min-width:122px;
+  }
+
+  #adminDashboardSheet .business-dashboard-refresh-btn.is-loading::before{
+    content:"";
+    width:14px;
+    height:14px;
+    border:2px solid rgba(255,255,255,.72);
+    border-top-color:transparent;
+    border-radius:999px;
+    animation:business-dashboard-spin .72s linear infinite;
+  }
+
+  @keyframes business-dashboard-spin{
+    to{ transform:rotate(360deg); }
+  }
+
+  @media (min-width:1024px){
+    #adminDashboardSheet{
+      left:50%;
+      right:auto;
+      width:min(1360px, calc(100vw - 48px));
+      max-width:1360px;
+      transform:translate3d(-50%, 100%, 0);
+    }
+
+    #adminDashboardSheet.show{
+      transform:translate3d(-50%, 0, 0);
+    }
   }
 
   #adminDashboardSheet .business-dashboard-unavailable{
@@ -1808,6 +1886,19 @@ body[data-theme="cute"] .shop-subtitle{
   }
 
   @media (max-width:1024px){
+    #adminDashboardSheet .business-dashboard-toolbar{
+      align-items:stretch;
+    }
+
+    #adminDashboardSheet .business-dashboard-range,
+    #adminDashboardSheet .business-dashboard-panel-actions{
+      width:100%;
+    }
+
+    #adminDashboardSheet .business-dashboard-panel-actions{
+      justify-content:space-between;
+    }
+
     #adminDashboardSheet .business-dashboard-kpi-grid{
       grid-template-columns:repeat(2, minmax(0, 1fr));
     }
@@ -9051,6 +9142,7 @@ const SOURCE_MASTER_SUITE_ID = "source_master";
 const SOURCEABLE_AVAILABILITY_SUITE_ID = "sourceable_availability";
 const SOURCE_ALLOCATION_SUITE_ID = "source_allocation";
 const SOURCE_FULFILLMENT_SUITE_ID = "source_fulfillment";
+const CUSTOMER_CONTACT_FOUNDATION_SUITE_ID = "customer_contact_foundation";
 const DISPLAY_UI_INTEGRATION_TEST_PREFIX = "TEST-UI-DISPLAY-";
 
 const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
@@ -9098,6 +9190,12 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     label: "Source Fulfillment",
     mutation: true,
     mutationDescription: "Run after Source Master, Sourceable Availability, and Source Allocation PASS. Creates isolated TEST-DIAG Product, Order, Source, Availability, Allocation, and Fulfillment records, verifies fulfillment and cost behavior, then cleans the exact generated rows."
+  },
+  {
+    id: CUSTOMER_CONTACT_FOUNDATION_SUITE_ID,
+    label: "Customer Contact Foundation",
+    mutation: true,
+    mutationDescription: "Run after Billing Customer Foundation PASS. Creates isolated TEST-DIAG Customers and Contacts, verifies Customer Contact roles and guards, then cleans the exact generated records."
   },
   {
     id: DISPLAY_UI_INTEGRATION_SUITE_ID,
@@ -13355,7 +13453,7 @@ function renderBusinessDashboardTrend(model) {
   }).join("");
 
   return renderBusinessDashboardPanel(
-    useRevenue ? "Revenue trend" : "Order count trend",
+    useRevenue ? "?????????????" : "???????????????????",
     ["orders"],
     "order.view",
     points.some(point => (useRevenue ? point.revenue : point.orderCount) > 0)
@@ -13389,7 +13487,7 @@ function renderBusinessDashboardStatusPanel(model) {
   }).join("");
 
   return renderBusinessDashboardPanel(
-    "Order status",
+    "????????????",
     ["orders"],
     "order.view",
     total ? content : `<div class="empty-state">ยังไม่มี Order ในช่วงนี้</div>`
@@ -13428,7 +13526,7 @@ function renderBusinessDashboardTopProducts(model) {
   `).join("");
 
   return renderBusinessDashboardPanel(
-    "Top products",
+    "???????????",
     ["orders"],
     "order.view",
     content || `<div class="empty-state">Order item data ไม่พอสำหรับจัดอันดับสินค้าในช่วงนี้</div>`
@@ -13457,7 +13555,7 @@ function renderBusinessDashboardInventoryPanel(model) {
   `;
 
   return renderBusinessDashboardPanel(
-    "Inventory snapshot",
+    "???????????",
     ["products", "displayInventory"],
     null,
     content
@@ -13580,7 +13678,7 @@ function renderBusinessDashboardSourceablePanel(model) {
   `;
 
   return renderBusinessDashboardPanel(
-    "Sourceable snapshot",
+    "????????????????",
     ["sources", "sourceableAvailability", "allocationSummary", "fulfillmentSummary"],
     "sourceable.view",
     content
@@ -13621,9 +13719,9 @@ function renderBusinessDashboardSheet() {
         <div class="business-dashboard-panel-actions">
           <span class="status-badge compact status-approved">TEST</span>
           <span class="status-badge compact status-neutral">Role: ${esc(role)}</span>
-          <button class="btn btn-primary" type="button" ${loading ? "disabled" : ""}
+          <button class="btn btn-primary business-dashboard-refresh-btn ${loading ? "is-loading" : ""}" type="button" ${loading ? "disabled" : ""}
             onclick="refreshBusinessDashboard()">
-            รีเฟรช
+            ${loading ? "???????????" : "??????"}
           </button>
         </div>
         <div class="business-dashboard-meta">ช่วงข้อมูล: ${esc(model.windowRange.label)} | อัปเดตล่าสุด: ${esc(lastRefresh)}</div>
