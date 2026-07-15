@@ -6880,6 +6880,7 @@ const state = {
       availability: null,
       loadingAvailability: false,
       runningSuite: "",
+      requestId: 0,
       results: {},
       error: ""
     },
@@ -9216,6 +9217,7 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     id: BILL_FOUNDATION_SUITE_ID,
     label: "Bill Foundation",
     mutation: true,
+    timeoutMs: 240000,
     mutationDescription: "Run after Billing Customer Foundation, Customer Contact Foundation, and Order Customer Buyer Foundation PASS. Creates isolated TEST-DIAG Customer, Contact, Product, Orders, Fulfillment fixtures, Draft Bill, Issue, and VOID checks; exact fixtures are cleaned while Bill sequence rows are retained so INV numbers are never reused."
   },
   {
@@ -9242,6 +9244,7 @@ function resetDeveloperDiagnosticsState() {
   state.admin.developerDiagnostics.availability = null;
   state.admin.developerDiagnostics.loadingAvailability = false;
   state.admin.developerDiagnostics.runningSuite = "";
+  state.admin.developerDiagnostics.requestId = 0;
   state.admin.developerDiagnostics.results = {};
   state.admin.developerDiagnostics.error = "";
 }
@@ -9480,6 +9483,66 @@ function getDeveloperDiagnosticStatusClass(status) {
   }[key] || "status-neutral";
 }
 
+function getDeveloperDiagnosticSuiteTimeoutMs(suiteConfig) {
+  const configuredTimeout = Number(suiteConfig && suiteConfig.timeoutMs || 0);
+  return Number.isFinite(configuredTimeout) && configuredTimeout > 0
+    ? configuredTimeout
+    : 60000;
+}
+
+function redactDeveloperDiagnosticClientMessage(message) {
+  return String(message || "Developer diagnostic request failed")
+    .replace(/https?:\/\/\S+/g, "[redacted-url]")
+    .replace(/AKfyc[\w-]+/g, "[redacted-script-id]")
+    .replace(/Bearer\s+\S+/gi, "Bearer [redacted-token]")
+    .replace(/token[=:]\s*[\w.-]+/gi, "token=[redacted-token]")
+    .slice(0, 240);
+}
+
+function isDeveloperDiagnosticTimeoutMessage(message) {
+  const text = String(message || "").toLowerCase();
+  return text.includes("timeout") ||
+    text.includes("timed out") ||
+    text.includes("connection") ||
+    text.includes("ช้า");
+}
+
+function buildDeveloperDiagnosticClientFailureResult(
+  suite,
+  suiteConfig,
+  err,
+  startedAt,
+  startedMs,
+  timeoutMs
+) {
+  const message = redactDeveloperDiagnosticClientMessage(
+    err && err.message || err
+  );
+  const isTimeout = isDeveloperDiagnosticTimeoutMessage(message);
+
+  return {
+    success: true,
+    environment: "TEST",
+    suite,
+    status: "FAIL",
+    startedAt: startedAt.toISOString(),
+    durationMs: Math.max(0, Date.now() - startedMs),
+    checks: [
+      {
+        name: isTimeout ? "request_timeout" : "request_error",
+        status: "FAIL",
+        summary: isTimeout
+          ? `Client request timed out after ${timeoutMs} ms before a diagnostic result was received. No automatic retry was sent.`
+          : message
+      }
+    ],
+    cleanup: {
+      required: !!(suiteConfig && suiteConfig.mutation),
+      status: isTimeout ? "UNKNOWN" : "NOT_REQUIRED"
+    }
+  };
+}
+
 async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
   const suite = String(suiteId || "").trim();
   const suiteConfig = DEVELOPER_DIAGNOSTIC_UI_SUITES
@@ -9512,6 +9575,13 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
   }
 
   const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.runningSuite) return;
+
+  const startedAt = new Date();
+  const startedMs = Date.now();
+  const timeoutMs = getDeveloperDiagnosticSuiteTimeoutMs(suiteConfig);
+  const requestId = Number(diagnostics.requestId || 0) + 1;
+  diagnostics.requestId = requestId;
   diagnostics.runningSuite = suite;
   diagnostics.error = "";
   renderDeveloperDiagnosticsSheet();
@@ -9522,16 +9592,30 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
     form.append("token", state.admin.token);
     form.append("suite", suite);
 
-    const json = await postFormAction(form, { timeout: 60000 });
+    const json = await postFormAction(form, { timeout: timeoutMs });
+    if (requestId !== diagnostics.requestId) return;
+
     const result = json.data || json;
     diagnostics.results[suite] = result;
     showToast(`Diagnostics ${result.status || "complete"}`, "info");
   } catch (err) {
+    if (requestId !== diagnostics.requestId) return;
+
     diagnostics.error = err.message || "Developer diagnostic failed";
+    diagnostics.results[suite] = buildDeveloperDiagnosticClientFailureResult(
+      suite,
+      suiteConfig,
+      err,
+      startedAt,
+      startedMs,
+      timeoutMs
+    );
     showToast(diagnostics.error, "error");
   } finally {
-    diagnostics.runningSuite = "";
-    renderDeveloperDiagnosticsSheet();
+    if (requestId === diagnostics.requestId) {
+      diagnostics.runningSuite = "";
+      renderDeveloperDiagnosticsSheet();
+    }
   }
 }
 
