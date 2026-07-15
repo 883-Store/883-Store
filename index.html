@@ -9145,6 +9145,7 @@ const SOURCE_FULFILLMENT_SUITE_ID = "source_fulfillment";
 const BILLING_CUSTOMER_FOUNDATION_SUITE_ID = "billing_customer_foundation";
 const CUSTOMER_CONTACT_FOUNDATION_SUITE_ID = "customer_contact_foundation";
 const ORDER_CUSTOMER_BUYER_FOUNDATION_SUITE_ID = "order_customer_buyer_foundation";
+const BILL_FOUNDATION_SUITE_ID = "bill_foundation";
 const DISPLAY_UI_INTEGRATION_TEST_PREFIX = "TEST-UI-DISPLAY-";
 
 const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
@@ -9210,6 +9211,12 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     label: "Order Customer Buyer Foundation",
     mutation: true,
     mutationDescription: "Run after Billing Customer Foundation and Customer Contact Foundation PASS. Creates isolated TEST-DIAG Customers, Contacts, Partner, Product, Partner Request, and Orders, verifies Customer/Buyer validation and readiness, then cleans the exact generated records."
+  },
+  {
+    id: BILL_FOUNDATION_SUITE_ID,
+    label: "Bill Foundation",
+    mutation: true,
+    mutationDescription: "Run after Billing Customer Foundation, Customer Contact Foundation, and Order Customer Buyer Foundation PASS. Creates isolated TEST-DIAG Customer, Contact, Product, Orders, Fulfillment fixtures, Draft Bill, Issue, and VOID checks; exact fixtures are cleaned while Bill sequence rows are retained so INV numbers are never reused."
   },
   {
     id: DISPLAY_UI_INTEGRATION_SUITE_ID,
