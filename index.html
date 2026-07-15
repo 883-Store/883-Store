@@ -6498,6 +6498,8 @@ Object.assign(window, {
   closeDeveloperDiagnosticsSheet,
   backToAdminMenuFromDeveloperDiagnostics,
   runDeveloperDiagnosticSuiteFromAdmin,
+  loadLatestBillFoundationRuntimeTraceFromAdmin,
+  auditBillFoundationDiagnosticRecoveryFromAdmin,
   setBusinessDashboardRange,
   refreshBusinessDashboard,
   openBusinessDashboardPendingDeliveries,
@@ -6881,6 +6883,13 @@ const state = {
       loadingAvailability: false,
       runningSuite: "",
       requestId: 0,
+      loadingBillRuntimeTrace: false,
+      billRuntimeTrace: null,
+      billRuntimeTraceError: "",
+      loadingBillRecoveryAudit: false,
+      billRecoveryAudit: null,
+      billRecoveryError: "",
+      billRunId: "",
       results: {},
       error: ""
     },
@@ -9245,6 +9254,13 @@ function resetDeveloperDiagnosticsState() {
   state.admin.developerDiagnostics.loadingAvailability = false;
   state.admin.developerDiagnostics.runningSuite = "";
   state.admin.developerDiagnostics.requestId = 0;
+  state.admin.developerDiagnostics.loadingBillRuntimeTrace = false;
+  state.admin.developerDiagnostics.billRuntimeTrace = null;
+  state.admin.developerDiagnostics.billRuntimeTraceError = "";
+  state.admin.developerDiagnostics.loadingBillRecoveryAudit = false;
+  state.admin.developerDiagnostics.billRecoveryAudit = null;
+  state.admin.developerDiagnostics.billRecoveryError = "";
+  state.admin.developerDiagnostics.billRunId = "";
   state.admin.developerDiagnostics.results = {};
   state.admin.developerDiagnostics.error = "";
 }
@@ -9448,6 +9464,9 @@ function renderDeveloperDiagnosticResultCard(suite) {
       </div>
       <details>
         <summary aria-label="${escAttr(`${suite.label} details`)}">Details</summary>
+        ${suite.id === BILL_FOUNDATION_SUITE_ID
+          ? renderBillFoundationRuntimeTracePanel()
+          : ""}
         <div class="diagnostic-check-list">
           ${
             checks.length
@@ -9470,12 +9489,77 @@ function renderDeveloperDiagnosticResultCard(suite) {
   `;
 }
 
+function renderBillFoundationRuntimeTracePanel() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const trace = diagnostics.billRuntimeTrace;
+  const isLoading = diagnostics.loadingBillRuntimeTrace;
+  const traceError = diagnostics.billRuntimeTraceError;
+  const recovery = diagnostics.billRecoveryAudit;
+  const isRecoveryLoading = diagnostics.loadingBillRecoveryAudit;
+  const recoveryError = diagnostics.billRecoveryError;
+  const recoverySummary = recovery?.summary || {};
+  const recoverySummaryText = recovery
+    ? Object.keys(recoverySummary)
+        .map(key => {
+          const item = recoverySummary[key] || {};
+          return `${key}: ${Number(item.exists || 0)} exists / ${Number(item.missing || 0)} missing`;
+        })
+        .join(" | ")
+    : "";
+
+  return `
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Persistent Bill Progress</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadLatestBillFoundationRuntimeTraceFromAdmin()">
+          ${isLoading ? "Loading..." : "ดู Runtime Trace ล่าสุด"}
+        </button>
+      </div>
+      <div class="diagnostic-check-summary">
+        ${trace ? `
+          Status: ${esc(trace.status || "-")} |
+          Last: ${esc(trace.lastCheckpoint || trace.lastCompletedCheckpoint || "-")} |
+          Current: ${esc(trace.currentCheckpoint || "-")} |
+          Elapsed: ${Number(trace.elapsedMs || 0)} ms |
+          Cleanup: ${esc(trace.cleanupStatus || "-")}
+          ${trace.errorMessage ? `<br>Error: ${esc(trace.errorMessage)}` : ""}
+          ${trace.runId ? `<br>Run: ${esc(trace.runId)}` : ""}
+          ${trace.recordCountSummary ? `<br>Records: ${esc(JSON.stringify(trace.recordCountSummary))}` : ""}
+        ` : esc(traceError || "No persistent trace loaded")}
+      </div>
+    </div>
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Recovery Status</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isRecoveryLoading ? "disabled" : ""}
+          onclick="auditBillFoundationDiagnosticRecoveryFromAdmin()">
+          ${isRecoveryLoading ? "Checking..." : "Check Recovery Status"}
+        </button>
+      </div>
+      <div class="diagnostic-check-summary">
+        ${recovery ? `
+          Run: ${esc(recovery.runId || "-")} |
+          Status: ${esc(recovery.status || "-")} |
+          Cleanup: ${esc(recovery.cleanupStatus || "-")} |
+          Sequence retained: ${recovery.sequenceProtected ? "YES" : "NO"}
+          ${recoverySummaryText ? `<br>${esc(recoverySummaryText)}` : ""}
+        ` : esc(recoveryError || "Recovery audit not loaded")}
+      </div>
+    </div>
+  `;
+}
+
 function getDeveloperDiagnosticStatusClass(status) {
   const key = String(status || "").trim().toUpperCase().replace(/\s+/g, "_");
 
   return {
     PASS: "status-approved",
     FAIL: "status-rejected",
+    TIMEOUT: "status-rejected",
+    ABORTED: "status-blocked",
     PARTIAL: "status-partial",
     BLOCKED: "status-blocked",
     NOT_RUN: "status-not-run",
@@ -9543,6 +9627,144 @@ function buildDeveloperDiagnosticClientFailureResult(
   };
 }
 
+function makeBillFoundationClientRunId() {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const randomPart = Math.random().toString(36).slice(2, 10).toUpperCase();
+  return `BILL-RUN-${timestamp}-${randomPart}`;
+}
+
+function appendBillFoundationProgressToFailureResult(result, progress) {
+  if (!result || !Array.isArray(result.checks)) return result;
+  if (!progress) {
+    result.checks.push({
+      name: "progress_unavailable",
+      status: "FAIL",
+      summary: "Persistent Bill progress could not be loaded after timeout."
+    });
+    return result;
+  }
+
+  result.checks.push(
+    {
+      name: "last_checkpoint",
+      status: "FAIL",
+      summary: progress.lastCheckpoint || progress.lastCompletedCheckpoint || "-"
+    },
+    {
+      name: "backend_elapsed_ms",
+      status: "FAIL",
+      summary: `${Number(progress.elapsedMs || 0)}`
+    },
+    {
+      name: "cleanup_status",
+      status: "FAIL",
+      summary: progress.cleanupStatus || "UNKNOWN"
+    },
+    {
+      name: "run_id",
+      status: "FAIL",
+      summary: progress.runId || "-"
+    }
+  );
+  if (result.cleanup) {
+    result.cleanup.status = progress.cleanupStatus || result.cleanup.status;
+  }
+  return result;
+}
+
+async function loadLatestBillFoundationRuntimeTraceFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingBillRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingBillRuntimeTrace = true;
+  diagnostics.billRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "getBillFoundationDiagnosticProgress");
+    form.append("token", state.admin.token);
+    if (diagnostics.billRunId) {
+      form.append("runId", diagnostics.billRunId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.billRuntimeTrace = json.data?.progress || null;
+    if (diagnostics.billRuntimeTrace?.runId) {
+      diagnostics.billRunId = diagnostics.billRuntimeTrace.runId;
+    }
+    if (!diagnostics.billRuntimeTrace) {
+      diagnostics.billRuntimeTraceError = "No persistent progress found";
+    }
+  } catch (err) {
+    diagnostics.billRuntimeTrace = null;
+    diagnostics.billRuntimeTraceError =
+      err.message || "Bill progress unavailable";
+    showToast(diagnostics.billRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingBillRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function auditBillFoundationDiagnosticRecoveryFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingBillRecoveryAudit) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingBillRecoveryAudit = true;
+  diagnostics.billRecoveryError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "auditBillFoundationDiagnosticRecovery");
+    form.append("token", state.admin.token);
+    if (diagnostics.billRunId) {
+      form.append("runId", diagnostics.billRunId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.billRecoveryAudit = json.data?.recovery || null;
+    if (diagnostics.billRecoveryAudit?.runId) {
+      diagnostics.billRunId = diagnostics.billRecoveryAudit.runId;
+    }
+    if (!diagnostics.billRecoveryAudit) {
+      diagnostics.billRecoveryError = "No recovery manifest found";
+    }
+  } catch (err) {
+    diagnostics.billRecoveryError =
+      err.message || "Recovery audit unavailable";
+    showToast(diagnostics.billRecoveryError, "error");
+  } finally {
+    diagnostics.loadingBillRecoveryAudit = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
 async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
   const suite = String(suiteId || "").trim();
   const suiteConfig = DEVELOPER_DIAGNOSTIC_UI_SUITES
@@ -9581,9 +9803,27 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
   const startedMs = Date.now();
   const timeoutMs = getDeveloperDiagnosticSuiteTimeoutMs(suiteConfig);
   const requestId = Number(diagnostics.requestId || 0) + 1;
+  const billRunId = suite === BILL_FOUNDATION_SUITE_ID
+    ? makeBillFoundationClientRunId()
+    : "";
   diagnostics.requestId = requestId;
   diagnostics.runningSuite = suite;
   diagnostics.error = "";
+  if (billRunId) {
+    diagnostics.billRunId = billRunId;
+    diagnostics.billRuntimeTrace = {
+      runId: billRunId,
+      suiteId: BILL_FOUNDATION_SUITE_ID,
+      status: "RUNNING",
+      lastCheckpoint: "",
+      currentCheckpoint: "REQUEST_SENT",
+      elapsedMs: 0,
+      cleanupStatus: "NOT_STARTED"
+    };
+    diagnostics.billRuntimeTraceError = "";
+    diagnostics.billRecoveryAudit = null;
+    diagnostics.billRecoveryError = "";
+  }
   renderDeveloperDiagnosticsSheet();
 
   try {
@@ -9591,6 +9831,9 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
     form.append("action", "runDeveloperDiagnosticSuite");
     form.append("token", state.admin.token);
     form.append("suite", suite);
+    if (billRunId) {
+      form.append("billRunId", billRunId);
+    }
 
     const json = await postFormAction(form, { timeout: timeoutMs });
     if (requestId !== diagnostics.requestId) return;
@@ -9601,8 +9844,11 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
   } catch (err) {
     if (requestId !== diagnostics.requestId) return;
 
+    const isTimeout = isDeveloperDiagnosticTimeoutMessage(
+      err && err.message || err
+    );
     diagnostics.error = err.message || "Developer diagnostic failed";
-    diagnostics.results[suite] = buildDeveloperDiagnosticClientFailureResult(
+    const failureResult = buildDeveloperDiagnosticClientFailureResult(
       suite,
       suiteConfig,
       err,
@@ -9610,6 +9856,16 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
       startedMs,
       timeoutMs
     );
+    diagnostics.results[suite] = failureResult;
+    if (suite === BILL_FOUNDATION_SUITE_ID && isTimeout) {
+      await loadLatestBillFoundationRuntimeTraceFromAdmin();
+      if (requestId !== diagnostics.requestId) return;
+      appendBillFoundationProgressToFailureResult(
+        failureResult,
+        diagnostics.billRuntimeTrace
+      );
+      diagnostics.results[suite] = failureResult;
+    }
     showToast(diagnostics.error, "error");
   } finally {
     if (requestId === diagnostics.requestId) {
