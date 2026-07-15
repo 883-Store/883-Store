@@ -6500,6 +6500,9 @@ Object.assign(window, {
   runDeveloperDiagnosticSuiteFromAdmin,
   loadLatestBillFoundationRuntimeTraceFromAdmin,
   auditBillFoundationDiagnosticRecoveryFromAdmin,
+  confirmBillFoundationRecoveryCleanupFromAdmin,
+  closeBillFoundationRecoveryCleanupConfirmation,
+  executeBillFoundationRecoveryCleanupFromAdmin,
   setBusinessDashboardRange,
   refreshBusinessDashboard,
   openBusinessDashboardPendingDeliveries,
@@ -6887,8 +6890,10 @@ const state = {
       billRuntimeTrace: null,
       billRuntimeTraceError: "",
       loadingBillRecoveryAudit: false,
+      loadingBillRecoveryCleanup: false,
       billRecoveryAudit: null,
       billRecoveryError: "",
+      billRecoveryCleanupMessage: "",
       billRunId: "",
       results: {},
       error: ""
@@ -9258,8 +9263,10 @@ function resetDeveloperDiagnosticsState() {
   state.admin.developerDiagnostics.billRuntimeTrace = null;
   state.admin.developerDiagnostics.billRuntimeTraceError = "";
   state.admin.developerDiagnostics.loadingBillRecoveryAudit = false;
+  state.admin.developerDiagnostics.loadingBillRecoveryCleanup = false;
   state.admin.developerDiagnostics.billRecoveryAudit = null;
   state.admin.developerDiagnostics.billRecoveryError = "";
+  state.admin.developerDiagnostics.billRecoveryCleanupMessage = "";
   state.admin.developerDiagnostics.billRunId = "";
   state.admin.developerDiagnostics.results = {};
   state.admin.developerDiagnostics.error = "";
@@ -9496,7 +9503,9 @@ function renderBillFoundationRuntimeTracePanel() {
   const traceError = diagnostics.billRuntimeTraceError;
   const recovery = diagnostics.billRecoveryAudit;
   const isRecoveryLoading = diagnostics.loadingBillRecoveryAudit;
+  const isRecoveryCleanupLoading = diagnostics.loadingBillRecoveryCleanup;
   const recoveryError = diagnostics.billRecoveryError;
+  const recoveryCleanupMessage = diagnostics.billRecoveryCleanupMessage;
   const recoverySummary = recovery?.summary || {};
   const recoverySummaryText = recovery
     ? Object.keys(recoverySummary)
@@ -9538,6 +9547,11 @@ function renderBillFoundationRuntimeTracePanel() {
           onclick="auditBillFoundationDiagnosticRecoveryFromAdmin()">
           ${isRecoveryLoading ? "Checking..." : "Check Recovery Status"}
         </button>
+        <button class="btn btn-danger diagnostic-suite-button" type="button"
+          ${isRecoveryCleanupLoading ? "disabled" : ""}
+          onclick="confirmBillFoundationRecoveryCleanupFromAdmin()">
+          ${isRecoveryCleanupLoading ? "Cleaning..." : "Cleanup Recovery Run"}
+        </button>
       </div>
       <div class="diagnostic-check-summary">
         ${recovery ? `
@@ -9546,6 +9560,7 @@ function renderBillFoundationRuntimeTracePanel() {
           Cleanup: ${esc(recovery.cleanupStatus || "-")} |
           Sequence retained: ${recovery.sequenceProtected ? "YES" : "NO"}
           ${recoverySummaryText ? `<br>${esc(recoverySummaryText)}` : ""}
+          ${recoveryCleanupMessage ? `<br>${esc(recoveryCleanupMessage)}` : ""}
         ` : esc(recoveryError || "Recovery audit not loaded")}
       </div>
     </div>
@@ -9761,6 +9776,161 @@ async function auditBillFoundationDiagnosticRecoveryFromAdmin() {
     showToast(diagnostics.billRecoveryError, "error");
   } finally {
     diagnostics.loadingBillRecoveryAudit = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+function confirmBillFoundationRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (
+    diagnostics.runningSuite ||
+    diagnostics.loadingBillRecoveryAudit ||
+    diagnostics.loadingBillRecoveryCleanup
+  ) {
+    return;
+  }
+
+  const runId =
+    diagnostics.billRecoveryAudit?.runId ||
+    diagnostics.billRuntimeTrace?.runId ||
+    diagnostics.billRunId ||
+    "latest persisted Bill Foundation run";
+
+  confirmSheet.setAttribute(
+    "aria-labelledby",
+    "billRecoveryCleanupConfirmTitle"
+  );
+  confirmSheet.innerHTML = `
+    <h3 id="billRecoveryCleanupConfirmTitle">Cleanup Recovery Run</h3>
+    <div class="display-inventory-help">
+      This calls the existing TEST-only recovery cleanup for run ${esc(runId)}. It deletes only exact tracked TEST-DIAG Bill Foundation records and keeps Bill number sequence rows.
+    </div>
+    <label class="display-inventory-help" for="billRecoveryCleanupConfirmation">
+      Type CLEANUP_TEST_DIAG_BILL_RUN to confirm.
+    </label>
+    <input id="billRecoveryCleanupConfirmation"
+      type="text"
+      autocomplete="off"
+      style="width:100%;max-width:420px"
+      placeholder="CLEANUP_TEST_DIAG_BILL_RUN">
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closeBillFoundationRecoveryCleanupConfirmation()">
+        Cancel
+      </button>
+      <button class="btn btn-danger" type="button"
+        onclick="executeBillFoundationRecoveryCleanupFromAdmin()">
+        Cleanup Recovery Run
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+}
+
+function closeBillFoundationRecoveryCleanupConfirmation() {
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  closeOverlay(confirmSheet);
+}
+
+function updateBillFoundationCardAfterRecoveryCleanup(cleanup) {
+  const diagnostics = state.admin.developerDiagnostics;
+  const cleanupStatus = String(cleanup && cleanup.status || "FAIL")
+    .trim()
+    .toUpperCase();
+  const cleanupSummary = String(cleanup && cleanup.summary || "").trim();
+  const current = diagnostics.results[BILL_FOUNDATION_SUITE_ID] || {
+    suite: BILL_FOUNDATION_SUITE_ID,
+    status: cleanupStatus === "PASS" ? "PARTIAL" : "FAIL",
+    checks: []
+  };
+  const checks = Array.isArray(current.checks) ? current.checks.slice() : [];
+  const nextCheck = {
+    name: "recovery_cleanup",
+    status: cleanupStatus,
+    summary: cleanupSummary || "Recovery cleanup completed"
+  };
+  const index = checks.findIndex(check => check.name === nextCheck.name);
+  if (index === -1) {
+    checks.push(nextCheck);
+  } else {
+    checks[index] = nextCheck;
+  }
+  current.checks = checks;
+  current.cleanup = {
+    required: true,
+    status: cleanupStatus
+  };
+  if (cleanupStatus !== "PASS") {
+    current.status = "FAIL";
+  } else if (!current.status || current.status === "NOT_RUN") {
+    current.status = "PARTIAL";
+  }
+  diagnostics.results[BILL_FOUNDATION_SUITE_ID] = current;
+}
+
+async function executeBillFoundationRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingBillRecoveryCleanup) return;
+
+  const confirmation = String(
+    document.getElementById("billRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  if (confirmation !== "CLEANUP_TEST_DIAG_BILL_RUN") {
+    showToast("Recovery cleanup confirmation is required", "warning");
+    return;
+  }
+
+  closeBillFoundationRecoveryCleanupConfirmation();
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingBillRecoveryCleanup = true;
+  diagnostics.billRecoveryError = "";
+  diagnostics.billRecoveryCleanupMessage = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "cleanupBillFoundationDiagnosticRecovery");
+    form.append("token", state.admin.token);
+    form.append("confirmation", confirmation);
+    if (diagnostics.billRunId) {
+      form.append("runId", diagnostics.billRunId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    const cleanup = json.data?.cleanup || {};
+    diagnostics.billRuntimeTrace = json.data?.progress || null;
+    diagnostics.billRecoveryAudit = json.data?.recovery || null;
+    if (diagnostics.billRuntimeTrace?.runId) {
+      diagnostics.billRunId = diagnostics.billRuntimeTrace.runId;
+    } else if (diagnostics.billRecoveryAudit?.runId) {
+      diagnostics.billRunId = diagnostics.billRecoveryAudit.runId;
+    }
+    diagnostics.billRecoveryCleanupMessage =
+      `Cleanup ${cleanup.status || "-"}: ${cleanup.summary || "-"}`;
+    updateBillFoundationCardAfterRecoveryCleanup(cleanup);
+    showToast(
+      cleanup.status === "PASS" ? "Cleanup PASS" : "Cleanup completed",
+      cleanup.status === "PASS" ? "success" : "warning"
+    );
+  } catch (err) {
+    diagnostics.billRecoveryCleanupMessage =
+      err.message || "Recovery cleanup unavailable";
+    diagnostics.billRecoveryError = diagnostics.billRecoveryCleanupMessage;
+    showToast(diagnostics.billRecoveryCleanupMessage, "error");
+  } finally {
+    diagnostics.loadingBillRecoveryCleanup = false;
     renderDeveloperDiagnosticsSheet();
   }
 }
