@@ -9162,6 +9162,7 @@ const CUSTOMER_CONTACT_FOUNDATION_SUITE_ID = "customer_contact_foundation";
 const ORDER_CUSTOMER_BUYER_FOUNDATION_SUITE_ID = "order_customer_buyer_foundation";
 const BILL_FOUNDATION_SUITE_ID = "bill_foundation";
 const BILL_FOUNDATION_DRAFT_SUITE_ID = "bill_foundation_draft";
+const BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID = "bill_foundation_draft_validation";
 const BILL_FOUNDATION_ISSUE_VOID_SUITE_ID = "bill_foundation_issue_void";
 const DISPLAY_UI_INTEGRATION_TEST_PREFIX = "TEST-UI-DISPLAY-";
 
@@ -9242,6 +9243,13 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     mutation: true,
     timeoutMs: 240000,
     mutationDescription: "Run only after Bill Draft Foundation shows READY_FOR_ISSUE_VOID. Uses the shared runId manifest, verifies Issue, numbering, VOID, final cleanup, and keeps Bill sequence rows retained."
+  },
+  {
+    id: BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID,
+    label: "Bill Draft Validation",
+    mutation: true,
+    timeoutMs: 240000,
+    mutationDescription: "Runs the heavier Draft validation cases as a separate TEST-DIAG diagnostic with its own runId and exact cleanup. It does not gate Bill Issue + VOID Foundation."
   },
   {
     id: BILL_FOUNDATION_SUITE_ID,
@@ -9670,6 +9678,7 @@ function isBillFoundationDiagnosticSuite(suiteId) {
   return [
     BILL_FOUNDATION_SUITE_ID,
     BILL_FOUNDATION_DRAFT_SUITE_ID,
+    BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID,
     BILL_FOUNDATION_ISSUE_VOID_SUITE_ID
   ].indexOf(String(suiteId || "").trim()) !== -1;
 }
@@ -10025,7 +10034,9 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
   const timeoutMs = getDeveloperDiagnosticSuiteTimeoutMs(suiteConfig);
   const requestId = Number(diagnostics.requestId || 0) + 1;
   const billRunId =
-    suite === BILL_FOUNDATION_SUITE_ID || suite === BILL_FOUNDATION_DRAFT_SUITE_ID
+    suite === BILL_FOUNDATION_SUITE_ID ||
+    suite === BILL_FOUNDATION_DRAFT_SUITE_ID ||
+    suite === BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID
       ? makeBillFoundationClientRunId()
       : suite === BILL_FOUNDATION_ISSUE_VOID_SUITE_ID
         ? diagnostics.billRuntimeTrace?.runId || diagnostics.billRunId || ""
