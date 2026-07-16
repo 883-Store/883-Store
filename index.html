@@ -2181,6 +2181,28 @@ body.admin-sheet-viewport-repairing #appHeader{
  #confirmSheet.show{
    z-index:9999;
  }
+
+#confirmSheet.developer-diagnostic-confirm-sheet.show{
+  top:max(16px, env(safe-area-inset-top, 0px));
+  bottom:auto;
+  max-height:calc(100dvh - max(32px, env(safe-area-inset-top, 0px)));
+  display:flex;
+  flex-direction:column;
+  transform:translate3d(0, 0, 0);
+}
+
+#confirmSheet.developer-diagnostic-confirm-sheet .sheet-action-footer{
+  flex-shrink:0;
+}
+
+@media (min-width:768px){
+  body[data-ux-foundation="true"] #confirmSheet.developer-diagnostic-confirm-sheet.show{
+    left:50%;
+    right:auto;
+    width:min(520px, calc(100vw - 48px));
+    transform:translate3d(-50%, 0, 0);
+  }
+}
  
 .sheet h3{
   margin:0 0 12px;
@@ -9161,6 +9183,7 @@ const BILLING_CUSTOMER_FOUNDATION_SUITE_ID = "billing_customer_foundation";
 const CUSTOMER_CONTACT_FOUNDATION_SUITE_ID = "customer_contact_foundation";
 const ORDER_CUSTOMER_BUYER_FOUNDATION_SUITE_ID = "order_customer_buyer_foundation";
 const BILL_FOUNDATION_SUITE_ID = "bill_foundation";
+const BILL_FOUNDATION_FIXTURE_SUITE_ID = "bill_foundation_fixture";
 const BILL_FOUNDATION_DRAFT_SUITE_ID = "bill_foundation_draft";
 const BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID = "bill_foundation_draft_validation";
 const BILL_FOUNDATION_ISSUE_VOID_SUITE_ID = "bill_foundation_issue_void";
@@ -9231,11 +9254,18 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     mutationDescription: "Run after Billing Customer Foundation and Customer Contact Foundation PASS. Creates isolated TEST-DIAG Customers, Contacts, Partner, Product, Partner Request, and Orders, verifies Customer/Buyer validation and readiness, then cleans the exact generated records."
   },
   {
+    id: BILL_FOUNDATION_FIXTURE_SUITE_ID,
+    label: "Bill Fixture Foundation",
+    mutation: true,
+    timeoutMs: 240000,
+    mutationDescription: "Run after Billing Customer Foundation, Customer Contact Foundation, and Order Customer Buyer Foundation PASS. Creates isolated TEST-DIAG Product, Customer, Contact, Partner, Orders, Source, Availability, Allocation, and Fulfillment fixtures, persists the shared runId manifest, and defers cleanup."
+  },
+  {
     id: BILL_FOUNDATION_DRAFT_SUITE_ID,
     label: "Bill Draft Foundation",
     mutation: true,
     timeoutMs: 240000,
-    mutationDescription: "Run after Billing Customer Foundation, Customer Contact Foundation, and Order Customer Buyer Foundation PASS. Creates isolated TEST-DIAG fixtures, verifies Draft behavior, persists a shared runId handoff, and defers cleanup for Bill Issue + VOID Foundation."
+    mutationDescription: "Run only after Bill Fixture Foundation shows READY_FOR_DRAFT. Uses the shared runId manifest, verifies Draft reservation/update behavior, persists Issue + VOID targets, and defers cleanup."
   },
   {
     id: BILL_FOUNDATION_ISSUE_VOID_SUITE_ID,
@@ -9561,6 +9591,9 @@ function renderBillFoundationRuntimeTracePanel() {
           Cleanup: ${esc(trace.cleanupStatus || "-")}
           ${trace.errorMessage ? `<br>Error: ${esc(trace.errorMessage)}` : ""}
           ${trace.runId ? `<br>Run: ${esc(trace.runId)}` : ""}
+          <br>Parts: Fixture ${esc(trace.fixtureStatus || trace.handoff?.fixtureStatus || "-")} |
+          Draft ${esc(trace.draftStatus || trace.handoff?.draftStatus || "-")} |
+          Issue+VOID ${esc(trace.issueVoidStatus || trace.handoff?.issueVoidStatus || "-")}
           ${trace.recordCountSummary ? `<br>Records: ${esc(JSON.stringify(trace.recordCountSummary))}` : ""}
         ` : esc(traceError || "No persistent trace loaded")}
       </div>
@@ -9677,10 +9710,21 @@ function makeBillFoundationClientRunId() {
 function isBillFoundationDiagnosticSuite(suiteId) {
   return [
     BILL_FOUNDATION_SUITE_ID,
+    BILL_FOUNDATION_FIXTURE_SUITE_ID,
     BILL_FOUNDATION_DRAFT_SUITE_ID,
     BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID,
     BILL_FOUNDATION_ISSUE_VOID_SUITE_ID
   ].indexOf(String(suiteId || "").trim()) !== -1;
+}
+
+function canRunBillDraftDiagnostic() {
+  const trace = state.admin.developerDiagnostics.billRuntimeTrace || {};
+  const handoff = trace.handoff || {};
+  return (
+    String(trace.status || "").toUpperCase() === "READY_FOR_DRAFT" &&
+    String(handoff.fixtureStatus || trace.fixtureStatus || "").toUpperCase() === "PASS" &&
+    !!(trace.runId || state.admin.developerDiagnostics.billRunId)
+  );
 }
 
 function canRunBillIssueVoidDiagnostic() {
@@ -9689,11 +9733,15 @@ function canRunBillIssueVoidDiagnostic() {
   return (
     String(trace.status || "").toUpperCase() === "READY_FOR_ISSUE_VOID" &&
     String(handoff.part1Status || trace.part1Status || "").toUpperCase() === "PASS" &&
+    String(handoff.draftStatus || trace.draftStatus || "").toUpperCase() === "PASS" &&
     !!(trace.runId || state.admin.developerDiagnostics.billRunId)
   );
 }
 
 function getDeveloperDiagnosticSuiteDisabledReason(suite) {
+  if (suite.id === BILL_FOUNDATION_DRAFT_SUITE_ID && !canRunBillDraftDiagnostic()) {
+    return "Run Bill Fixture Foundation first and confirm READY_FOR_DRAFT.";
+  }
   if (suite.id === BILL_FOUNDATION_ISSUE_VOID_SUITE_ID && !canRunBillIssueVoidDiagnostic()) {
     return "Run Bill Draft Foundation first and confirm READY_FOR_ISSUE_VOID.";
   }
@@ -9852,6 +9900,7 @@ function confirmBillFoundationRecoveryCleanupFromAdmin() {
     "aria-labelledby",
     "billRecoveryCleanupConfirmTitle"
   );
+  confirmSheet.classList.add("developer-diagnostic-confirm-sheet");
   confirmSheet.innerHTML = `
     <h3 id="billRecoveryCleanupConfirmTitle">Cleanup Recovery Run</h3>
     <div class="display-inventory-help">
@@ -9881,6 +9930,7 @@ function confirmBillFoundationRecoveryCleanupFromAdmin() {
 
 function closeBillFoundationRecoveryCleanupConfirmation() {
   confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  confirmSheet.classList.remove("developer-diagnostic-confirm-sheet");
   closeOverlay(confirmSheet);
 }
 
@@ -10017,6 +10067,10 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
   }
 
   const diagnostics = state.admin.developerDiagnostics;
+  if (suite === BILL_FOUNDATION_DRAFT_SUITE_ID && !canRunBillDraftDiagnostic()) {
+    showToast("Run Bill Fixture Foundation first and confirm READY_FOR_DRAFT.", "warning");
+    return;
+  }
   if (suite === BILL_FOUNDATION_ISSUE_VOID_SUITE_ID && !canRunBillIssueVoidDiagnostic()) {
     showToast("Run Bill Draft Foundation first and confirm READY_FOR_ISSUE_VOID.", "warning");
     return;
@@ -10035,10 +10089,11 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
   const requestId = Number(diagnostics.requestId || 0) + 1;
   const billRunId =
     suite === BILL_FOUNDATION_SUITE_ID ||
-    suite === BILL_FOUNDATION_DRAFT_SUITE_ID ||
+    suite === BILL_FOUNDATION_FIXTURE_SUITE_ID ||
     suite === BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID
       ? makeBillFoundationClientRunId()
-      : suite === BILL_FOUNDATION_ISSUE_VOID_SUITE_ID
+      : suite === BILL_FOUNDATION_DRAFT_SUITE_ID ||
+        suite === BILL_FOUNDATION_ISSUE_VOID_SUITE_ID
         ? diagnostics.billRuntimeTrace?.runId || diagnostics.billRunId || ""
         : "";
   diagnostics.requestId = requestId;
@@ -10129,6 +10184,7 @@ function confirmDeveloperDiagnosticMutationSuiteFromAdmin(suite) {
     "aria-labelledby",
     "developerDiagnosticMutationConfirmTitle"
   );
+  confirmSheet.classList.add("developer-diagnostic-confirm-sheet");
   confirmSheet.innerHTML = `
     <h3 id="developerDiagnosticMutationConfirmTitle">${esc(suiteLabel)}</h3>
     <div class="display-inventory-help">
@@ -10150,6 +10206,7 @@ function confirmDeveloperDiagnosticMutationSuiteFromAdmin(suite) {
 
 function closeDeveloperDiagnosticMutationConfirmation() {
   confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  confirmSheet.classList.remove("developer-diagnostic-confirm-sheet");
   closeOverlay(confirmSheet);
 }
 
