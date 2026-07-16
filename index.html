@@ -9161,6 +9161,8 @@ const BILLING_CUSTOMER_FOUNDATION_SUITE_ID = "billing_customer_foundation";
 const CUSTOMER_CONTACT_FOUNDATION_SUITE_ID = "customer_contact_foundation";
 const ORDER_CUSTOMER_BUYER_FOUNDATION_SUITE_ID = "order_customer_buyer_foundation";
 const BILL_FOUNDATION_SUITE_ID = "bill_foundation";
+const BILL_FOUNDATION_DRAFT_SUITE_ID = "bill_foundation_draft";
+const BILL_FOUNDATION_ISSUE_VOID_SUITE_ID = "bill_foundation_issue_void";
 const DISPLAY_UI_INTEGRATION_TEST_PREFIX = "TEST-UI-DISPLAY-";
 
 const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
@@ -9228,11 +9230,25 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     mutationDescription: "Run after Billing Customer Foundation and Customer Contact Foundation PASS. Creates isolated TEST-DIAG Customers, Contacts, Partner, Product, Partner Request, and Orders, verifies Customer/Buyer validation and readiness, then cleans the exact generated records."
   },
   {
-    id: BILL_FOUNDATION_SUITE_ID,
-    label: "Bill Foundation",
+    id: BILL_FOUNDATION_DRAFT_SUITE_ID,
+    label: "Bill Draft Foundation",
     mutation: true,
     timeoutMs: 240000,
-    mutationDescription: "Run after Billing Customer Foundation, Customer Contact Foundation, and Order Customer Buyer Foundation PASS. Creates isolated TEST-DIAG Customer, Contact, Product, Orders, Fulfillment fixtures, Draft Bill, Issue, and VOID checks; exact fixtures are cleaned while Bill sequence rows are retained so INV numbers are never reused."
+    mutationDescription: "Run after Billing Customer Foundation, Customer Contact Foundation, and Order Customer Buyer Foundation PASS. Creates isolated TEST-DIAG fixtures, verifies Draft behavior, persists a shared runId handoff, and defers cleanup for Bill Issue + VOID Foundation."
+  },
+  {
+    id: BILL_FOUNDATION_ISSUE_VOID_SUITE_ID,
+    label: "Bill Issue + VOID Foundation",
+    mutation: true,
+    timeoutMs: 240000,
+    mutationDescription: "Run only after Bill Draft Foundation shows READY_FOR_ISSUE_VOID. Uses the shared runId manifest, verifies Issue, numbering, VOID, final cleanup, and keeps Bill sequence rows retained."
+  },
+  {
+    id: BILL_FOUNDATION_SUITE_ID,
+    label: "Bill Foundation (Legacy)",
+    mutation: true,
+    timeoutMs: 240000,
+    mutationDescription: "Legacy oversized one-execution suite retained for recovery compatibility. Prefer Bill Draft Foundation followed by Bill Issue + VOID Foundation."
   },
   {
     id: DISPLAY_UI_INTEGRATION_SUITE_ID,
@@ -9408,12 +9424,14 @@ function renderDeveloperDiagnosticsSheet() {
       <div class="action-row developer-diagnostics-actions" role="group" aria-label="Developer diagnostic suites">
         ${DEVELOPER_DIAGNOSTIC_UI_SUITES.map(suite => {
           const isRunning = runningSuite === suite.id;
+          const disabledReason = getDeveloperDiagnosticSuiteDisabledReason(suite);
+          const isDisabled = !canRun || !!runningSuite || !!disabledReason;
           return `
             <button class="btn diagnostic-suite-button ${suite.primary ? "primary" : ""} ${suite.mutation ? "mutation" : ""} ${isRunning ? "running" : ""}"
-              ${canRun && !runningSuite ? "" : "disabled"}
-              aria-disabled="${canRun && !runningSuite ? "false" : "true"}"
+              ${isDisabled ? "disabled" : ""}
+              aria-disabled="${isDisabled ? "true" : "false"}"
               aria-busy="${isRunning ? "true" : "false"}"
-              title="${suite.mutation ? escAttr(suite.mutationDescription || "Creates and cleans TEST records in TEST only") : ""}"
+              title="${escAttr(disabledReason || (suite.mutation ? suite.mutationDescription || "Creates and cleans TEST records in TEST only" : ""))}"
               onclick="runDeveloperDiagnosticSuiteFromAdmin('${suite.id}')">
               ${isRunning ? "Running..." : esc(suite.label)}
             </button>
@@ -9471,7 +9489,7 @@ function renderDeveloperDiagnosticResultCard(suite) {
       </div>
       <details>
         <summary aria-label="${escAttr(`${suite.label} details`)}">Details</summary>
-        ${suite.id === BILL_FOUNDATION_SUITE_ID
+        ${isBillFoundationDiagnosticSuite(suite.id)
           ? renderBillFoundationRuntimeTracePanel()
           : ""}
         <div class="diagnostic-check-list">
@@ -9646,6 +9664,31 @@ function makeBillFoundationClientRunId() {
   const timestamp = Date.now().toString(36).toUpperCase();
   const randomPart = Math.random().toString(36).slice(2, 10).toUpperCase();
   return `BILL-RUN-${timestamp}-${randomPart}`;
+}
+
+function isBillFoundationDiagnosticSuite(suiteId) {
+  return [
+    BILL_FOUNDATION_SUITE_ID,
+    BILL_FOUNDATION_DRAFT_SUITE_ID,
+    BILL_FOUNDATION_ISSUE_VOID_SUITE_ID
+  ].indexOf(String(suiteId || "").trim()) !== -1;
+}
+
+function canRunBillIssueVoidDiagnostic() {
+  const trace = state.admin.developerDiagnostics.billRuntimeTrace || {};
+  const handoff = trace.handoff || {};
+  return (
+    String(trace.status || "").toUpperCase() === "READY_FOR_ISSUE_VOID" &&
+    String(handoff.part1Status || trace.part1Status || "").toUpperCase() === "PASS" &&
+    !!(trace.runId || state.admin.developerDiagnostics.billRunId)
+  );
+}
+
+function getDeveloperDiagnosticSuiteDisabledReason(suite) {
+  if (suite.id === BILL_FOUNDATION_ISSUE_VOID_SUITE_ID && !canRunBillIssueVoidDiagnostic()) {
+    return "Run Bill Draft Foundation first and confirm READY_FOR_ISSUE_VOID.";
+  }
+  return "";
 }
 
 function appendBillFoundationProgressToFailureResult(result, progress) {
@@ -9834,12 +9877,15 @@ function closeBillFoundationRecoveryCleanupConfirmation() {
 
 function updateBillFoundationCardAfterRecoveryCleanup(cleanup) {
   const diagnostics = state.admin.developerDiagnostics;
+  const cleanupSuiteId = isBillFoundationDiagnosticSuite(diagnostics.billRuntimeTrace?.suiteId)
+    ? diagnostics.billRuntimeTrace.suiteId
+    : BILL_FOUNDATION_SUITE_ID;
   const cleanupStatus = String(cleanup && cleanup.status || "FAIL")
     .trim()
     .toUpperCase();
   const cleanupSummary = String(cleanup && cleanup.summary || "").trim();
-  const current = diagnostics.results[BILL_FOUNDATION_SUITE_ID] || {
-    suite: BILL_FOUNDATION_SUITE_ID,
+  const current = diagnostics.results[cleanupSuiteId] || {
+    suite: cleanupSuiteId,
     status: cleanupStatus === "PASS" ? "PARTIAL" : "FAIL",
     checks: []
   };
@@ -9865,7 +9911,7 @@ function updateBillFoundationCardAfterRecoveryCleanup(cleanup) {
   } else if (!current.status || current.status === "NOT_RUN") {
     current.status = "PARTIAL";
   }
-  diagnostics.results[BILL_FOUNDATION_SUITE_ID] = current;
+  diagnostics.results[cleanupSuiteId] = current;
 }
 
 async function executeBillFoundationRecoveryCleanupFromAdmin() {
@@ -9961,21 +10007,29 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
     return;
   }
 
+  const diagnostics = state.admin.developerDiagnostics;
+  if (suite === BILL_FOUNDATION_ISSUE_VOID_SUITE_ID && !canRunBillIssueVoidDiagnostic()) {
+    showToast("Run Bill Draft Foundation first and confirm READY_FOR_ISSUE_VOID.", "warning");
+    return;
+  }
+
   if (suiteConfig.mutation && !options.confirmed) {
     confirmDeveloperDiagnosticMutationSuiteFromAdmin(suiteConfig);
     return;
   }
 
-  const diagnostics = state.admin.developerDiagnostics;
   if (diagnostics.runningSuite) return;
 
   const startedAt = new Date();
   const startedMs = Date.now();
   const timeoutMs = getDeveloperDiagnosticSuiteTimeoutMs(suiteConfig);
   const requestId = Number(diagnostics.requestId || 0) + 1;
-  const billRunId = suite === BILL_FOUNDATION_SUITE_ID
-    ? makeBillFoundationClientRunId()
-    : "";
+  const billRunId =
+    suite === BILL_FOUNDATION_SUITE_ID || suite === BILL_FOUNDATION_DRAFT_SUITE_ID
+      ? makeBillFoundationClientRunId()
+      : suite === BILL_FOUNDATION_ISSUE_VOID_SUITE_ID
+        ? diagnostics.billRuntimeTrace?.runId || diagnostics.billRunId || ""
+        : "";
   diagnostics.requestId = requestId;
   diagnostics.runningSuite = suite;
   diagnostics.error = "";
@@ -9983,7 +10037,7 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
     diagnostics.billRunId = billRunId;
     diagnostics.billRuntimeTrace = {
       runId: billRunId,
-      suiteId: BILL_FOUNDATION_SUITE_ID,
+      suiteId: suite,
       status: "RUNNING",
       lastCheckpoint: "",
       currentCheckpoint: "REQUEST_SENT",
@@ -10010,6 +10064,10 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
 
     const result = json.data || json;
     diagnostics.results[suite] = result;
+    if (isBillFoundationDiagnosticSuite(suite)) {
+      await loadLatestBillFoundationRuntimeTraceFromAdmin();
+      if (requestId !== diagnostics.requestId) return;
+    }
     showToast(`Diagnostics ${result.status || "complete"}`, "info");
   } catch (err) {
     if (requestId !== diagnostics.requestId) return;
@@ -10027,7 +10085,7 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
       timeoutMs
     );
     diagnostics.results[suite] = failureResult;
-    if (suite === BILL_FOUNDATION_SUITE_ID && isTimeout) {
+    if (isBillFoundationDiagnosticSuite(suite) && isTimeout) {
       await loadLatestBillFoundationRuntimeTraceFromAdmin();
       if (requestId !== diagnostics.requestId) return;
       appendBillFoundationProgressToFailureResult(
