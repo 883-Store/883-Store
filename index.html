@@ -9204,6 +9204,7 @@ const BILL_FOUNDATION_DRAFT_SUITE_ID = "bill_foundation_draft";
 const BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID = "bill_foundation_draft_validation";
 const BILL_FOUNDATION_ISSUE_VOID_SUITE_ID = "bill_foundation_issue_void";
 const PAYMENT_FOUNDATION_SUITE_ID = "payment_foundation";
+const RECEIVABLE_FOUNDATION_SUITE_ID = "receivable_foundation";
 const DISPLAY_UI_INTEGRATION_TEST_PREFIX = "TEST-UI-DISPLAY-";
 
 const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
@@ -9296,6 +9297,12 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     label: "Payment Foundation",
     mutation: true,
     mutationDescription: "Run after Bill Issue + VOID Foundation PASS. Creates isolated TEST-DIAG Payment and Bill fixtures, verifies full-payment validation, idempotency, derived receivable state, exact cleanup, and retained Bill sequence rows."
+  },
+  {
+    id: RECEIVABLE_FOUNDATION_SUITE_ID,
+    label: "Receivable Foundation",
+    mutation: true,
+    mutationDescription: "Run after Payment Foundation PASS. Creates isolated TEST-DIAG Bill and Payment fixtures, verifies derived NOT_APPLICABLE, OPEN, PAID, overdue, integrity, exact cleanup, and retained Bill sequence rows."
   },
   {
     id: BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID,
