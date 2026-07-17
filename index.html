@@ -6532,6 +6532,12 @@ Object.assign(window, {
   confirmPaymentFoundationRecoveryCleanupFromAdmin,
   closePaymentFoundationRecoveryCleanupConfirmation,
   executePaymentFoundationRecoveryCleanupFromAdmin,
+  loadLatestPaymentCorrectionFoundationRuntimeTraceFromAdmin,
+  loadPaymentCorrectionFoundationProgressFromAdmin,
+  auditPaymentCorrectionFoundationDiagnosticRecoveryFromAdmin,
+  confirmPaymentCorrectionFoundationRecoveryCleanupFromAdmin,
+  closePaymentCorrectionFoundationRecoveryCleanupConfirmation,
+  executePaymentCorrectionFoundationRecoveryCleanupFromAdmin,
   setBusinessDashboardRange,
   refreshBusinessDashboard,
   openBusinessDashboardPendingDeliveries,
@@ -9205,6 +9211,7 @@ const BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID = "bill_foundation_draft_validat
 const BILL_FOUNDATION_ISSUE_VOID_SUITE_ID = "bill_foundation_issue_void";
 const PAYMENT_FOUNDATION_SUITE_ID = "payment_foundation";
 const RECEIVABLE_FOUNDATION_SUITE_ID = "receivable_foundation";
+const PAYMENT_CORRECTION_FOUNDATION_SUITE_ID = "payment_correction_foundation";
 const DISPLAY_UI_INTEGRATION_TEST_PREFIX = "TEST-UI-DISPLAY-";
 
 const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
@@ -9305,6 +9312,12 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     mutationDescription: "Run after Payment Foundation PASS. Creates isolated TEST-DIAG Bill and Payment fixtures, verifies derived NOT_APPLICABLE, OPEN, PAID, overdue, integrity, exact cleanup, and retained Bill sequence rows."
   },
   {
+    id: PAYMENT_CORRECTION_FOUNDATION_SUITE_ID,
+    label: "Payment Correction Foundation",
+    mutation: true,
+    mutationDescription: "Run after Receivable Foundation PASS. Creates isolated TEST-DIAG Payment Correction, replacement Payment, and Bill fixtures, verifies REVERSAL correction, Receivable reopening, exact cleanup, and retained Bill sequence rows."
+  },
+  {
     id: BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID,
     label: "Bill Draft Validation",
     mutation: true,
@@ -9361,6 +9374,15 @@ function resetDeveloperDiagnosticsState() {
   state.admin.developerDiagnostics.paymentRecoveryError = "";
   state.admin.developerDiagnostics.paymentRecoveryCleanupMessage = "";
   state.admin.developerDiagnostics.paymentRunId = "";
+  state.admin.developerDiagnostics.loadingPaymentCorrectionRuntimeTrace = false;
+  state.admin.developerDiagnostics.paymentCorrectionRuntimeTrace = null;
+  state.admin.developerDiagnostics.paymentCorrectionRuntimeTraceError = "";
+  state.admin.developerDiagnostics.loadingPaymentCorrectionRecoveryAudit = false;
+  state.admin.developerDiagnostics.loadingPaymentCorrectionRecoveryCleanup = false;
+  state.admin.developerDiagnostics.paymentCorrectionRecoveryAudit = null;
+  state.admin.developerDiagnostics.paymentCorrectionRecoveryError = "";
+  state.admin.developerDiagnostics.paymentCorrectionRecoveryCleanupMessage = "";
+  state.admin.developerDiagnostics.paymentCorrectionRunId = "";
   state.admin.developerDiagnostics.results = {};
   state.admin.developerDiagnostics.error = "";
 }
@@ -9572,6 +9594,9 @@ function renderDeveloperDiagnosticResultCard(suite) {
         ${suite.id === PAYMENT_FOUNDATION_SUITE_ID
           ? renderPaymentFoundationRuntimeRecoveryPanel()
           : ""}
+        ${suite.id === PAYMENT_CORRECTION_FOUNDATION_SUITE_ID
+          ? renderPaymentCorrectionFoundationRuntimeRecoveryPanel()
+          : ""}
         <div class="diagnostic-check-list">
           ${
             checks.length
@@ -9747,6 +9772,87 @@ function renderPaymentFoundationRuntimeRecoveryPanel() {
   `;
 }
 
+function renderPaymentCorrectionFoundationRuntimeRecoveryPanel() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const trace = diagnostics.paymentCorrectionRuntimeTrace;
+  const isLoading = diagnostics.loadingPaymentCorrectionRuntimeTrace;
+  const traceError = diagnostics.paymentCorrectionRuntimeTraceError;
+  const recovery = diagnostics.paymentCorrectionRecoveryAudit;
+  const isRecoveryLoading = diagnostics.loadingPaymentCorrectionRecoveryAudit;
+  const isRecoveryCleanupLoading =
+    diagnostics.loadingPaymentCorrectionRecoveryCleanup;
+  const recoveryError = diagnostics.paymentCorrectionRecoveryError;
+  const recoveryCleanupMessage =
+    diagnostics.paymentCorrectionRecoveryCleanupMessage;
+  const recoverySummary = recovery?.summary || {};
+  const recoverySummaryText = recovery
+    ? Object.keys(recoverySummary)
+        .map(key => {
+          const item = recoverySummary[key] || {};
+          return `${key}: ${Number(item.exists || 0)} exists / ${Number(item.missing || 0)} missing`;
+        })
+        .join(" | ")
+    : "";
+
+  return `
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Payment Correction Runtime Trace</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadLatestPaymentCorrectionFoundationRuntimeTraceFromAdmin()">
+          ${isLoading ? "Loading..." : "Latest Payment Correction Runtime Trace"}
+        </button>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadPaymentCorrectionFoundationProgressFromAdmin()">
+          ${isLoading ? "Loading..." : "Payment Correction Progress"}
+        </button>
+      </div>
+      <div class="diagnostic-check-summary">
+        ${trace ? `
+          Run: ${esc(trace.runId || "-")} |
+          Status: ${esc(trace.status || "-")} |
+          Last: ${esc(trace.lastCheckpoint || trace.lastCompletedCheckpoint || "-")} |
+          Current: ${esc(trace.currentCheckpoint || "-")} |
+          Failing: ${esc(trace.failingCheckpoint || "-")} |
+          Elapsed: ${Number(trace.elapsedMs || 0)} ms |
+          Cleanup: ${esc(trace.cleanupStatus || "-")}
+          ${trace.errorMessage ? `<br>Error: ${esc(trace.errorMessage)}` : ""}
+          ${trace.recordCountSummary ? `<br>Manifest: ${esc(JSON.stringify(trace.recordCountSummary))}` : ""}
+        ` : esc(traceError || "Payment Correction runtime trace not loaded")}
+      </div>
+    </div>
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Payment Correction Recovery Status</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isRecoveryLoading ? "disabled" : ""}
+          onclick="auditPaymentCorrectionFoundationDiagnosticRecoveryFromAdmin()">
+          ${isRecoveryLoading ? "Checking..." : "Check Payment Correction Recovery Status"}
+        </button>
+        <button class="btn btn-danger diagnostic-suite-button" type="button"
+          ${isRecoveryCleanupLoading ? "disabled" : ""}
+          onclick="confirmPaymentCorrectionFoundationRecoveryCleanupFromAdmin()">
+          ${isRecoveryCleanupLoading ? "Cleaning..." : "Cleanup Payment Correction Recovery Run"}
+        </button>
+      </div>
+      <div class="diagnostic-check-summary">
+        ${recovery ? `
+          Run: ${esc(recovery.runId || "-")} |
+          Status: ${esc(recovery.status || "-")} |
+          Cleanup: ${esc(recovery.cleanupStatus || "-")} |
+          Cleanup safe: ${recovery.cleanupSafe === false ? "NO" : "YES"} |
+          Sequence retained: ${(recovery.sequenceRetained || recovery.sequenceProtected) ? "YES" : "NO"}
+          ${recovery.ownershipStatus ? `<br>Ownership: ${esc(recovery.ownershipStatus)}` : ""}
+          ${recoverySummaryText ? `<br>${esc(recoverySummaryText)}` : ""}
+          ${recoveryCleanupMessage ? `<br>${esc(recoveryCleanupMessage)}` : ""}
+        ` : esc(recoveryError || "Payment Correction recovery audit not loaded")}
+      </div>
+    </div>
+  `;
+}
+
 function getDeveloperDiagnosticStatusClass(status) {
   const key = String(status || "").trim().toUpperCase().replace(/\s+/g, "_");
 
@@ -9844,7 +9950,8 @@ function isBillFoundationDiagnosticSuite(suiteId) {
 function isRuntimeRecoveryDeveloperDiagnosticSuite(suiteId) {
   const id = String(suiteId || "").trim();
   return isBillFoundationDiagnosticSuite(id) ||
-    id === PAYMENT_FOUNDATION_SUITE_ID;
+    id === PAYMENT_FOUNDATION_SUITE_ID ||
+    id === PAYMENT_CORRECTION_FOUNDATION_SUITE_ID;
 }
 
 function canRunBillDraftDiagnostic() {
@@ -10026,6 +10133,10 @@ async function loadDeveloperDiagnosticRuntimeTraceAfterTimeoutFromAdmin(suite) {
   if (suite === PAYMENT_FOUNDATION_SUITE_ID) {
     await loadLatestPaymentFoundationRuntimeTraceFromAdmin();
     return state.admin.developerDiagnostics.paymentRuntimeTrace;
+  }
+  if (suite === PAYMENT_CORRECTION_FOUNDATION_SUITE_ID) {
+    await loadLatestPaymentCorrectionFoundationRuntimeTraceFromAdmin();
+    return state.admin.developerDiagnostics.paymentCorrectionRuntimeTrace;
   }
   return null;
 }
@@ -10571,6 +10682,313 @@ async function executePaymentFoundationRecoveryCleanupFromAdmin() {
     showToast(diagnostics.paymentRecoveryCleanupMessage, "error");
   } finally {
     diagnostics.loadingPaymentRecoveryCleanup = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadLatestPaymentCorrectionFoundationRuntimeTraceFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingPaymentCorrectionRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingPaymentCorrectionRuntimeTrace = true;
+  diagnostics.paymentCorrectionRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "getLatestPaymentCorrectionFoundationRuntimeTrace");
+    form.append("token", state.admin.token);
+
+    const json = await postFormAction(form);
+    diagnostics.paymentCorrectionRuntimeTrace = json.data?.trace || null;
+    if (diagnostics.paymentCorrectionRuntimeTrace?.runId) {
+      diagnostics.paymentCorrectionRunId =
+        diagnostics.paymentCorrectionRuntimeTrace.runId;
+    }
+    if (!diagnostics.paymentCorrectionRuntimeTrace) {
+      diagnostics.paymentCorrectionRuntimeTraceError =
+        "No persistent Payment Correction trace found";
+    }
+  } catch (err) {
+    diagnostics.paymentCorrectionRuntimeTrace = null;
+    diagnostics.paymentCorrectionRuntimeTraceError =
+      err.message || "Payment Correction trace unavailable";
+    showToast(diagnostics.paymentCorrectionRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingPaymentCorrectionRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadPaymentCorrectionFoundationProgressFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingPaymentCorrectionRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingPaymentCorrectionRuntimeTrace = true;
+  diagnostics.paymentCorrectionRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "getPaymentCorrectionFoundationDiagnosticProgress");
+    form.append("token", state.admin.token);
+    if (diagnostics.paymentCorrectionRunId) {
+      form.append("runId", diagnostics.paymentCorrectionRunId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.paymentCorrectionRuntimeTrace = json.data?.progress || null;
+    if (diagnostics.paymentCorrectionRuntimeTrace?.runId) {
+      diagnostics.paymentCorrectionRunId =
+        diagnostics.paymentCorrectionRuntimeTrace.runId;
+    }
+    if (!diagnostics.paymentCorrectionRuntimeTrace) {
+      diagnostics.paymentCorrectionRuntimeTraceError =
+        "No persistent Payment Correction progress found";
+    }
+  } catch (err) {
+    diagnostics.paymentCorrectionRuntimeTrace = null;
+    diagnostics.paymentCorrectionRuntimeTraceError =
+      err.message || "Payment Correction progress unavailable";
+    showToast(diagnostics.paymentCorrectionRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingPaymentCorrectionRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function auditPaymentCorrectionFoundationDiagnosticRecoveryFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingPaymentCorrectionRecoveryAudit) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingPaymentCorrectionRecoveryAudit = true;
+  diagnostics.paymentCorrectionRecoveryError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "auditPaymentCorrectionFoundationDiagnosticRecovery");
+    form.append("token", state.admin.token);
+    if (diagnostics.paymentCorrectionRunId) {
+      form.append("runId", diagnostics.paymentCorrectionRunId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.paymentCorrectionRecoveryAudit = json.data?.recovery || null;
+    if (diagnostics.paymentCorrectionRecoveryAudit?.runId) {
+      diagnostics.paymentCorrectionRunId =
+        diagnostics.paymentCorrectionRecoveryAudit.runId;
+    }
+    if (!diagnostics.paymentCorrectionRecoveryAudit) {
+      diagnostics.paymentCorrectionRecoveryError =
+        "No Payment Correction recovery manifest found";
+    }
+  } catch (err) {
+    diagnostics.paymentCorrectionRecoveryError =
+      err.message || "Payment Correction recovery audit unavailable";
+    showToast(diagnostics.paymentCorrectionRecoveryError, "error");
+  } finally {
+    diagnostics.loadingPaymentCorrectionRecoveryAudit = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+function confirmPaymentCorrectionFoundationRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (
+    diagnostics.runningSuite ||
+    diagnostics.loadingPaymentCorrectionRecoveryAudit ||
+    diagnostics.loadingPaymentCorrectionRecoveryCleanup
+  ) {
+    return;
+  }
+
+  const runId =
+    diagnostics.paymentCorrectionRecoveryAudit?.runId ||
+    diagnostics.paymentCorrectionRuntimeTrace?.runId ||
+    diagnostics.paymentCorrectionRunId ||
+    "latest persisted Correction run";
+
+  confirmSheet.setAttribute(
+    "aria-labelledby",
+    "paymentCorrectionRecoveryCleanupConfirmTitle"
+  );
+  confirmSheet.classList.add("developer-diagnostic-confirm-sheet");
+  confirmSheet.innerHTML = `
+    <h3 id="paymentCorrectionRecoveryCleanupConfirmTitle">Cleanup Payment Correction Recovery Run</h3>
+    <div class="display-inventory-help">
+      This calls the TEST-only Payment Correction recovery cleanup for run ${esc(runId)}. It deletes only exact tracked TEST-DIAG Payment Correction, Payment, and Bill fixture records and keeps Bill number sequence rows.
+    </div>
+    <label class="display-inventory-help" for="paymentCorrectionRecoveryCleanupConfirmation">
+      Type CLEANUP_TEST_DIAG_PAYMENT_CORRECTION_RUN to confirm.
+    </label>
+    <input id="paymentCorrectionRecoveryCleanupConfirmation"
+      type="text"
+      autocomplete="off"
+      style="width:100%;max-width:420px"
+      placeholder="CLEANUP_TEST_DIAG_PAYMENT_CORRECTION_RUN">
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closePaymentCorrectionFoundationRecoveryCleanupConfirmation()">
+        Cancel
+      </button>
+      <button class="btn btn-danger" type="button"
+        onclick="executePaymentCorrectionFoundationRecoveryCleanupFromAdmin()">
+        Cleanup Payment Correction Recovery Run
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+}
+
+function closePaymentCorrectionFoundationRecoveryCleanupConfirmation() {
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  confirmSheet.classList.remove("developer-diagnostic-confirm-sheet");
+  closeOverlay(confirmSheet);
+}
+
+function updatePaymentCorrectionFoundationCardAfterRecoveryCleanup(cleanup) {
+  const diagnostics = state.admin.developerDiagnostics;
+  const cleanupStatus = String(cleanup && cleanup.status || "FAIL")
+    .trim()
+    .toUpperCase();
+  const cleanupSummary = String(cleanup && cleanup.summary || "").trim();
+  const current =
+    diagnostics.results[PAYMENT_CORRECTION_FOUNDATION_SUITE_ID] || {
+      suite: PAYMENT_CORRECTION_FOUNDATION_SUITE_ID,
+      status: cleanupStatus === "PASS" ? "PARTIAL" : "FAIL",
+      checks: []
+    };
+  const checks = Array.isArray(current.checks) ? current.checks.slice() : [];
+  const nextCheck = {
+    name: "payment_correction_recovery_cleanup",
+    status: cleanupStatus,
+    summary: cleanupSummary || "Payment Correction recovery cleanup completed"
+  };
+  const index = checks.findIndex(check => check.name === nextCheck.name);
+  if (index === -1) {
+    checks.push(nextCheck);
+  } else {
+    checks[index] = nextCheck;
+  }
+  current.checks = checks;
+  current.cleanup = {
+    required: true,
+    status: cleanupStatus
+  };
+  if (cleanupStatus !== "PASS") {
+    current.status = "FAIL";
+  } else if (!current.status || current.status === "NOT_RUN") {
+    current.status = "PARTIAL";
+  }
+  diagnostics.results[PAYMENT_CORRECTION_FOUNDATION_SUITE_ID] = current;
+}
+
+async function executePaymentCorrectionFoundationRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingPaymentCorrectionRecoveryCleanup) return;
+
+  const confirmation = String(
+    document.getElementById("paymentCorrectionRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  if (confirmation !== "CLEANUP_TEST_DIAG_PAYMENT_CORRECTION_RUN") {
+    showToast(
+      "Payment Correction recovery cleanup confirmation is required",
+      "warning"
+    );
+    return;
+  }
+
+  closePaymentCorrectionFoundationRecoveryCleanupConfirmation();
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingPaymentCorrectionRecoveryCleanup = true;
+  diagnostics.paymentCorrectionRecoveryError = "";
+  diagnostics.paymentCorrectionRecoveryCleanupMessage = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "cleanupPaymentCorrectionFoundationDiagnosticRecovery");
+    form.append("token", state.admin.token);
+    form.append("confirmation", confirmation);
+    if (diagnostics.paymentCorrectionRunId) {
+      form.append("runId", diagnostics.paymentCorrectionRunId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    const cleanup = json.data?.cleanup || {};
+    diagnostics.paymentCorrectionRuntimeTrace = json.data?.progress || null;
+    diagnostics.paymentCorrectionRecoveryAudit = json.data?.recovery || null;
+    if (diagnostics.paymentCorrectionRuntimeTrace?.runId) {
+      diagnostics.paymentCorrectionRunId =
+        diagnostics.paymentCorrectionRuntimeTrace.runId;
+    } else if (diagnostics.paymentCorrectionRecoveryAudit?.runId) {
+      diagnostics.paymentCorrectionRunId =
+        diagnostics.paymentCorrectionRecoveryAudit.runId;
+    }
+    diagnostics.paymentCorrectionRecoveryCleanupMessage =
+      `Cleanup ${cleanup.status || "-"}: ${cleanup.summary || "-"}`;
+    updatePaymentCorrectionFoundationCardAfterRecoveryCleanup(cleanup);
+    showToast(
+      cleanup.status === "PASS"
+        ? "Payment Correction cleanup PASS"
+        : "Payment Correction cleanup completed",
+      cleanup.status === "PASS" ? "success" : "warning"
+    );
+  } catch (err) {
+    diagnostics.paymentCorrectionRecoveryCleanupMessage =
+      err.message || "Payment Correction recovery cleanup unavailable";
+    diagnostics.paymentCorrectionRecoveryError =
+      diagnostics.paymentCorrectionRecoveryCleanupMessage;
+    showToast(diagnostics.paymentCorrectionRecoveryCleanupMessage, "error");
+  } finally {
+    diagnostics.loadingPaymentCorrectionRecoveryCleanup = false;
     renderDeveloperDiagnosticsSheet();
   }
 }
