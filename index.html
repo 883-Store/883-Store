@@ -9744,6 +9744,7 @@ function getDeveloperDiagnosticStatusClass(status) {
   const key = String(status || "").trim().toUpperCase().replace(/\s+/g, "_");
 
   return {
+    COMPLETE: "status-approved",
     PASS: "status-approved",
     FAIL: "status-rejected",
     TIMEOUT: "status-rejected",
@@ -9751,7 +9752,9 @@ function getDeveloperDiagnosticStatusClass(status) {
     PARTIAL: "status-partial",
     BLOCKED: "status-blocked",
     NOT_RUN: "status-not-run",
-    RUNNING: "status-running"
+    RUNNING: "status-running",
+    READY_FOR_DRAFT: "status-approved",
+    READY_FOR_ISSUE_VOID: "status-approved"
   }[key] || "status-neutral";
 }
 
@@ -9831,6 +9834,12 @@ function isBillFoundationDiagnosticSuite(suiteId) {
   ].indexOf(String(suiteId || "").trim()) !== -1;
 }
 
+function isRuntimeRecoveryDeveloperDiagnosticSuite(suiteId) {
+  const id = String(suiteId || "").trim();
+  return isBillFoundationDiagnosticSuite(id) ||
+    id === PAYMENT_FOUNDATION_SUITE_ID;
+}
+
 function canRunBillDraftDiagnostic() {
   const trace = state.admin.developerDiagnostics.billRuntimeTrace || {};
   const handoff = trace.handoff || {};
@@ -9863,42 +9872,155 @@ function getDeveloperDiagnosticSuiteDisabledReason(suite) {
 }
 
 function appendBillFoundationProgressToFailureResult(result, progress) {
+  return appendPersistedRuntimeTraceToTimeoutResult(result, progress);
+}
+
+function getPersistedRuntimeTraceState(trace) {
+  const status = String(trace?.status || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_");
+  if (["PASS", "COMPLETE", "READY_FOR_DRAFT", "READY_FOR_ISSUE_VOID"].includes(status)) {
+    return "complete";
+  }
+  if (status === "RUNNING") {
+    return "running";
+  }
+  if (["FAIL", "FAILED", "TIMEOUT", "ABORTED"].includes(status)) {
+    return "failed";
+  }
+  return status ? "partial" : "unavailable";
+}
+
+function getPersistedRuntimeCheckStatus(stateKey) {
+  return {
+    complete: "PASS",
+    running: "RUNNING",
+    failed: "FAIL",
+    partial: "PARTIAL",
+    unavailable: "FAIL"
+  }[stateKey] || "PARTIAL";
+}
+
+function markClientTimeoutCheckInformational(result) {
+  if (!result || !Array.isArray(result.checks)) return;
+  result.checks = result.checks.map(check => {
+    if (check && check.name === "request_timeout") {
+      return Object.assign({}, check, {
+        status: "PARTIAL",
+        summary: `${check.summary || "Client request timed out."} Persisted backend runtime state was loaded after timeout.`
+      });
+    }
+    return check;
+  });
+}
+
+function appendPersistedRuntimeTraceToTimeoutResult(result, trace) {
   if (!result || !Array.isArray(result.checks)) return result;
-  if (!progress) {
+  if (!trace) {
     result.checks.push({
-      name: "progress_unavailable",
+      name: "runtime_trace_unavailable",
       status: "FAIL",
-      summary: "Persistent Bill progress could not be loaded after timeout."
+      summary: "Persistent backend runtime state could not be loaded after timeout."
     });
     return result;
   }
 
+  const runtimeState = getPersistedRuntimeTraceState(trace);
+  const checkStatus = getPersistedRuntimeCheckStatus(runtimeState);
+  const status = String(trace.status || "").trim().toUpperCase();
+  markClientTimeoutCheckInformational(result);
+
   result.checks.push(
     {
+      name: "persisted_runtime_status",
+      status: checkStatus,
+      summary: status || "-"
+    },
+    {
+      name: "current_checkpoint",
+      status: checkStatus,
+      summary: trace.currentCheckpoint || "-"
+    },
+    {
       name: "last_checkpoint",
-      status: "FAIL",
-      summary: progress.lastCheckpoint || progress.lastCompletedCheckpoint || "-"
+      status: checkStatus,
+      summary: trace.lastCheckpoint || trace.lastCompletedCheckpoint || "-"
     },
     {
       name: "backend_elapsed_ms",
-      status: "FAIL",
-      summary: `${Number(progress.elapsedMs || 0)}`
+      status: checkStatus,
+      summary: `${Number(trace.elapsedMs || 0)}`
     },
     {
       name: "cleanup_status",
-      status: "FAIL",
-      summary: progress.cleanupStatus || "UNKNOWN"
+      status: checkStatus,
+      summary: trace.cleanupStatus || "UNKNOWN"
     },
     {
       name: "run_id",
-      status: "FAIL",
-      summary: progress.runId || "-"
+      status: checkStatus,
+      summary: trace.runId || "-"
     }
   );
+  if (runtimeState === "complete") {
+    result.checks.push({
+      name: "backend_completion_after_timeout",
+      status: "PASS",
+      summary: `Backend completed after client timeout; final status ${status || "-"}`
+    });
+  }
+  if (runtimeState === "running") {
+    result.checks.push({
+      name: "backend_still_running",
+      status: "RUNNING",
+      summary: "Backend execution is still running. Wait, then refresh runtime progress before rerunning or cleaning up."
+    });
+  }
+  if (runtimeState === "failed") {
+    result.checks.push(
+      {
+        name: "failing_checkpoint",
+        status: "FAIL",
+        summary: trace.failingCheckpoint || trace.currentCheckpoint || "-"
+      },
+      {
+        name: "sanitized_error",
+        status: "FAIL",
+        summary: trace.errorMessage || "-"
+      }
+    );
+  }
   if (result.cleanup) {
-    result.cleanup.status = progress.cleanupStatus || result.cleanup.status;
+    result.cleanup.status = trace.cleanupStatus || result.cleanup.status;
+  }
+  if (runtimeState === "complete") {
+    result.status = ["COMPLETE", "READY_FOR_DRAFT", "READY_FOR_ISSUE_VOID"].includes(status)
+      ? status
+      : "PASS";
+    result.durationMs = Number(trace.elapsedMs || result.durationMs || 0);
+  } else if (runtimeState === "running") {
+    result.status = "RUNNING";
+    result.durationMs = Number(trace.elapsedMs || result.durationMs || 0);
+  } else if (runtimeState === "failed") {
+    result.status = "FAIL";
+    result.durationMs = Number(trace.elapsedMs || result.durationMs || 0);
+  } else {
+    result.status = "PARTIAL";
   }
   return result;
+}
+
+async function loadDeveloperDiagnosticRuntimeTraceAfterTimeoutFromAdmin(suite) {
+  if (isBillFoundationDiagnosticSuite(suite)) {
+    await loadLatestBillFoundationRuntimeTraceFromAdmin();
+    return state.admin.developerDiagnostics.billRuntimeTrace;
+  }
+  if (suite === PAYMENT_FOUNDATION_SUITE_ID) {
+    await loadLatestPaymentFoundationRuntimeTraceFromAdmin();
+    return state.admin.developerDiagnostics.paymentRuntimeTrace;
+  }
+  return null;
 }
 
 async function loadLatestBillFoundationRuntimeTraceFromAdmin() {
@@ -10557,13 +10679,12 @@ async function runDeveloperDiagnosticSuiteFromAdmin(suiteId, options = {}) {
       timeoutMs
     );
     diagnostics.results[suite] = failureResult;
-    if (isBillFoundationDiagnosticSuite(suite) && isTimeout) {
-      await loadLatestBillFoundationRuntimeTraceFromAdmin();
-      if (requestId !== diagnostics.requestId) return;
-      appendBillFoundationProgressToFailureResult(
-        failureResult,
-        diagnostics.billRuntimeTrace
+    if (isRuntimeRecoveryDeveloperDiagnosticSuite(suite) && isTimeout) {
+      const trace = await loadDeveloperDiagnosticRuntimeTraceAfterTimeoutFromAdmin(
+        suite
       );
+      if (requestId !== diagnostics.requestId) return;
+      appendPersistedRuntimeTraceToTimeoutResult(failureResult, trace);
       diagnostics.results[suite] = failureResult;
     }
     showToast(diagnostics.error, "error");
