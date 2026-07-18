@@ -6538,6 +6538,12 @@ Object.assign(window, {
   confirmPaymentCorrectionFoundationRecoveryCleanupFromAdmin,
   closePaymentCorrectionFoundationRecoveryCleanupConfirmation,
   executePaymentCorrectionFoundationRecoveryCleanupFromAdmin,
+  loadLatestReceiptFoundationRuntimeTraceFromAdmin,
+  loadReceiptFoundationProgressFromAdmin,
+  auditReceiptFoundationDiagnosticRecoveryFromAdmin,
+  confirmReceiptFoundationRecoveryCleanupFromAdmin,
+  closeReceiptFoundationRecoveryCleanupConfirmation,
+  executeReceiptFoundationRecoveryCleanupFromAdmin,
   setBusinessDashboardRange,
   refreshBusinessDashboard,
   openBusinessDashboardPendingDeliveries,
@@ -6939,6 +6945,15 @@ const state = {
       paymentRecoveryError: "",
       paymentRecoveryCleanupMessage: "",
       paymentRunId: "",
+      loadingReceiptRuntimeTrace: false,
+      receiptRuntimeTrace: null,
+      receiptRuntimeTraceError: "",
+      loadingReceiptRecoveryAudit: false,
+      loadingReceiptRecoveryCleanup: false,
+      receiptRecoveryAudit: null,
+      receiptRecoveryError: "",
+      receiptRecoveryCleanupMessage: "",
+      receiptRunId: "",
       results: {},
       error: ""
     },
@@ -9212,6 +9227,7 @@ const BILL_FOUNDATION_ISSUE_VOID_SUITE_ID = "bill_foundation_issue_void";
 const PAYMENT_FOUNDATION_SUITE_ID = "payment_foundation";
 const RECEIVABLE_FOUNDATION_SUITE_ID = "receivable_foundation";
 const PAYMENT_CORRECTION_FOUNDATION_SUITE_ID = "payment_correction_foundation";
+const RECEIPT_FOUNDATION_SUITE_ID = "receipt_foundation";
 const DISPLAY_UI_INTEGRATION_TEST_PREFIX = "TEST-UI-DISPLAY-";
 
 const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
@@ -9318,6 +9334,12 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     mutationDescription: "Run after Receivable Foundation PASS. Creates isolated TEST-DIAG Payment Correction, replacement Payment, and Bill fixtures, verifies REVERSAL correction, Receivable reopening, exact cleanup, and retained Bill sequence rows."
   },
   {
+    id: RECEIPT_FOUNDATION_SUITE_ID,
+    label: "Receipt Foundation",
+    mutation: true,
+    mutationDescription: "Run after Payment Correction Foundation PASS. Creates isolated TEST-DIAG Receipt, Payment Correction, replacement Payment, Payment, and Bill fixtures, verifies Receipt issue/VOID, numbering, Correction guard, exact cleanup, and retained Receipt/Bill sequence rows."
+  },
+  {
     id: BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID,
     label: "Bill Draft Validation",
     mutation: true,
@@ -9383,6 +9405,15 @@ function resetDeveloperDiagnosticsState() {
   state.admin.developerDiagnostics.paymentCorrectionRecoveryError = "";
   state.admin.developerDiagnostics.paymentCorrectionRecoveryCleanupMessage = "";
   state.admin.developerDiagnostics.paymentCorrectionRunId = "";
+  state.admin.developerDiagnostics.loadingReceiptRuntimeTrace = false;
+  state.admin.developerDiagnostics.receiptRuntimeTrace = null;
+  state.admin.developerDiagnostics.receiptRuntimeTraceError = "";
+  state.admin.developerDiagnostics.loadingReceiptRecoveryAudit = false;
+  state.admin.developerDiagnostics.loadingReceiptRecoveryCleanup = false;
+  state.admin.developerDiagnostics.receiptRecoveryAudit = null;
+  state.admin.developerDiagnostics.receiptRecoveryError = "";
+  state.admin.developerDiagnostics.receiptRecoveryCleanupMessage = "";
+  state.admin.developerDiagnostics.receiptRunId = "";
   state.admin.developerDiagnostics.results = {};
   state.admin.developerDiagnostics.error = "";
 }
@@ -9596,6 +9627,9 @@ function renderDeveloperDiagnosticResultCard(suite) {
           : ""}
         ${suite.id === PAYMENT_CORRECTION_FOUNDATION_SUITE_ID
           ? renderPaymentCorrectionFoundationRuntimeRecoveryPanel()
+          : ""}
+        ${suite.id === RECEIPT_FOUNDATION_SUITE_ID
+          ? renderReceiptFoundationRuntimeRecoveryPanel()
           : ""}
         <div class="diagnostic-check-list">
           ${
@@ -9853,6 +9887,85 @@ function renderPaymentCorrectionFoundationRuntimeRecoveryPanel() {
   `;
 }
 
+function renderReceiptFoundationRuntimeRecoveryPanel() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const trace = diagnostics.receiptRuntimeTrace;
+  const isLoading = diagnostics.loadingReceiptRuntimeTrace;
+  const traceError = diagnostics.receiptRuntimeTraceError;
+  const recovery = diagnostics.receiptRecoveryAudit;
+  const isRecoveryLoading = diagnostics.loadingReceiptRecoveryAudit;
+  const isRecoveryCleanupLoading = diagnostics.loadingReceiptRecoveryCleanup;
+  const recoveryError = diagnostics.receiptRecoveryError;
+  const recoveryCleanupMessage = diagnostics.receiptRecoveryCleanupMessage;
+  const recoverySummary = recovery?.summary || {};
+  const recoverySummaryText = recovery
+    ? Object.keys(recoverySummary)
+        .map(key => {
+          const item = recoverySummary[key] || {};
+          return `${key}: ${Number(item.exists || 0)} exists / ${Number(item.missing || 0)} missing`;
+        })
+        .join(" | ")
+    : "";
+
+  return `
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Receipt Runtime Trace</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadLatestReceiptFoundationRuntimeTraceFromAdmin()">
+          ${isLoading ? "Loading..." : "Latest Receipt Runtime Trace"}
+        </button>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadReceiptFoundationProgressFromAdmin()">
+          ${isLoading ? "Loading..." : "Receipt Progress"}
+        </button>
+      </div>
+      <div class="diagnostic-check-summary">
+        ${trace ? `
+          Run: ${esc(trace.runId || "-")} |
+          Status: ${esc(trace.status || "-")} |
+          Last: ${esc(trace.lastCheckpoint || trace.lastCompletedCheckpoint || "-")} |
+          Current: ${esc(trace.currentCheckpoint || "-")} |
+          Failing: ${esc(trace.failingCheckpoint || "-")} |
+          Elapsed: ${Number(trace.elapsedMs || 0)} ms |
+          Cleanup: ${esc(trace.cleanupStatus || "-")}
+          ${trace.errorMessage ? `<br>Error: ${esc(trace.errorMessage)}` : ""}
+          ${trace.recordCountSummary ? `<br>Manifest: ${esc(JSON.stringify(trace.recordCountSummary))}` : ""}
+        ` : esc(traceError || "Receipt runtime trace not loaded")}
+      </div>
+    </div>
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Receipt Recovery Status</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isRecoveryLoading ? "disabled" : ""}
+          onclick="auditReceiptFoundationDiagnosticRecoveryFromAdmin()">
+          ${isRecoveryLoading ? "Checking..." : "Check Receipt Recovery Status"}
+        </button>
+        <button class="btn btn-danger diagnostic-suite-button" type="button"
+          ${isRecoveryCleanupLoading ? "disabled" : ""}
+          onclick="confirmReceiptFoundationRecoveryCleanupFromAdmin()">
+          ${isRecoveryCleanupLoading ? "Cleaning..." : "Cleanup Receipt Recovery Run"}
+        </button>
+      </div>
+      <div class="diagnostic-check-summary">
+        ${recovery ? `
+          Run: ${esc(recovery.runId || "-")} |
+          Status: ${esc(recovery.status || "-")} |
+          Cleanup: ${esc(recovery.cleanupStatus || "-")} |
+          Cleanup safe: ${recovery.cleanupSafe === false ? "NO" : "YES"} |
+          Sequence retained: ${(recovery.sequenceRetained || recovery.sequenceProtected) ? "YES" : "NO"}
+          ${recovery.ownershipStatus ? `<br>Ownership: ${esc(recovery.ownershipStatus)}` : ""}
+          ${recoverySummaryText ? `<br>${esc(recoverySummaryText)}` : ""}
+          ${recoveryCleanupMessage ? `<br>${esc(recoveryCleanupMessage)}` : ""}
+        ` : esc(recoveryError || "Receipt recovery audit not loaded")}
+      </div>
+    </div>
+  `;
+}
+
 function getDeveloperDiagnosticStatusClass(status) {
   const key = String(status || "").trim().toUpperCase().replace(/\s+/g, "_");
 
@@ -9951,7 +10064,8 @@ function isRuntimeRecoveryDeveloperDiagnosticSuite(suiteId) {
   const id = String(suiteId || "").trim();
   return isBillFoundationDiagnosticSuite(id) ||
     id === PAYMENT_FOUNDATION_SUITE_ID ||
-    id === PAYMENT_CORRECTION_FOUNDATION_SUITE_ID;
+    id === PAYMENT_CORRECTION_FOUNDATION_SUITE_ID ||
+    id === RECEIPT_FOUNDATION_SUITE_ID;
 }
 
 function canRunBillDraftDiagnostic() {
@@ -10137,6 +10251,10 @@ async function loadDeveloperDiagnosticRuntimeTraceAfterTimeoutFromAdmin(suite) {
   if (suite === PAYMENT_CORRECTION_FOUNDATION_SUITE_ID) {
     await loadLatestPaymentCorrectionFoundationRuntimeTraceFromAdmin();
     return state.admin.developerDiagnostics.paymentCorrectionRuntimeTrace;
+  }
+  if (suite === RECEIPT_FOUNDATION_SUITE_ID) {
+    await loadLatestReceiptFoundationRuntimeTraceFromAdmin();
+    return state.admin.developerDiagnostics.receiptRuntimeTrace;
   }
   return null;
 }
@@ -10989,6 +11107,306 @@ async function executePaymentCorrectionFoundationRecoveryCleanupFromAdmin() {
     showToast(diagnostics.paymentCorrectionRecoveryCleanupMessage, "error");
   } finally {
     diagnostics.loadingPaymentCorrectionRecoveryCleanup = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadLatestReceiptFoundationRuntimeTraceFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingReceiptRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingReceiptRuntimeTrace = true;
+  diagnostics.receiptRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "getLatestReceiptFoundationRuntimeTrace");
+    form.append("token", state.admin.token);
+
+    const json = await postFormAction(form);
+    diagnostics.receiptRuntimeTrace = json.data?.trace || null;
+    if (diagnostics.receiptRuntimeTrace?.runId) {
+      diagnostics.receiptRunId = diagnostics.receiptRuntimeTrace.runId;
+    }
+    if (!diagnostics.receiptRuntimeTrace) {
+      diagnostics.receiptRuntimeTraceError =
+        "No persistent Receipt trace found";
+    }
+  } catch (err) {
+    diagnostics.receiptRuntimeTrace = null;
+    diagnostics.receiptRuntimeTraceError =
+      err.message || "Receipt trace unavailable";
+    showToast(diagnostics.receiptRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingReceiptRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadReceiptFoundationProgressFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingReceiptRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingReceiptRuntimeTrace = true;
+  diagnostics.receiptRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "getReceiptFoundationDiagnosticProgress");
+    form.append("token", state.admin.token);
+    if (diagnostics.receiptRunId) {
+      form.append("runId", diagnostics.receiptRunId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.receiptRuntimeTrace = json.data?.progress || null;
+    if (diagnostics.receiptRuntimeTrace?.runId) {
+      diagnostics.receiptRunId = diagnostics.receiptRuntimeTrace.runId;
+    }
+    if (!diagnostics.receiptRuntimeTrace) {
+      diagnostics.receiptRuntimeTraceError =
+        "No persistent Receipt progress found";
+    }
+  } catch (err) {
+    diagnostics.receiptRuntimeTrace = null;
+    diagnostics.receiptRuntimeTraceError =
+      err.message || "Receipt progress unavailable";
+    showToast(diagnostics.receiptRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingReceiptRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function auditReceiptFoundationDiagnosticRecoveryFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingReceiptRecoveryAudit) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingReceiptRecoveryAudit = true;
+  diagnostics.receiptRecoveryError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "auditReceiptFoundationDiagnosticRecovery");
+    form.append("token", state.admin.token);
+    if (diagnostics.receiptRunId) {
+      form.append("runId", diagnostics.receiptRunId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.receiptRecoveryAudit = json.data?.recovery || null;
+    if (diagnostics.receiptRecoveryAudit?.runId) {
+      diagnostics.receiptRunId = diagnostics.receiptRecoveryAudit.runId;
+    }
+    if (!diagnostics.receiptRecoveryAudit) {
+      diagnostics.receiptRecoveryError = "No Receipt recovery manifest found";
+    }
+  } catch (err) {
+    diagnostics.receiptRecoveryError =
+      err.message || "Receipt recovery audit unavailable";
+    showToast(diagnostics.receiptRecoveryError, "error");
+  } finally {
+    diagnostics.loadingReceiptRecoveryAudit = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+function confirmReceiptFoundationRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (
+    diagnostics.runningSuite ||
+    diagnostics.loadingReceiptRecoveryAudit ||
+    diagnostics.loadingReceiptRecoveryCleanup
+  ) {
+    return;
+  }
+
+  const runId =
+    diagnostics.receiptRecoveryAudit?.runId ||
+    diagnostics.receiptRuntimeTrace?.runId ||
+    diagnostics.receiptRunId ||
+    "latest persisted Receipt run";
+
+  confirmSheet.setAttribute(
+    "aria-labelledby",
+    "receiptRecoveryCleanupConfirmTitle"
+  );
+  confirmSheet.classList.add("developer-diagnostic-confirm-sheet");
+  confirmSheet.innerHTML = `
+    <h3 id="receiptRecoveryCleanupConfirmTitle">Cleanup Receipt Recovery Run</h3>
+    <div class="display-inventory-help">
+      This calls the TEST-only Receipt recovery cleanup for run ${esc(runId)}. It deletes only exact tracked TEST-DIAG Receipt, Payment Correction, Payment, and Bill fixture records and keeps Receipt and Bill number sequence rows.
+    </div>
+    <label class="display-inventory-help" for="receiptRecoveryCleanupConfirmation">
+      Type CLEANUP_TEST_DIAG_RECEIPT_RUN to confirm.
+    </label>
+    <input id="receiptRecoveryCleanupConfirmation"
+      type="text"
+      autocomplete="off"
+      style="width:100%;max-width:420px"
+      placeholder="CLEANUP_TEST_DIAG_RECEIPT_RUN">
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closeReceiptFoundationRecoveryCleanupConfirmation()">
+        Cancel
+      </button>
+      <button class="btn btn-danger" type="button"
+        onclick="executeReceiptFoundationRecoveryCleanupFromAdmin()">
+        Cleanup Receipt Recovery Run
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+}
+
+function closeReceiptFoundationRecoveryCleanupConfirmation() {
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  confirmSheet.classList.remove("developer-diagnostic-confirm-sheet");
+  closeOverlay(confirmSheet);
+}
+
+function updateReceiptFoundationCardAfterRecoveryCleanup(cleanup) {
+  const diagnostics = state.admin.developerDiagnostics;
+  const cleanupStatus = String(cleanup && cleanup.status || "FAIL")
+    .trim()
+    .toUpperCase();
+  const cleanupSummary = String(cleanup && cleanup.summary || "").trim();
+  const current =
+    diagnostics.results[RECEIPT_FOUNDATION_SUITE_ID] || {
+      suite: RECEIPT_FOUNDATION_SUITE_ID,
+      status: cleanupStatus === "PASS" ? "PARTIAL" : "FAIL",
+      checks: []
+    };
+  const checks = Array.isArray(current.checks) ? current.checks.slice() : [];
+  const nextCheck = {
+    name: "receipt_recovery_cleanup",
+    status: cleanupStatus,
+    summary: cleanupSummary || "Receipt recovery cleanup completed"
+  };
+  const index = checks.findIndex(check => check.name === nextCheck.name);
+  if (index === -1) {
+    checks.push(nextCheck);
+  } else {
+    checks[index] = nextCheck;
+  }
+  current.checks = checks;
+  current.cleanup = {
+    required: true,
+    status: cleanupStatus
+  };
+  if (cleanupStatus !== "PASS") {
+    current.status = "FAIL";
+  } else if (!current.status || current.status === "NOT_RUN") {
+    current.status = "PARTIAL";
+  }
+  diagnostics.results[RECEIPT_FOUNDATION_SUITE_ID] = current;
+}
+
+async function executeReceiptFoundationRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingReceiptRecoveryCleanup) return;
+
+  const confirmation = String(
+    document.getElementById("receiptRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  if (confirmation !== "CLEANUP_TEST_DIAG_RECEIPT_RUN") {
+    showToast(
+      "Receipt recovery cleanup confirmation is required",
+      "warning"
+    );
+    return;
+  }
+
+  closeReceiptFoundationRecoveryCleanupConfirmation();
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingReceiptRecoveryCleanup = true;
+  diagnostics.receiptRecoveryError = "";
+  diagnostics.receiptRecoveryCleanupMessage = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "cleanupReceiptFoundationDiagnosticRecovery");
+    form.append("token", state.admin.token);
+    form.append("confirmation", confirmation);
+    if (diagnostics.receiptRunId) {
+      form.append("runId", diagnostics.receiptRunId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    const cleanup = json.data?.cleanup || {};
+    diagnostics.receiptRuntimeTrace = json.data?.progress || null;
+    diagnostics.receiptRecoveryAudit = json.data?.recovery || null;
+    if (diagnostics.receiptRuntimeTrace?.runId) {
+      diagnostics.receiptRunId = diagnostics.receiptRuntimeTrace.runId;
+    } else if (diagnostics.receiptRecoveryAudit?.runId) {
+      diagnostics.receiptRunId = diagnostics.receiptRecoveryAudit.runId;
+    }
+    diagnostics.receiptRecoveryCleanupMessage =
+      `Cleanup ${cleanup.status || "-"}: ${cleanup.summary || "-"}`;
+    updateReceiptFoundationCardAfterRecoveryCleanup(cleanup);
+    showToast(
+      cleanup.status === "PASS"
+        ? "Receipt cleanup PASS"
+        : "Receipt cleanup completed",
+      cleanup.status === "PASS" ? "success" : "warning"
+    );
+  } catch (err) {
+    diagnostics.receiptRecoveryCleanupMessage =
+      err.message || "Receipt recovery cleanup unavailable";
+    diagnostics.receiptRecoveryError = diagnostics.receiptRecoveryCleanupMessage;
+    showToast(diagnostics.receiptRecoveryCleanupMessage, "error");
+  } finally {
+    diagnostics.loadingReceiptRecoveryCleanup = false;
     renderDeveloperDiagnosticsSheet();
   }
 }
