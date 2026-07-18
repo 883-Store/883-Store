@@ -10060,6 +10060,13 @@ function isBillFoundationDiagnosticSuite(suiteId) {
   ].indexOf(String(suiteId || "").trim()) !== -1;
 }
 
+function getBillFoundationSuiteIdFromRuntimeTrace(trace) {
+  const suiteId = String(trace?.suiteId || "").trim();
+  return isBillFoundationDiagnosticSuite(suiteId)
+    ? suiteId
+    : BILL_FOUNDATION_SUITE_ID;
+}
+
 function isRuntimeRecoveryDeveloperDiagnosticSuite(suiteId) {
   const id = String(suiteId || "").trim();
   return isBillFoundationDiagnosticSuite(id) ||
@@ -10130,27 +10137,272 @@ function getPersistedRuntimeCheckStatus(stateKey) {
   }[stateKey] || "PARTIAL";
 }
 
+const DEVELOPER_DIAGNOSTIC_RECONCILIATION_CHECK_NAMES = Object.freeze([
+  "persisted_runtime_status",
+  "persisted_recovery_status",
+  "current_checkpoint",
+  "last_checkpoint",
+  "backend_elapsed_ms",
+  "cleanup_status",
+  "run_id",
+  "backend_completion_after_timeout",
+  "backend_still_running",
+  "failing_checkpoint",
+  "sanitized_error",
+  "runtime_trace_unavailable",
+  "recovery_ownership",
+  "cleanup_safe",
+  "sequence_retained"
+]);
+
+function normalizeDeveloperDiagnosticStatus(status) {
+  return String(status || "").trim().toUpperCase().replace(/\s+/g, "_");
+}
+
 function markClientTimeoutCheckInformational(result) {
   if (!result || !Array.isArray(result.checks)) return;
   result.checks = result.checks.map(check => {
     if (check && check.name === "request_timeout") {
+      const summary = check.summary || "Client request timed out.";
+      const note = "Persisted backend runtime state was loaded after timeout.";
       return Object.assign({}, check, {
         status: "PARTIAL",
-        summary: `${check.summary || "Client request timed out."} Persisted backend runtime state was loaded after timeout.`
+        summary: summary.indexOf(note) === -1
+          ? `${summary} ${note}`
+          : summary
       });
     }
     return check;
   });
 }
 
+function getDeveloperDiagnosticResultRunId(result) {
+  const checks = Array.isArray(result?.checks) ? result.checks : [];
+  const runCheck = checks.find(check => check && check.name === "run_id");
+  return String(result?.runId || runCheck?.summary || "").trim();
+}
+
+function setDeveloperDiagnosticReconciliationChecks(result, nextChecks) {
+  const checks = Array.isArray(result?.checks) ? result.checks.slice() : [];
+  const filtered = checks.filter(check =>
+    check && DEVELOPER_DIAGNOSTIC_RECONCILIATION_CHECK_NAMES.indexOf(check.name) === -1
+  );
+  (nextChecks || []).forEach(nextCheck => {
+    const index = filtered.findIndex(check => check && check.name === nextCheck.name);
+    if (index === -1) {
+      filtered.push(nextCheck);
+    } else {
+      filtered[index] = nextCheck;
+    }
+  });
+  result.checks = filtered;
+}
+
+function getDeveloperDiagnosticCardStatusFromPersistedTrace(trace) {
+  const runtimeState = getPersistedRuntimeTraceState(trace);
+  const status = normalizeDeveloperDiagnosticStatus(trace?.status);
+  if (runtimeState === "complete") {
+    return ["COMPLETE", "READY_FOR_DRAFT", "READY_FOR_ISSUE_VOID"].includes(status)
+      ? status
+      : "PASS";
+  }
+  if (runtimeState === "running") return "RUNNING";
+  if (runtimeState === "failed") return "FAIL";
+  return status || "PARTIAL";
+}
+
+function getDeveloperDiagnosticCardStatusFromRecovery(recovery) {
+  const status = normalizeDeveloperDiagnosticStatus(recovery?.status);
+  const cleanupStatus = normalizeDeveloperDiagnosticStatus(recovery?.cleanupStatus);
+  if (status === "PASS" && cleanupStatus === "PASS") return "PASS";
+  if (["FAIL", "FAILED", "TIMEOUT", "ABORTED"].includes(status)) return "FAIL";
+  if (status === "RUNNING") return "RUNNING";
+  if (status === "PASS" || status === "COMPLETE") return "PASS";
+  return status || "";
+}
+
+function shouldApplyPersistedDeveloperDiagnosticState(current, incoming) {
+  const incomingRunId = String(incoming?.runId || "").trim();
+  const currentRunId = getDeveloperDiagnosticResultRunId(current);
+  if (incomingRunId && currentRunId && incomingRunId !== currentRunId) {
+    return false;
+  }
+
+  const incomingStatus = normalizeDeveloperDiagnosticStatus(incoming?.status);
+  const currentStatus = normalizeDeveloperDiagnosticStatus(current?.status);
+  const currentIsTerminal = [
+    "PASS",
+    "COMPLETE",
+    "READY_FOR_DRAFT",
+    "READY_FOR_ISSUE_VOID",
+    "FAIL",
+    "FAILED",
+    "TIMEOUT",
+    "ABORTED"
+  ].includes(currentStatus);
+
+  if (currentIsTerminal && incomingStatus === "RUNNING") {
+    return false;
+  }
+  return true;
+}
+
+function reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+  suiteId,
+  persisted = {}
+) {
+  const diagnostics = state.admin.developerDiagnostics;
+  const suite = String(suiteId || "").trim();
+  if (!suite) return;
+
+  const trace = persisted.trace || null;
+  const recovery = persisted.recovery || null;
+  const cleanup = persisted.cleanup || null;
+  const incoming =
+    recovery && recovery.runId
+      ? recovery
+      : trace && trace.runId
+        ? trace
+        : null;
+  if (!incoming || !shouldApplyPersistedDeveloperDiagnosticState(
+    diagnostics.results[suite],
+    incoming
+  )) {
+    return;
+  }
+
+  const current = diagnostics.results[suite] || {
+    suite,
+    status: "NOT_RUN",
+    checks: []
+  };
+  const result = Object.assign({}, current, {
+    suite,
+    runId: incoming.runId || current.runId || ""
+  });
+  const traceStatus = trace
+    ? getDeveloperDiagnosticCardStatusFromPersistedTrace(trace)
+    : "";
+  const recoveryStatus = recovery
+    ? getDeveloperDiagnosticCardStatusFromRecovery(recovery)
+    : "";
+  const nextStatus = recoveryStatus || traceStatus || result.status || "PARTIAL";
+  const elapsedMs = Number(trace?.elapsedMs || recovery?.elapsedMs || result.durationMs || 0);
+  const cleanupStatus =
+    recovery?.cleanupStatus ||
+    trace?.cleanupStatus ||
+    cleanup?.status ||
+    result.cleanup?.status ||
+    "UNKNOWN";
+  const checkStatus = getPersistedRuntimeCheckStatus(
+    getPersistedRuntimeTraceState({ status: nextStatus })
+  );
+  const checks = [
+    {
+      name: "persisted_runtime_status",
+      status: checkStatus,
+      summary: nextStatus || "-"
+    },
+    {
+      name: "current_checkpoint",
+      status: checkStatus,
+      summary: trace?.currentCheckpoint || recovery?.currentCheckpoint || "-"
+    },
+    {
+      name: "last_checkpoint",
+      status: checkStatus,
+      summary: trace?.lastCheckpoint || trace?.lastCompletedCheckpoint ||
+        recovery?.lastCheckpoint || recovery?.lastCompletedCheckpoint || "-"
+    },
+    {
+      name: "backend_elapsed_ms",
+      status: checkStatus,
+      summary: `${elapsedMs}`
+    },
+    {
+      name: "cleanup_status",
+      status: checkStatus,
+      summary: cleanupStatus || "UNKNOWN"
+    },
+    {
+      name: "run_id",
+      status: checkStatus,
+      summary: incoming.runId || "-"
+    }
+  ];
+
+  if (recovery) {
+    checks.push(
+      {
+        name: "persisted_recovery_status",
+        status: recoveryStatus === "PASS" ? "PASS" : checkStatus,
+        summary: recovery.status || "-"
+      },
+      {
+        name: "recovery_ownership",
+        status: recovery.ownershipStatus === "PASS" ? "PASS" : "PARTIAL",
+        summary: recovery.ownershipStatus || "-"
+      },
+      {
+        name: "cleanup_safe",
+        status: recovery.cleanupSafe === false ? "FAIL" : "PASS",
+        summary: recovery.cleanupSafe === false ? "NO" : "YES"
+      },
+      {
+        name: "sequence_retained",
+        status: (recovery.sequenceRetained || recovery.sequenceProtected) ? "PASS" : "PARTIAL",
+        summary: (recovery.sequenceRetained || recovery.sequenceProtected) ? "YES" : "UNKNOWN"
+      }
+    );
+  }
+
+  if (nextStatus === "PASS" || nextStatus === "COMPLETE") {
+    checks.push({
+      name: "backend_completion_after_timeout",
+      status: "PASS",
+      summary: `Persisted backend state is ${nextStatus}; client timeout is informational only.`
+    });
+  } else if (nextStatus === "RUNNING") {
+    checks.push({
+      name: "backend_still_running",
+      status: "RUNNING",
+      summary: "Backend execution is still running. Wait, then refresh runtime progress before rerunning or cleaning up."
+    });
+  } else if (nextStatus === "FAIL") {
+    checks.push(
+      {
+        name: "failing_checkpoint",
+        status: "FAIL",
+        summary: trace?.failingCheckpoint || recovery?.failingCheckpoint ||
+          trace?.currentCheckpoint || "-"
+      },
+      {
+        name: "sanitized_error",
+        status: "FAIL",
+        summary: trace?.errorMessage || recovery?.errorMessage || "-"
+      }
+    );
+  }
+
+  markClientTimeoutCheckInformational(result);
+  setDeveloperDiagnosticReconciliationChecks(result, checks);
+  result.status = nextStatus;
+  result.durationMs = elapsedMs;
+  result.cleanup = {
+    required: true,
+    status: cleanupStatus
+  };
+  diagnostics.results[suite] = result;
+}
+
 function appendPersistedRuntimeTraceToTimeoutResult(result, trace) {
   if (!result || !Array.isArray(result.checks)) return result;
   if (!trace) {
-    result.checks.push({
-      name: "runtime_trace_unavailable",
+    setDeveloperDiagnosticReconciliationChecks(result, [{
+      name: "persisted_runtime_status",
       status: "FAIL",
       summary: "Persistent backend runtime state could not be loaded after timeout."
-    });
+    }]);
     return result;
   }
 
@@ -10159,7 +10411,7 @@ function appendPersistedRuntimeTraceToTimeoutResult(result, trace) {
   const status = String(trace.status || "").trim().toUpperCase();
   markClientTimeoutCheckInformational(result);
 
-  result.checks.push(
+  const checks = [
     {
       name: "persisted_runtime_status",
       status: checkStatus,
@@ -10190,23 +10442,23 @@ function appendPersistedRuntimeTraceToTimeoutResult(result, trace) {
       status: checkStatus,
       summary: trace.runId || "-"
     }
-  );
+  ];
   if (runtimeState === "complete") {
-    result.checks.push({
+    checks.push({
       name: "backend_completion_after_timeout",
       status: "PASS",
       summary: `Backend completed after client timeout; final status ${status || "-"}`
     });
   }
   if (runtimeState === "running") {
-    result.checks.push({
+    checks.push({
       name: "backend_still_running",
       status: "RUNNING",
       summary: "Backend execution is still running. Wait, then refresh runtime progress before rerunning or cleaning up."
     });
   }
   if (runtimeState === "failed") {
-    result.checks.push(
+    checks.push(
       {
         name: "failing_checkpoint",
         status: "FAIL",
@@ -10219,6 +10471,7 @@ function appendPersistedRuntimeTraceToTimeoutResult(result, trace) {
       }
     );
   }
+  setDeveloperDiagnosticReconciliationChecks(result, checks);
   if (result.cleanup) {
     result.cleanup.status = trace.cleanupStatus || result.cleanup.status;
   }
@@ -10291,6 +10544,10 @@ async function loadLatestBillFoundationRuntimeTraceFromAdmin() {
     diagnostics.billRuntimeTrace = json.data?.progress || null;
     if (diagnostics.billRuntimeTrace?.runId) {
       diagnostics.billRunId = diagnostics.billRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        getBillFoundationSuiteIdFromRuntimeTrace(diagnostics.billRuntimeTrace),
+        { trace: diagnostics.billRuntimeTrace }
+      );
     }
     if (!diagnostics.billRuntimeTrace) {
       diagnostics.billRuntimeTraceError = "No persistent progress found";
@@ -10338,6 +10595,10 @@ async function auditBillFoundationDiagnosticRecoveryFromAdmin() {
     diagnostics.billRecoveryAudit = json.data?.recovery || null;
     if (diagnostics.billRecoveryAudit?.runId) {
       diagnostics.billRunId = diagnostics.billRecoveryAudit.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        getBillFoundationSuiteIdFromRuntimeTrace(diagnostics.billRuntimeTrace),
+        { recovery: diagnostics.billRecoveryAudit }
+      );
     }
     if (!diagnostics.billRecoveryAudit) {
       diagnostics.billRecoveryError = "No recovery manifest found";
@@ -10497,6 +10758,14 @@ async function executeBillFoundationRecoveryCleanupFromAdmin() {
     diagnostics.billRecoveryCleanupMessage =
       `Cleanup ${cleanup.status || "-"}: ${cleanup.summary || "-"}`;
     updateBillFoundationCardAfterRecoveryCleanup(cleanup);
+    reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+      getBillFoundationSuiteIdFromRuntimeTrace(diagnostics.billRuntimeTrace),
+      {
+        trace: diagnostics.billRuntimeTrace,
+        recovery: diagnostics.billRecoveryAudit,
+        cleanup
+      }
+    );
     showToast(
       cleanup.status === "PASS" ? "Cleanup PASS" : "Cleanup completed",
       cleanup.status === "PASS" ? "success" : "warning"
@@ -10539,6 +10808,10 @@ async function loadLatestPaymentFoundationRuntimeTraceFromAdmin() {
     diagnostics.paymentRuntimeTrace = json.data?.trace || null;
     if (diagnostics.paymentRuntimeTrace?.runId) {
       diagnostics.paymentRunId = diagnostics.paymentRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        PAYMENT_FOUNDATION_SUITE_ID,
+        { trace: diagnostics.paymentRuntimeTrace }
+      );
     }
     if (!diagnostics.paymentRuntimeTrace) {
       diagnostics.paymentRuntimeTraceError = "No persistent Payment trace found";
@@ -10586,6 +10859,10 @@ async function loadPaymentFoundationProgressFromAdmin() {
     diagnostics.paymentRuntimeTrace = json.data?.progress || null;
     if (diagnostics.paymentRuntimeTrace?.runId) {
       diagnostics.paymentRunId = diagnostics.paymentRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        PAYMENT_FOUNDATION_SUITE_ID,
+        { trace: diagnostics.paymentRuntimeTrace }
+      );
     }
     if (!diagnostics.paymentRuntimeTrace) {
       diagnostics.paymentRuntimeTraceError = "No persistent Payment progress found";
@@ -10633,6 +10910,10 @@ async function auditPaymentFoundationDiagnosticRecoveryFromAdmin() {
     diagnostics.paymentRecoveryAudit = json.data?.recovery || null;
     if (diagnostics.paymentRecoveryAudit?.runId) {
       diagnostics.paymentRunId = diagnostics.paymentRecoveryAudit.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        PAYMENT_FOUNDATION_SUITE_ID,
+        { recovery: diagnostics.paymentRecoveryAudit }
+      );
     }
     if (!diagnostics.paymentRecoveryAudit) {
       diagnostics.paymentRecoveryError = "No Payment recovery manifest found";
@@ -10789,6 +11070,14 @@ async function executePaymentFoundationRecoveryCleanupFromAdmin() {
     diagnostics.paymentRecoveryCleanupMessage =
       `Cleanup ${cleanup.status || "-"}: ${cleanup.summary || "-"}`;
     updatePaymentFoundationCardAfterRecoveryCleanup(cleanup);
+    reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+      PAYMENT_FOUNDATION_SUITE_ID,
+      {
+        trace: diagnostics.paymentRuntimeTrace,
+        recovery: diagnostics.paymentRecoveryAudit,
+        cleanup
+      }
+    );
     showToast(
       cleanup.status === "PASS" ? "Payment cleanup PASS" : "Payment cleanup completed",
       cleanup.status === "PASS" ? "success" : "warning"
@@ -10832,6 +11121,10 @@ async function loadLatestPaymentCorrectionFoundationRuntimeTraceFromAdmin() {
     if (diagnostics.paymentCorrectionRuntimeTrace?.runId) {
       diagnostics.paymentCorrectionRunId =
         diagnostics.paymentCorrectionRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        PAYMENT_CORRECTION_FOUNDATION_SUITE_ID,
+        { trace: diagnostics.paymentCorrectionRuntimeTrace }
+      );
     }
     if (!diagnostics.paymentCorrectionRuntimeTrace) {
       diagnostics.paymentCorrectionRuntimeTraceError =
@@ -10881,6 +11174,10 @@ async function loadPaymentCorrectionFoundationProgressFromAdmin() {
     if (diagnostics.paymentCorrectionRuntimeTrace?.runId) {
       diagnostics.paymentCorrectionRunId =
         diagnostics.paymentCorrectionRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        PAYMENT_CORRECTION_FOUNDATION_SUITE_ID,
+        { trace: diagnostics.paymentCorrectionRuntimeTrace }
+      );
     }
     if (!diagnostics.paymentCorrectionRuntimeTrace) {
       diagnostics.paymentCorrectionRuntimeTraceError =
@@ -10930,6 +11227,10 @@ async function auditPaymentCorrectionFoundationDiagnosticRecoveryFromAdmin() {
     if (diagnostics.paymentCorrectionRecoveryAudit?.runId) {
       diagnostics.paymentCorrectionRunId =
         diagnostics.paymentCorrectionRecoveryAudit.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        PAYMENT_CORRECTION_FOUNDATION_SUITE_ID,
+        { recovery: diagnostics.paymentCorrectionRecoveryAudit }
+      );
     }
     if (!diagnostics.paymentCorrectionRecoveryAudit) {
       diagnostics.paymentCorrectionRecoveryError =
@@ -11093,6 +11394,14 @@ async function executePaymentCorrectionFoundationRecoveryCleanupFromAdmin() {
     diagnostics.paymentCorrectionRecoveryCleanupMessage =
       `Cleanup ${cleanup.status || "-"}: ${cleanup.summary || "-"}`;
     updatePaymentCorrectionFoundationCardAfterRecoveryCleanup(cleanup);
+    reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+      PAYMENT_CORRECTION_FOUNDATION_SUITE_ID,
+      {
+        trace: diagnostics.paymentCorrectionRuntimeTrace,
+        recovery: diagnostics.paymentCorrectionRecoveryAudit,
+        cleanup
+      }
+    );
     showToast(
       cleanup.status === "PASS"
         ? "Payment Correction cleanup PASS"
@@ -11138,6 +11447,10 @@ async function loadLatestReceiptFoundationRuntimeTraceFromAdmin() {
     diagnostics.receiptRuntimeTrace = json.data?.trace || null;
     if (diagnostics.receiptRuntimeTrace?.runId) {
       diagnostics.receiptRunId = diagnostics.receiptRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        RECEIPT_FOUNDATION_SUITE_ID,
+        { trace: diagnostics.receiptRuntimeTrace }
+      );
     }
     if (!diagnostics.receiptRuntimeTrace) {
       diagnostics.receiptRuntimeTraceError =
@@ -11186,6 +11499,10 @@ async function loadReceiptFoundationProgressFromAdmin() {
     diagnostics.receiptRuntimeTrace = json.data?.progress || null;
     if (diagnostics.receiptRuntimeTrace?.runId) {
       diagnostics.receiptRunId = diagnostics.receiptRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        RECEIPT_FOUNDATION_SUITE_ID,
+        { trace: diagnostics.receiptRuntimeTrace }
+      );
     }
     if (!diagnostics.receiptRuntimeTrace) {
       diagnostics.receiptRuntimeTraceError =
@@ -11234,6 +11551,10 @@ async function auditReceiptFoundationDiagnosticRecoveryFromAdmin() {
     diagnostics.receiptRecoveryAudit = json.data?.recovery || null;
     if (diagnostics.receiptRecoveryAudit?.runId) {
       diagnostics.receiptRunId = diagnostics.receiptRecoveryAudit.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        RECEIPT_FOUNDATION_SUITE_ID,
+        { recovery: diagnostics.receiptRecoveryAudit }
+      );
     }
     if (!diagnostics.receiptRecoveryAudit) {
       diagnostics.receiptRecoveryError = "No Receipt recovery manifest found";
@@ -11394,6 +11715,14 @@ async function executeReceiptFoundationRecoveryCleanupFromAdmin() {
     diagnostics.receiptRecoveryCleanupMessage =
       `Cleanup ${cleanup.status || "-"}: ${cleanup.summary || "-"}`;
     updateReceiptFoundationCardAfterRecoveryCleanup(cleanup);
+    reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+      RECEIPT_FOUNDATION_SUITE_ID,
+      {
+        trace: diagnostics.receiptRuntimeTrace,
+        recovery: diagnostics.receiptRecoveryAudit,
+        cleanup
+      }
+    );
     showToast(
       cleanup.status === "PASS"
         ? "Receipt cleanup PASS"
