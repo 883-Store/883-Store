@@ -9340,6 +9340,12 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     mutationDescription: "Run after Payment Correction Foundation PASS. Creates isolated TEST-DIAG Receipt, Payment Correction, replacement Payment, Payment, and Bill fixtures, verifies Receipt issue/VOID, numbering, Correction guard, exact cleanup, and retained Receipt/Bill sequence rows."
   },
   {
+    id: "legal_identity_foundation",
+    label: "Legal Identity Foundation",
+    mutation: true,
+    mutationDescription: "Run after Receipt Foundation PASS and before Tax Invoice implementation. Creates isolated TEST-DIAG Customer Legal Identity and Company Legal Profile fixtures, verifies no-fallback guards, exact cleanup, and real-record protection."
+  },
+  {
     id: BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID,
     label: "Bill Draft Validation",
     mutation: true,
