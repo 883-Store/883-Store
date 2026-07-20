@@ -6544,6 +6544,12 @@ Object.assign(window, {
   confirmReceiptFoundationRecoveryCleanupFromAdmin,
   closeReceiptFoundationRecoveryCleanupConfirmation,
   executeReceiptFoundationRecoveryCleanupFromAdmin,
+  loadLatestTaxInvoiceFoundationRuntimeTraceFromAdmin,
+  loadTaxInvoiceFoundationProgressFromAdmin,
+  auditTaxInvoiceFoundationDiagnosticRecoveryFromAdmin,
+  confirmTaxInvoiceFoundationRecoveryCleanupFromAdmin,
+  closeTaxInvoiceFoundationRecoveryCleanupConfirmation,
+  executeTaxInvoiceFoundationRecoveryCleanupFromAdmin,
   setBusinessDashboardRange,
   refreshBusinessDashboard,
   openBusinessDashboardPendingDeliveries,
@@ -6954,6 +6960,15 @@ const state = {
       receiptRecoveryError: "",
       receiptRecoveryCleanupMessage: "",
       receiptRunId: "",
+      loadingTaxInvoiceRuntimeTrace: false,
+      taxInvoiceRuntimeTrace: null,
+      taxInvoiceRuntimeTraceError: "",
+      loadingTaxInvoiceRecoveryAudit: false,
+      loadingTaxInvoiceRecoveryCleanup: false,
+      taxInvoiceRecoveryAudit: null,
+      taxInvoiceRecoveryError: "",
+      taxInvoiceRecoveryCleanupMessage: "",
+      taxInvoiceRunId: "",
       results: {},
       error: ""
     },
@@ -9228,6 +9243,7 @@ const PAYMENT_FOUNDATION_SUITE_ID = "payment_foundation";
 const RECEIVABLE_FOUNDATION_SUITE_ID = "receivable_foundation";
 const PAYMENT_CORRECTION_FOUNDATION_SUITE_ID = "payment_correction_foundation";
 const RECEIPT_FOUNDATION_SUITE_ID = "receipt_foundation";
+const TAX_INVOICE_FOUNDATION_SUITE_ID = "tax_invoice_foundation";
 const DISPLAY_UI_INTEGRATION_TEST_PREFIX = "TEST-UI-DISPLAY-";
 
 const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
@@ -9343,7 +9359,13 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     id: "legal_identity_foundation",
     label: "Legal Identity Foundation",
     mutation: true,
-    mutationDescription: "Run after Receipt Foundation PASS and before Tax Invoice implementation. Creates isolated TEST-DIAG Customer Legal Identity and Company Legal Profile fixtures, verifies no-fallback guards, exact cleanup, and real-record protection."
+    mutationDescription: "Run after Receipt Foundation PASS and before Tax Invoice Foundation. Creates isolated TEST-DIAG Customer Legal Identity and Company Legal Profile fixtures, verifies no-fallback guards, exact cleanup, and real-record protection."
+  },
+  {
+    id: TAX_INVOICE_FOUNDATION_SUITE_ID,
+    label: "Tax Invoice Foundation",
+    mutation: true,
+    mutationDescription: "Run after Legal Identity Foundation PASS. Creates isolated TEST-DIAG Tax Invoice, Legal Identity, Bill, Receipt, and Payment fixtures, verifies issue/VOID, TINV numbering, immutable VAT/legal snapshots, exact cleanup, and retained Tax Invoice/Bill/Receipt sequence rows."
   },
   {
     id: BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID,
@@ -9420,6 +9442,15 @@ function resetDeveloperDiagnosticsState() {
   state.admin.developerDiagnostics.receiptRecoveryError = "";
   state.admin.developerDiagnostics.receiptRecoveryCleanupMessage = "";
   state.admin.developerDiagnostics.receiptRunId = "";
+  state.admin.developerDiagnostics.loadingTaxInvoiceRuntimeTrace = false;
+  state.admin.developerDiagnostics.taxInvoiceRuntimeTrace = null;
+  state.admin.developerDiagnostics.taxInvoiceRuntimeTraceError = "";
+  state.admin.developerDiagnostics.loadingTaxInvoiceRecoveryAudit = false;
+  state.admin.developerDiagnostics.loadingTaxInvoiceRecoveryCleanup = false;
+  state.admin.developerDiagnostics.taxInvoiceRecoveryAudit = null;
+  state.admin.developerDiagnostics.taxInvoiceRecoveryError = "";
+  state.admin.developerDiagnostics.taxInvoiceRecoveryCleanupMessage = "";
+  state.admin.developerDiagnostics.taxInvoiceRunId = "";
   state.admin.developerDiagnostics.results = {};
   state.admin.developerDiagnostics.error = "";
 }
@@ -9636,6 +9667,9 @@ function renderDeveloperDiagnosticResultCard(suite) {
           : ""}
         ${suite.id === RECEIPT_FOUNDATION_SUITE_ID
           ? renderReceiptFoundationRuntimeRecoveryPanel()
+          : ""}
+        ${suite.id === TAX_INVOICE_FOUNDATION_SUITE_ID
+          ? renderTaxInvoiceFoundationRuntimeRecoveryPanel()
           : ""}
         <div class="diagnostic-check-list">
           ${
@@ -9972,6 +10006,85 @@ function renderReceiptFoundationRuntimeRecoveryPanel() {
   `;
 }
 
+function renderTaxInvoiceFoundationRuntimeRecoveryPanel() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const trace = diagnostics.taxInvoiceRuntimeTrace;
+  const isLoading = diagnostics.loadingTaxInvoiceRuntimeTrace;
+  const traceError = diagnostics.taxInvoiceRuntimeTraceError;
+  const recovery = diagnostics.taxInvoiceRecoveryAudit;
+  const isRecoveryLoading = diagnostics.loadingTaxInvoiceRecoveryAudit;
+  const isRecoveryCleanupLoading = diagnostics.loadingTaxInvoiceRecoveryCleanup;
+  const recoveryError = diagnostics.taxInvoiceRecoveryError;
+  const recoveryCleanupMessage = diagnostics.taxInvoiceRecoveryCleanupMessage;
+  const recoverySummary = recovery?.summary || {};
+  const recoverySummaryText = recovery
+    ? Object.keys(recoverySummary)
+        .map(key => {
+          const item = recoverySummary[key] || {};
+          return `${key}: ${Number(item.exists || 0)} exists / ${Number(item.missing || 0)} missing`;
+        })
+        .join(" | ")
+    : "";
+
+  return `
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Tax Invoice Runtime Trace</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadLatestTaxInvoiceFoundationRuntimeTraceFromAdmin()">
+          ${isLoading ? "Loading..." : "Latest Tax Invoice Runtime Trace"}
+        </button>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadTaxInvoiceFoundationProgressFromAdmin()">
+          ${isLoading ? "Loading..." : "Tax Invoice Progress"}
+        </button>
+      </div>
+      <div class="diagnostic-check-summary">
+        ${trace ? `
+          Run: ${esc(trace.runId || "-")} |
+          Status: ${esc(trace.status || "-")} |
+          Last: ${esc(trace.lastCheckpoint || trace.lastCompletedCheckpoint || "-")} |
+          Current: ${esc(trace.currentCheckpoint || "-")} |
+          Failing: ${esc(trace.failingCheckpoint || "-")} |
+          Elapsed: ${Number(trace.elapsedMs || 0)} ms |
+          Cleanup: ${esc(trace.cleanupStatus || "-")}
+          ${trace.errorMessage ? `<br>Error: ${esc(trace.errorMessage)}` : ""}
+          ${trace.recordCountSummary ? `<br>Manifest: ${esc(JSON.stringify(trace.recordCountSummary))}` : ""}
+        ` : esc(traceError || "Tax Invoice runtime trace not loaded")}
+      </div>
+    </div>
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Tax Invoice Recovery Status</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isRecoveryLoading ? "disabled" : ""}
+          onclick="auditTaxInvoiceFoundationDiagnosticRecoveryFromAdmin()">
+          ${isRecoveryLoading ? "Checking..." : "Check Tax Invoice Recovery Status"}
+        </button>
+        <button class="btn btn-danger diagnostic-suite-button" type="button"
+          ${isRecoveryCleanupLoading ? "disabled" : ""}
+          onclick="confirmTaxInvoiceFoundationRecoveryCleanupFromAdmin()">
+          ${isRecoveryCleanupLoading ? "Cleaning..." : "Cleanup Tax Invoice Recovery Run"}
+        </button>
+      </div>
+      <div class="diagnostic-check-summary">
+        ${recovery ? `
+          Run: ${esc(recovery.runId || "-")} |
+          Status: ${esc(recovery.status || "-")} |
+          Cleanup: ${esc(recovery.cleanupStatus || "-")} |
+          Cleanup safe: ${recovery.cleanupSafe === false ? "NO" : "YES"} |
+          Sequence retained: ${(recovery.sequenceRetained || recovery.sequenceProtected) ? "YES" : "NO"}
+          ${recovery.ownershipStatus ? `<br>Ownership: ${esc(recovery.ownershipStatus)}` : ""}
+          ${recoverySummaryText ? `<br>${esc(recoverySummaryText)}` : ""}
+          ${recoveryCleanupMessage ? `<br>${esc(recoveryCleanupMessage)}` : ""}
+        ` : esc(recoveryError || "Tax Invoice recovery audit not loaded")}
+      </div>
+    </div>
+  `;
+}
+
 function getDeveloperDiagnosticStatusClass(status) {
   const key = String(status || "").trim().toUpperCase().replace(/\s+/g, "_");
 
@@ -10078,7 +10191,8 @@ function isRuntimeRecoveryDeveloperDiagnosticSuite(suiteId) {
   return isBillFoundationDiagnosticSuite(id) ||
     id === PAYMENT_FOUNDATION_SUITE_ID ||
     id === PAYMENT_CORRECTION_FOUNDATION_SUITE_ID ||
-    id === RECEIPT_FOUNDATION_SUITE_ID;
+    id === RECEIPT_FOUNDATION_SUITE_ID ||
+    id === TAX_INVOICE_FOUNDATION_SUITE_ID;
 }
 
 function canRunBillDraftDiagnostic() {
@@ -10514,6 +10628,10 @@ async function loadDeveloperDiagnosticRuntimeTraceAfterTimeoutFromAdmin(suite) {
   if (suite === RECEIPT_FOUNDATION_SUITE_ID) {
     await loadLatestReceiptFoundationRuntimeTraceFromAdmin();
     return state.admin.developerDiagnostics.receiptRuntimeTrace;
+  }
+  if (suite === TAX_INVOICE_FOUNDATION_SUITE_ID) {
+    await loadLatestTaxInvoiceFoundationRuntimeTraceFromAdmin();
+    return state.admin.developerDiagnostics.taxInvoiceRuntimeTrace;
   }
   return null;
 }
@@ -11742,6 +11860,328 @@ async function executeReceiptFoundationRecoveryCleanupFromAdmin() {
     showToast(diagnostics.receiptRecoveryCleanupMessage, "error");
   } finally {
     diagnostics.loadingReceiptRecoveryCleanup = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadLatestTaxInvoiceFoundationRuntimeTraceFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingTaxInvoiceRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingTaxInvoiceRuntimeTrace = true;
+  diagnostics.taxInvoiceRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "getLatestTaxInvoiceFoundationRuntimeTrace");
+    form.append("token", state.admin.token);
+
+    const json = await postFormAction(form);
+    diagnostics.taxInvoiceRuntimeTrace = json.data?.trace || null;
+    if (diagnostics.taxInvoiceRuntimeTrace?.runId) {
+      diagnostics.taxInvoiceRunId = diagnostics.taxInvoiceRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        TAX_INVOICE_FOUNDATION_SUITE_ID,
+        { trace: diagnostics.taxInvoiceRuntimeTrace }
+      );
+    }
+    if (!diagnostics.taxInvoiceRuntimeTrace) {
+      diagnostics.taxInvoiceRuntimeTraceError =
+        "No persistent Tax Invoice trace found";
+    }
+  } catch (err) {
+    diagnostics.taxInvoiceRuntimeTrace = null;
+    diagnostics.taxInvoiceRuntimeTraceError =
+      err.message || "Tax Invoice trace unavailable";
+    showToast(diagnostics.taxInvoiceRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingTaxInvoiceRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadTaxInvoiceFoundationProgressFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingTaxInvoiceRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingTaxInvoiceRuntimeTrace = true;
+  diagnostics.taxInvoiceRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "getTaxInvoiceFoundationDiagnosticProgress");
+    form.append("token", state.admin.token);
+    if (diagnostics.taxInvoiceRunId) {
+      form.append("runId", diagnostics.taxInvoiceRunId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.taxInvoiceRuntimeTrace = json.data?.progress || null;
+    if (diagnostics.taxInvoiceRuntimeTrace?.runId) {
+      diagnostics.taxInvoiceRunId = diagnostics.taxInvoiceRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        TAX_INVOICE_FOUNDATION_SUITE_ID,
+        { trace: diagnostics.taxInvoiceRuntimeTrace }
+      );
+    }
+    if (!diagnostics.taxInvoiceRuntimeTrace) {
+      diagnostics.taxInvoiceRuntimeTraceError =
+        "No persistent Tax Invoice progress found";
+    }
+  } catch (err) {
+    diagnostics.taxInvoiceRuntimeTrace = null;
+    diagnostics.taxInvoiceRuntimeTraceError =
+      err.message || "Tax Invoice progress unavailable";
+    showToast(diagnostics.taxInvoiceRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingTaxInvoiceRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function auditTaxInvoiceFoundationDiagnosticRecoveryFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingTaxInvoiceRecoveryAudit) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingTaxInvoiceRecoveryAudit = true;
+  diagnostics.taxInvoiceRecoveryError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "auditTaxInvoiceFoundationDiagnosticRecovery");
+    form.append("token", state.admin.token);
+    if (diagnostics.taxInvoiceRunId) {
+      form.append("runId", diagnostics.taxInvoiceRunId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.taxInvoiceRecoveryAudit = json.data?.recovery || null;
+    if (diagnostics.taxInvoiceRecoveryAudit?.runId) {
+      diagnostics.taxInvoiceRunId = diagnostics.taxInvoiceRecoveryAudit.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        TAX_INVOICE_FOUNDATION_SUITE_ID,
+        { recovery: diagnostics.taxInvoiceRecoveryAudit }
+      );
+    }
+    if (!diagnostics.taxInvoiceRecoveryAudit) {
+      diagnostics.taxInvoiceRecoveryError =
+        "No Tax Invoice recovery manifest found";
+    }
+  } catch (err) {
+    diagnostics.taxInvoiceRecoveryError =
+      err.message || "Tax Invoice recovery audit unavailable";
+    showToast(diagnostics.taxInvoiceRecoveryError, "error");
+  } finally {
+    diagnostics.loadingTaxInvoiceRecoveryAudit = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+function confirmTaxInvoiceFoundationRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (
+    diagnostics.runningSuite ||
+    diagnostics.loadingTaxInvoiceRecoveryAudit ||
+    diagnostics.loadingTaxInvoiceRecoveryCleanup
+  ) {
+    return;
+  }
+
+  const runId =
+    diagnostics.taxInvoiceRecoveryAudit?.runId ||
+    diagnostics.taxInvoiceRuntimeTrace?.runId ||
+    diagnostics.taxInvoiceRunId ||
+    "latest persisted Tax Invoice run";
+
+  confirmSheet.setAttribute(
+    "aria-labelledby",
+    "taxInvoiceRecoveryCleanupConfirmTitle"
+  );
+  confirmSheet.classList.add("developer-diagnostic-confirm-sheet");
+  confirmSheet.innerHTML = `
+    <h3 id="taxInvoiceRecoveryCleanupConfirmTitle">Cleanup Tax Invoice Recovery Run</h3>
+    <div class="display-inventory-help">
+      This calls the TEST-only Tax Invoice recovery cleanup for run ${esc(runId)}. It deletes only exact tracked TEST-DIAG Tax Invoice, Legal Identity, Receipt, Payment, and Bill fixture records and keeps Tax Invoice, Receipt, and Bill number sequence rows.
+    </div>
+    <label class="display-inventory-help" for="taxInvoiceRecoveryCleanupConfirmation">
+      Type CLEANUP_TEST_DIAG_TAX_INVOICE_RUN to confirm.
+    </label>
+    <input id="taxInvoiceRecoveryCleanupConfirmation"
+      type="text"
+      autocomplete="off"
+      style="width:100%;max-width:420px"
+      placeholder="CLEANUP_TEST_DIAG_TAX_INVOICE_RUN">
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closeTaxInvoiceFoundationRecoveryCleanupConfirmation()">
+        Cancel
+      </button>
+      <button class="btn btn-danger" type="button"
+        onclick="executeTaxInvoiceFoundationRecoveryCleanupFromAdmin()">
+        Cleanup Tax Invoice Recovery Run
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+}
+
+function closeTaxInvoiceFoundationRecoveryCleanupConfirmation() {
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  confirmSheet.classList.remove("developer-diagnostic-confirm-sheet");
+  closeOverlay(confirmSheet);
+}
+
+function updateTaxInvoiceFoundationCardAfterRecoveryCleanup(cleanup) {
+  const diagnostics = state.admin.developerDiagnostics;
+  const cleanupStatus = String(cleanup && cleanup.status || "FAIL")
+    .trim()
+    .toUpperCase();
+  const cleanupSummary = String(cleanup && cleanup.summary || "").trim();
+  const current =
+    diagnostics.results[TAX_INVOICE_FOUNDATION_SUITE_ID] || {
+      suite: TAX_INVOICE_FOUNDATION_SUITE_ID,
+      status: cleanupStatus === "PASS" ? "PARTIAL" : "FAIL",
+      checks: []
+    };
+  const checks = Array.isArray(current.checks) ? current.checks.slice() : [];
+  const nextCheck = {
+    name: "tax_invoice_recovery_cleanup",
+    status: cleanupStatus,
+    summary: cleanupSummary || "Tax Invoice recovery cleanup completed"
+  };
+  const index = checks.findIndex(check => check.name === nextCheck.name);
+  if (index === -1) {
+    checks.push(nextCheck);
+  } else {
+    checks[index] = nextCheck;
+  }
+  current.checks = checks;
+  current.cleanup = {
+    required: true,
+    status: cleanupStatus
+  };
+  if (cleanupStatus !== "PASS") {
+    current.status = "FAIL";
+  } else if (!current.status || current.status === "NOT_RUN") {
+    current.status = "PARTIAL";
+  }
+  diagnostics.results[TAX_INVOICE_FOUNDATION_SUITE_ID] = current;
+}
+
+async function executeTaxInvoiceFoundationRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingTaxInvoiceRecoveryCleanup) return;
+
+  const confirmation = String(
+    document.getElementById("taxInvoiceRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  if (confirmation !== "CLEANUP_TEST_DIAG_TAX_INVOICE_RUN") {
+    showToast(
+      "Tax Invoice recovery cleanup confirmation is required",
+      "warning"
+    );
+    return;
+  }
+
+  closeTaxInvoiceFoundationRecoveryCleanupConfirmation();
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingTaxInvoiceRecoveryCleanup = true;
+  diagnostics.taxInvoiceRecoveryError = "";
+  diagnostics.taxInvoiceRecoveryCleanupMessage = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "cleanupTaxInvoiceFoundationDiagnosticRecovery");
+    form.append("token", state.admin.token);
+    form.append("confirmation", confirmation);
+    if (diagnostics.taxInvoiceRunId) {
+      form.append("runId", diagnostics.taxInvoiceRunId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    const cleanup = json.data?.cleanup || {};
+    diagnostics.taxInvoiceRuntimeTrace = json.data?.progress || null;
+    diagnostics.taxInvoiceRecoveryAudit = json.data?.recovery || null;
+    if (diagnostics.taxInvoiceRuntimeTrace?.runId) {
+      diagnostics.taxInvoiceRunId = diagnostics.taxInvoiceRuntimeTrace.runId;
+    } else if (diagnostics.taxInvoiceRecoveryAudit?.runId) {
+      diagnostics.taxInvoiceRunId = diagnostics.taxInvoiceRecoveryAudit.runId;
+    }
+    diagnostics.taxInvoiceRecoveryCleanupMessage =
+      `Cleanup ${cleanup.status || "-"}: ${cleanup.summary || "-"}`;
+    updateTaxInvoiceFoundationCardAfterRecoveryCleanup(cleanup);
+    reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+      TAX_INVOICE_FOUNDATION_SUITE_ID,
+      {
+        trace: diagnostics.taxInvoiceRuntimeTrace,
+        recovery: diagnostics.taxInvoiceRecoveryAudit,
+        cleanup
+      }
+    );
+    showToast(
+      cleanup.status === "PASS"
+        ? "Tax Invoice cleanup PASS"
+        : "Tax Invoice cleanup completed",
+      cleanup.status === "PASS" ? "success" : "warning"
+    );
+  } catch (err) {
+    diagnostics.taxInvoiceRecoveryCleanupMessage =
+      err.message || "Tax Invoice recovery cleanup unavailable";
+    diagnostics.taxInvoiceRecoveryError =
+      diagnostics.taxInvoiceRecoveryCleanupMessage;
+    showToast(diagnostics.taxInvoiceRecoveryCleanupMessage, "error");
+  } finally {
+    diagnostics.loadingTaxInvoiceRecoveryCleanup = false;
     renderDeveloperDiagnosticsSheet();
   }
 }
