@@ -9373,6 +9373,7 @@ const BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID = "bill_foundation_draft_validat
 const BILL_FOUNDATION_ISSUE_VOID_SUITE_ID = "bill_foundation_issue_void";
 const PAYMENT_FOUNDATION_SUITE_ID = "payment_foundation";
 const RECEIVABLE_FOUNDATION_SUITE_ID = "receivable_foundation";
+const RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID = "receivable_workspace_acceptance_fixture";
 const PAYMENT_CORRECTION_FOUNDATION_SUITE_ID = "payment_correction_foundation";
 const RECEIPT_FOUNDATION_SUITE_ID = "receipt_foundation";
 const TAX_INVOICE_FOUNDATION_SUITE_ID = "tax_invoice_foundation";
@@ -9475,6 +9476,12 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     label: "Receivable Foundation",
     mutation: true,
     mutationDescription: "Run after Payment Foundation PASS. Creates isolated TEST-DIAG Bill and Payment fixtures, verifies derived NOT_APPLICABLE, OPEN, PAID, overdue, integrity, exact cleanup, and retained Bill sequence rows."
+  },
+  {
+    id: RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID,
+    label: "Receivable Workspace Fixture",
+    mutation: true,
+    mutationDescription: "Run only for Workspace/Receivable Detail runtime acceptance. Creates one isolated TEST-DIAG ISSUED unpaid Bill, verifies it appears in Open Receivables, persists the runId, and defers exact cleanup."
   },
   {
     id: PAYMENT_CORRECTION_FOUNDATION_SUITE_ID,
