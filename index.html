@@ -6749,7 +6749,9 @@ const state = {
       data: null,
       history: [],
       requestId: 0,
-      workspaceScrollTop: 0
+      workspaceScrollTop: 0,
+      cache: {},
+      pendingKey: ""
     },
     deliveryNote: {
       poInput: "",
@@ -16243,6 +16245,8 @@ function getWorkspaceReadableError(error) {
   return "Workspace is temporarily unavailable. Use the existing menu and refresh again later.";
 }
 
+const FINANCE_LEGAL_DETAIL_HISTORY_MAX = 8;
+
 function getFinanceLegalDetailState() {
   if (!state.admin.financeLegalDetail) {
     state.admin.financeLegalDetail = {
@@ -16255,8 +16259,19 @@ function getFinanceLegalDetailState() {
       data: null,
       history: [],
       requestId: 0,
-      workspaceScrollTop: 0
+      workspaceScrollTop: 0,
+      cache: {},
+      pendingKey: ""
     };
+  }
+  if (!Array.isArray(state.admin.financeLegalDetail.history)) {
+    state.admin.financeLegalDetail.history = [];
+  }
+  if (!state.admin.financeLegalDetail.cache || typeof state.admin.financeLegalDetail.cache !== "object") {
+    state.admin.financeLegalDetail.cache = {};
+  }
+  if (typeof state.admin.financeLegalDetail.pendingKey !== "string") {
+    state.admin.financeLegalDetail.pendingKey = "";
   }
   return state.admin.financeLegalDetail;
 }
@@ -16274,6 +16289,21 @@ function getFinanceLegalDetailReadableError(error) {
   }
   if (/Bill ID is required/i.test(message)) {
     return "Workspace row ไม่มีรหัสใบแจ้งหนี้สำหรับเปิดรายละเอียด";
+  }
+  if (/Receivable not found/i.test(message)) {
+    return "ไม่พบยอดค้างรับที่เลือก";
+  }
+  if (/billId is required/i.test(message)) {
+    return "Workspace row ไม่มีรหัส Bill สำหรับเปิดยอดค้างรับ";
+  }
+  if (/Unsupported detail type/i.test(message)) {
+    return "ยังไม่รองรับรายละเอียดประเภทนี้";
+  }
+  if (/Malformed Receivable detail response/i.test(message)) {
+    return "รูปแบบข้อมูลยอดค้างรับไม่ถูกต้อง";
+  }
+  if (/Receivable identity mismatch/i.test(message)) {
+    return "ข้อมูลยอดค้างรับไม่ตรงกับรายการที่เลือก";
   }
   if (message.includes(t("connectionSlowRetry", "การเชื่อมต่อช้าเกินไป กรุณาลองใหม่อีกครั้ง"))) {
     return t("connectionSlowRetry", "การเชื่อมต่อช้าเกินไป กรุณาลองใหม่อีกครั้ง");
@@ -16324,21 +16354,48 @@ function renderFinanceLegalDetailEmpty(message) {
   return `<div class="empty-state">${esc(message || "ยังไม่มีข้อมูลในส่วนนี้")}</div>`;
 }
 
+function getFinanceLegalDetailStatus(detail) {
+  if (detail.type === "bill" && detail.data) {
+    return detail.data.status || "";
+  }
+  if (detail.type === "receivable" && detail.data) {
+    return detail.data.receivableStage || detail.data.status || "";
+  }
+  return "";
+}
+
+function getFinanceLegalDetailSubtitle(detail) {
+  if (detail.type === "bill") {
+    return "รายละเอียดใบแจ้งหนี้ | ดูอย่างเดียว";
+  }
+  if (detail.type === "receivable") {
+    return "รายละเอียดยอดค้างรับ | ดูอย่างเดียว";
+  }
+  return "รายละเอียด | ดูอย่างเดียว";
+}
+
+function renderFinanceLegalDetailBody(detail) {
+  if (detail.loading) {
+    return `<div class="loading has-lottie">${renderLottieLoading(t("loadingData", "กำลังโหลดข้อมูล"), { size: 90 })}</div>`;
+  }
+  if (detail.error) {
+    return `<div class="empty-state business-dashboard-unavailable" role="alert">${esc(detail.error)}</div>`;
+  }
+  if (detail.type === "bill" && detail.data) {
+    return renderBillReadOnlyDetail(detail.data);
+  }
+  if (detail.type === "receivable" && detail.data) {
+    return renderReceivableReadOnlyDetail(detail.data);
+  }
+  return renderFinanceLegalDetailEmpty("ยังไม่มีข้อมูลรายละเอียด");
+}
+
 function renderFinanceLegalDetailShell() {
   const detail = getFinanceLegalDetailState();
-  const bill = detail.type === "bill" && detail.data ? detail.data : null;
-  const status = bill?.status || "";
+  const status = getFinanceLegalDetailStatus(detail);
   const title = detail.title || "รายละเอียด";
-  const subtitle = detail.type === "bill"
-    ? "รายละเอียดใบแจ้งหนี้ | ดูอย่างเดียว"
-    : "รายละเอียด | ดูอย่างเดียว";
-  const body = detail.loading
-    ? `<div class="loading has-lottie">${renderLottieLoading(t("loadingData", "กำลังโหลดข้อมูล"), { size: 90 })}</div>`
-    : detail.error
-      ? `<div class="empty-state business-dashboard-unavailable" role="alert">${esc(detail.error)}</div>`
-      : bill
-        ? renderBillReadOnlyDetail(bill)
-        : renderFinanceLegalDetailEmpty("ยังไม่มีข้อมูลรายละเอียด");
+  const subtitle = getFinanceLegalDetailSubtitle(detail);
+  const body = renderFinanceLegalDetailBody(detail);
 
   adminDashboardSheet.innerHTML = `
     <div class="finance-legal-detail-panel">
@@ -16380,12 +16437,67 @@ function closeFinanceLegalDetailSheet() {
   detail.error = "";
   detail.data = null;
   detail.history = [];
+  detail.cache = {};
+  detail.pendingKey = "";
   detail.requestId += 1;
   detail.workspaceScrollTop = 0;
   renderAdminWorkspaceSheet();
   requestAnimationFrame(() => {
     adminDashboardSheet.scrollTop = restoreScrollTop;
   });
+}
+
+function getFinanceLegalDetailCacheKey(type, recordId) {
+  return `${String(type || "").trim()}:${String(recordId || "").trim()}`;
+}
+
+function getFinanceLegalDetailCachedData(detail, type, recordId) {
+  return detail.cache[getFinanceLegalDetailCacheKey(type, recordId)] || null;
+}
+
+function setFinanceLegalDetailCachedData(detail, type, recordId, data) {
+  detail.cache[getFinanceLegalDetailCacheKey(type, recordId)] = data;
+}
+
+function getFinanceLegalDetailTitle(type, data, fallback) {
+  if (type === "bill") {
+    return data?.billNumber || data?.billId || fallback || "รายละเอียดใบแจ้งหนี้";
+  }
+  if (type === "receivable") {
+    return data?.billNumber || data?.billId || fallback || "ยอดค้างรับ";
+  }
+  return fallback || "รายละเอียด";
+}
+
+function pushFinanceLegalDetailHistory(detail) {
+  const type = String(detail.type || "").trim();
+  const recordId = String(detail.recordId || "").trim();
+  if (!type || !recordId) return null;
+  const entry = {
+    type,
+    recordId,
+    title: detail.title || "",
+    data: detail.data || null,
+    scrollTop: Number(adminDashboardSheet?.scrollTop || 0)
+  };
+  const last = detail.history[detail.history.length - 1];
+  if (!last || last.type !== entry.type || last.recordId !== entry.recordId) {
+    detail.history.push(entry);
+    if (detail.history.length > FINANCE_LEGAL_DETAIL_HISTORY_MAX) {
+      detail.history = detail.history.slice(-FINANCE_LEGAL_DETAIL_HISTORY_MAX);
+    }
+  }
+  return entry;
+}
+
+function restoreFinanceLegalDetailEntry(detail, entry) {
+  detail.type = entry?.type || "";
+  detail.recordId = entry?.recordId || "";
+  detail.title = entry?.title || "";
+  detail.loading = false;
+  detail.error = "";
+  detail.data = entry?.data || getFinanceLegalDetailCachedData(detail, detail.type, detail.recordId);
+  detail.pendingKey = "";
 }
 
 function backFinanceLegalDetail() {
@@ -16395,14 +16507,12 @@ function backFinanceLegalDetail() {
     return;
   }
   const previous = detail.history.pop();
-  detail.type = previous.type || "";
-  detail.recordId = previous.recordId || "";
-  detail.title = previous.title || "";
-  detail.loading = false;
-  detail.error = "";
-  detail.data = previous.data || null;
+  restoreFinanceLegalDetailEntry(detail, previous);
   detail.requestId += 1;
   renderFinanceLegalDetailShell();
+  requestAnimationFrame(() => {
+    adminDashboardSheet.scrollTop = Number(previous.scrollTop || 0);
+  });
 }
 
 async function fetchBillDetailById(billId) {
@@ -16418,25 +16528,67 @@ async function fetchBillDetailById(billId) {
   return bill;
 }
 
-async function openFinanceLegalBillDetail(billId, context = {}) {
+async function fetchReceivableDetailByBillId(billId) {
+  const form = new URLSearchParams();
+  form.append("action", "getReceivable");
+  form.append("token", state.admin.token);
+  form.append("billId", billId);
+  const json = await postFormAction(form);
+  const receivable = json?.data?.receivable;
+  if (!receivable || !receivable.billId) {
+    throw new Error("Malformed Receivable detail response");
+  }
+  if (String(receivable.billId || "").trim() !== String(billId || "").trim()) {
+    throw new Error("Receivable identity mismatch");
+  }
+  return receivable;
+}
+
+async function fetchFinanceLegalDetailByType(type, recordId) {
+  if (type === "bill") return fetchBillDetailById(recordId);
+  if (type === "receivable") return fetchReceivableDetailByBillId(recordId);
+  throw new Error("Unsupported detail type");
+}
+
+async function openFinanceLegalDetail(type, recordId, context = {}) {
   if (!ensureAdminSessionForWorkspace()) return;
 
   const detail = getFinanceLegalDetailState();
+  const normalizedType = String(type || "").trim();
+  const normalizedRecordId = String(recordId || "").trim();
+  const targetKey = getFinanceLegalDetailCacheKey(normalizedType, normalizedRecordId);
+  if (
+    detail.open &&
+    detail.type === normalizedType &&
+    detail.recordId === normalizedRecordId
+  ) {
+    return;
+  }
+  if (detail.pendingKey && detail.pendingKey === targetKey) {
+    return;
+  }
   if (!detail.open) {
     detail.workspaceScrollTop = Number(adminDashboardSheet?.scrollTop || 0);
+    detail.history = [];
+    detail.cache = {};
+  } else if (context.pushHistory) {
+    pushFinanceLegalDetailHistory(detail);
+  } else {
+    detail.history = [];
   }
 
-  const normalizedBillId = String(billId || "").trim();
   detail.open = true;
-  detail.type = "bill";
-  detail.recordId = normalizedBillId;
-  detail.title = context.title || "รายละเอียดใบแจ้งหนี้";
-  detail.loading = !!normalizedBillId;
-  detail.error = normalizedBillId
+  detail.type = normalizedType;
+  detail.recordId = normalizedRecordId;
+  detail.title = context.title || getFinanceLegalDetailTitle(normalizedType, null, "");
+  detail.loading = !!normalizedRecordId;
+  detail.error = normalizedRecordId
     ? ""
-    : "Workspace row ไม่มีรหัสใบแจ้งหนี้สำหรับเปิดรายละเอียด";
+    : (normalizedType === "receivable"
+      ? "Workspace row ไม่มีรหัส Bill สำหรับเปิดยอดค้างรับ"
+      : "Workspace row ไม่มีรหัสใบแจ้งหนี้สำหรับเปิดรายละเอียด");
   detail.data = null;
-  detail.history = [];
+  detail.pendingKey = detail.loading ? targetKey : "";
   detail.requestId += 1;
   const requestId = detail.requestId;
 
@@ -16444,22 +16596,59 @@ async function openFinanceLegalBillDetail(billId, context = {}) {
   if (!adminDashboardSheet.classList.contains("show")) {
     openOverlay(adminDashboardSheet);
   }
-  if (!normalizedBillId) return;
+  if (!normalizedRecordId) return;
+
+  const cached = getFinanceLegalDetailCachedData(detail, normalizedType, normalizedRecordId);
+  if (cached) {
+    detail.data = cached;
+    detail.title = getFinanceLegalDetailTitle(normalizedType, cached, context.title);
+    detail.loading = false;
+    detail.pendingKey = "";
+    renderFinanceLegalDetailShell();
+    return;
+  }
 
   try {
-    const bill = await fetchBillDetailById(normalizedBillId);
+    const data = await fetchFinanceLegalDetailByType(normalizedType, normalizedRecordId);
     if (requestId !== detail.requestId) return;
-    detail.data = bill;
-    detail.title = bill.billNumber || bill.billId || "รายละเอียดใบแจ้งหนี้";
+    setFinanceLegalDetailCachedData(detail, normalizedType, normalizedRecordId, data);
+    detail.data = data;
+    detail.title = getFinanceLegalDetailTitle(normalizedType, data, context.title);
   } catch (err) {
     if (requestId !== detail.requestId) return;
-    detail.error = getFinanceLegalDetailReadableError(err);
+    const readableError = getFinanceLegalDetailReadableError(err);
+    if (context.pushHistory && detail.history.length) {
+      const previous = detail.history.pop();
+      restoreFinanceLegalDetailEntry(detail, previous);
+      showToast(readableError, "error");
+      requestAnimationFrame(() => {
+        adminDashboardSheet.scrollTop = Number(previous.scrollTop || 0);
+      });
+      return;
+    }
+    detail.error = readableError;
   } finally {
     if (requestId === detail.requestId) {
       detail.loading = false;
+      detail.pendingKey = "";
       renderFinanceLegalDetailShell();
     }
   }
+}
+
+async function openFinanceLegalBillDetail(billId, context = {}) {
+  return openFinanceLegalDetail("bill", billId, context);
+}
+
+async function openFinanceLegalReceivableDetail(billId, context = {}) {
+  return openFinanceLegalDetail("receivable", billId, context);
+}
+
+async function openRelatedFinanceLegalDetail(type, recordId, title) {
+  return openFinanceLegalDetail(type, recordId, {
+    title,
+    pushHistory: true
+  });
 }
 
 function renderBillReadOnlyDetail(bill) {
@@ -16594,6 +16783,175 @@ function renderBillDetailReceivableCard(bill) {
       ${renderFinanceLegalDetailField("เกินกำหนด", bill.isOverdue ? "ใช่" : "ไม่ใช่")}
       ${renderFinanceLegalDetailField("Payment ที่มีผล", bill.confirmedPaymentId || "-")}
       ${renderFinanceLegalDetailField("วันที่ Payment", bill.confirmedPaymentDate, { date: true })}
+    </div>
+    <div class="finance-legal-detail-related-note">
+      Bill → Receivable ยังไม่เปิดเป็นลิงก์จนกว่าจะ lock relationship contract แยกต่างหาก
+    </div>
+  `);
+}
+
+function renderFinanceLegalDetailLinkButton(type, recordId, title, label = "เปิดรายละเอียด") {
+  const targetType = String(type || "").trim();
+  const targetId = String(recordId || "").trim();
+  if (!targetType || !targetId) return "";
+  return `
+    <button class="btn btn-outline" type="button"
+      onclick="openRelatedFinanceLegalDetail(${toInlineJsStringLiteral(targetType)}, ${toInlineJsStringLiteral(targetId)}, ${toInlineJsStringLiteral(title || targetId)})">
+      ${esc(label)}
+    </button>
+  `;
+}
+
+function getReceivableStageLabel(stage) {
+  const key = String(stage || "").trim().toUpperCase();
+  if (key === "OPEN") return "ยังมีค้างรับ";
+  if (key === "PAID") return "ชำระครบ";
+  if (key === "NOT_APPLICABLE") return "ไม่เกี่ยวข้อง";
+  return stage || "-";
+}
+
+function renderReceivableReadOnlyDetail(receivable) {
+  return `
+    ${renderReceivableHeaderCard(receivable)}
+    ${renderReceivableBillCard(receivable)}
+    ${renderReceivableAmountCard(receivable)}
+    ${renderReceivableDateCard(receivable)}
+    ${renderReceivableSettlementCard(receivable)}
+    ${renderReceivablePaymentCard(receivable)}
+    ${renderReceivableCorrectionCard(receivable)}
+    ${renderReceivableRelatedDocumentsCard(receivable)}
+  `;
+}
+
+function renderReceivableHeaderCard(receivable) {
+  return renderFinanceLegalDetailCard("ยอดค้างรับ", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("รหัส Bill", receivable.billId)}
+      ${renderFinanceLegalDetailField("สถานะยอดค้างรับ", getReceivableStageLabel(receivable.receivableStage))}
+      ${renderFinanceLegalDetailField("ดูอย่างเดียว", "ไม่มีปุ่มแก้ไข / รับชำระ / ออกเอกสาร / ยกเลิก")}
+    </div>
+  `);
+}
+
+function renderReceivableBillCard(receivable) {
+  return renderFinanceLegalDetailCard("ใบแจ้งหนี้", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("รหัสใบแจ้งหนี้", receivable.billId)}
+      ${renderFinanceLegalDetailField("เลขที่ใบแจ้งหนี้", receivable.billNumber || receivable.billId)}
+      ${renderFinanceLegalDetailField("สถานะใบแจ้งหนี้", receivable.billStatus)}
+      ${renderFinanceLegalDetailField("รหัสลูกค้า", receivable.customerId)}
+      ${receivable.customerName ? renderFinanceLegalDetailField("ชื่อลูกค้า", receivable.customerName) : ""}
+    </div>
+  `);
+}
+
+function renderReceivableAmountCard(receivable) {
+  return renderFinanceLegalDetailCard("ยอดเงิน", `
+    <div class="finance-legal-detail-money-grid">
+      ${renderFinanceLegalDetailField("ยอดตั้งต้น", receivable.grandTotal, { money: true })}
+      ${renderFinanceLegalDetailField("ยอดคงเหลือ", receivable.remainingReceivable, { money: receivable.remainingReceivable !== null })}
+      ${receivable.paidAmount !== undefined ? renderFinanceLegalDetailField("ยอดที่ชำระแล้ว", receivable.paidAmount, { money: true }) : ""}
+      ${receivable.currency ? renderFinanceLegalDetailField("สกุลเงิน", receivable.currency) : ""}
+    </div>
+  `);
+}
+
+function renderReceivableDateCard(receivable) {
+  return renderFinanceLegalDetailCard("วันที่", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("วันครบกำหนด", receivable.dueDate, { date: true })}
+      ${renderFinanceLegalDetailField("เกินกำหนด", receivable.isOverdue ? "ใช่" : "ไม่ใช่")}
+      ${receivable.updatedAt ? renderFinanceLegalDetailField("อัปเดตล่าสุด", receivable.updatedAt, { date: true }) : ""}
+    </div>
+  `);
+}
+
+function renderReceivableSettlementCard(receivable) {
+  return renderFinanceLegalDetailCard("สถานะการชำระ", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("Settlement stage", getReceivableStageLabel(receivable.receivableStage))}
+      ${renderFinanceLegalDetailField("OPEN / PAID / NOT_APPLICABLE", receivable.receivableStage)}
+      ${renderFinanceLegalDetailField("เกินกำหนดได้เฉพาะ OPEN", receivable.receivableStage === "OPEN" && receivable.isOverdue ? "ใช่" : "ไม่ใช่")}
+    </div>
+  `);
+}
+
+function renderReceivablePaymentCard(receivable) {
+  if (!receivable.confirmedPaymentId) {
+    return renderFinanceLegalDetailCard("การชำระเงินที่เกี่ยวข้อง", renderFinanceLegalDetailEmpty("ยังไม่มี Payment ที่มีผลสำหรับยอดค้างรับนี้"));
+  }
+  return renderFinanceLegalDetailCard("การชำระเงินที่เกี่ยวข้อง", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("Payment ID", receivable.confirmedPaymentId)}
+      ${renderFinanceLegalDetailField("วันที่ Payment", receivable.confirmedPaymentDate, { date: true })}
+      ${receivable.paymentStatus ? renderFinanceLegalDetailField("สถานะ Payment", receivable.paymentStatus) : ""}
+      ${receivable.paymentAmount !== undefined ? renderFinanceLegalDetailField("ยอด Payment", receivable.paymentAmount, { money: true }) : ""}
+    </div>
+    <div class="finance-legal-detail-related-note">Payment Detail ยังไม่อยู่ใน scope นี้ จึงแสดงเป็นข้อมูลอ้างอิงเท่านั้น</div>
+  `);
+}
+
+function renderReceivableCorrectionCard(receivable) {
+  const hasCorrection =
+    receivable.correctionId ||
+    receivable.paymentCorrectionId ||
+    receivable.reopenedByCorrectionId ||
+    receivable.reopenedAt ||
+    receivable.reopenedReason;
+  if (!hasCorrection) {
+    return renderFinanceLegalDetailCard("รายการแก้ไขการชำระเงิน", renderFinanceLegalDetailEmpty("getReceivable ยังไม่ส่ง correction/reopened context สำหรับรายการนี้"));
+  }
+  return renderFinanceLegalDetailCard("รายการแก้ไขการชำระเงิน", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("Correction ID", receivable.correctionId || receivable.paymentCorrectionId || receivable.reopenedByCorrectionId)}
+      ${renderFinanceLegalDetailField("Reopened at", receivable.reopenedAt, { date: true })}
+      ${renderFinanceLegalDetailField("Reason", receivable.reopenedReason)}
+    </div>
+    <div class="finance-legal-detail-related-note">Payment Correction Detail ยังไม่อยู่ใน scope นี้ จึงแสดงเป็นข้อมูลอ้างอิงเท่านั้น</div>
+  `);
+}
+
+function renderReceivableRelatedDocumentsCard(receivable) {
+  const paymentLabel = receivable.confirmedPaymentId || "";
+  const correctionLabel =
+    receivable.correctionId ||
+    receivable.paymentCorrectionId ||
+    receivable.reopenedByCorrectionId ||
+    "";
+  return renderFinanceLegalDetailCard("เอกสารที่เกี่ยวข้อง", `
+    <div class="finance-legal-detail-list">
+      <div class="finance-legal-detail-reference">
+        <div class="business-dashboard-list-head">
+          <div class="business-dashboard-list-title">ใบแจ้งหนี้ที่เกี่ยวข้อง</div>
+          <span class="status-badge compact status-neutral">ดูอย่างเดียว</span>
+        </div>
+        <div class="business-dashboard-list-meta">${esc(receivable.billNumber || receivable.billId || "-")}</div>
+        <div class="finance-legal-detail-related-note">
+          ${receivable.billId
+            ? renderFinanceLegalDetailLinkButton("bill", receivable.billId, receivable.billNumber || receivable.billId, "เปิดรายละเอียด")
+            : "ไม่มี canonical Bill ID"}
+        </div>
+      </div>
+      ${paymentLabel ? `
+        <div class="finance-legal-detail-reference">
+          <div class="business-dashboard-list-head">
+            <div class="business-dashboard-list-title">การชำระเงินที่เกี่ยวข้อง</div>
+            <span class="status-badge compact status-neutral">ข้อมูลอ้างอิง</span>
+          </div>
+          <div class="business-dashboard-list-meta">${esc(paymentLabel)}</div>
+          <div class="finance-legal-detail-related-note">Payment Detail ยังไม่อยู่ใน scope นี้</div>
+        </div>
+      ` : ""}
+      ${correctionLabel ? `
+        <div class="finance-legal-detail-reference">
+          <div class="business-dashboard-list-head">
+            <div class="business-dashboard-list-title">รายการแก้ไขการชำระเงิน</div>
+            <span class="status-badge compact status-neutral">ข้อมูลอ้างอิง</span>
+          </div>
+          <div class="business-dashboard-list-meta">${esc(correctionLabel)}</div>
+          <div class="finance-legal-detail-related-note">Payment Correction Detail ยังไม่อยู่ใน scope นี้</div>
+        </div>
+      ` : ""}
     </div>
   `);
 }
@@ -16767,7 +17125,8 @@ function isWorkspaceDrillDownSupported(row) {
     "source_allocations",
     "source_fulfillments",
     "partner_requests",
-    "bills"
+    "bills",
+    "receivables"
   ].includes(module);
 }
 
@@ -16971,6 +17330,18 @@ async function openWorkspaceDrillDown(sectionId, rowId) {
     const billId = String(drillDown.billId || row?.id || "").trim();
     openFinanceLegalBillDetail(billId, {
       title: row?.primaryLabel || billId || "รายละเอียดใบแจ้งหนี้"
+    });
+    return;
+  }
+
+  if (module === "receivables") {
+    const billId = String(drillDown.billId || "").trim();
+    if (!billId) {
+      showToast("Workspace row ไม่มีรหัส Bill สำหรับเปิดยอดค้างรับ", "warning");
+      return;
+    }
+    openFinanceLegalReceivableDetail(billId, {
+      title: row?.primaryLabel || billId || "ยอดค้างรับ"
     });
     return;
   }
