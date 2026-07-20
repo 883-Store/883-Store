@@ -6550,6 +6550,9 @@ Object.assign(window, {
   confirmTaxInvoiceFoundationRecoveryCleanupFromAdmin,
   closeTaxInvoiceFoundationRecoveryCleanupConfirmation,
   executeTaxInvoiceFoundationRecoveryCleanupFromAdmin,
+  loadLatestWorkspaceReadModelFoundationRuntimeTraceFromAdmin,
+  loadWorkspaceReadModelFoundationProgressFromAdmin,
+  auditWorkspaceReadModelFoundationDiagnosticRecoveryFromAdmin,
   setBusinessDashboardRange,
   refreshBusinessDashboard,
   openBusinessDashboardPendingDeliveries,
@@ -6969,6 +6972,13 @@ const state = {
       taxInvoiceRecoveryError: "",
       taxInvoiceRecoveryCleanupMessage: "",
       taxInvoiceRunId: "",
+      loadingWorkspaceRuntimeTrace: false,
+      workspaceRuntimeTrace: null,
+      workspaceRuntimeTraceError: "",
+      loadingWorkspaceRecoveryAudit: false,
+      workspaceRecoveryAudit: null,
+      workspaceRecoveryError: "",
+      workspaceRunId: "",
       results: {},
       error: ""
     },
@@ -9244,6 +9254,7 @@ const RECEIVABLE_FOUNDATION_SUITE_ID = "receivable_foundation";
 const PAYMENT_CORRECTION_FOUNDATION_SUITE_ID = "payment_correction_foundation";
 const RECEIPT_FOUNDATION_SUITE_ID = "receipt_foundation";
 const TAX_INVOICE_FOUNDATION_SUITE_ID = "tax_invoice_foundation";
+const WORKSPACE_READ_MODEL_FOUNDATION_SUITE_ID = "workspace_read_model_foundation";
 const DISPLAY_UI_INTEGRATION_TEST_PREFIX = "TEST-UI-DISPLAY-";
 
 const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
@@ -9368,7 +9379,7 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     mutationDescription: "Run after Legal Identity Foundation PASS. Creates isolated TEST-DIAG Tax Invoice, Legal Identity, Bill, Receipt, and Payment fixtures, verifies issue/VOID, TINV numbering, immutable VAT/legal snapshots, exact cleanup, and retained Tax Invoice/Bill/Receipt sequence rows."
   },
   {
-    id: "workspace_read_model_foundation",
+    id: WORKSPACE_READ_MODEL_FOUNDATION_SUITE_ID,
     label: "Workspace Read Model Foundation"
   },
   {
@@ -9455,6 +9466,13 @@ function resetDeveloperDiagnosticsState() {
   state.admin.developerDiagnostics.taxInvoiceRecoveryError = "";
   state.admin.developerDiagnostics.taxInvoiceRecoveryCleanupMessage = "";
   state.admin.developerDiagnostics.taxInvoiceRunId = "";
+  state.admin.developerDiagnostics.loadingWorkspaceRuntimeTrace = false;
+  state.admin.developerDiagnostics.workspaceRuntimeTrace = null;
+  state.admin.developerDiagnostics.workspaceRuntimeTraceError = "";
+  state.admin.developerDiagnostics.loadingWorkspaceRecoveryAudit = false;
+  state.admin.developerDiagnostics.workspaceRecoveryAudit = null;
+  state.admin.developerDiagnostics.workspaceRecoveryError = "";
+  state.admin.developerDiagnostics.workspaceRunId = "";
   state.admin.developerDiagnostics.results = {};
   state.admin.developerDiagnostics.error = "";
 }
@@ -9674,6 +9692,9 @@ function renderDeveloperDiagnosticResultCard(suite) {
           : ""}
         ${suite.id === TAX_INVOICE_FOUNDATION_SUITE_ID
           ? renderTaxInvoiceFoundationRuntimeRecoveryPanel()
+          : ""}
+        ${suite.id === WORKSPACE_READ_MODEL_FOUNDATION_SUITE_ID
+          ? renderWorkspaceReadModelFoundationRuntimeRecoveryPanel()
           : ""}
         <div class="diagnostic-check-list">
           ${
@@ -10089,6 +10110,84 @@ function renderTaxInvoiceFoundationRuntimeRecoveryPanel() {
   `;
 }
 
+function renderWorkspaceReadModelFoundationRuntimeRecoveryPanel() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const trace = diagnostics.workspaceRuntimeTrace;
+  const isLoading = diagnostics.loadingWorkspaceRuntimeTrace;
+  const traceError = diagnostics.workspaceRuntimeTraceError;
+  const recovery = diagnostics.workspaceRecoveryAudit;
+  const isRecoveryLoading = diagnostics.loadingWorkspaceRecoveryAudit;
+  const recoveryError = diagnostics.workspaceRecoveryError;
+  const metrics = trace?.runtimeMetrics || recovery?.runtimeMetrics || {};
+  const longest = metrics.longestPhase || {};
+  const recoverySummary = recovery?.summary || {};
+  const recoverySummaryText = recovery
+    ? Object.keys(recoverySummary)
+        .map(key => {
+          const item = recoverySummary[key] || {};
+          return `${key}: ${Number(item.exists || 0)} exists / ${Number(item.missing || 0)} missing`;
+        })
+        .join(" | ")
+    : "";
+
+  return `
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Workspace Runtime Trace</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadLatestWorkspaceReadModelFoundationRuntimeTraceFromAdmin()">
+          ${isLoading ? "Loading..." : "Latest Workspace Runtime Trace"}
+        </button>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadWorkspaceReadModelFoundationProgressFromAdmin()">
+          ${isLoading ? "Loading..." : "Workspace Progress"}
+        </button>
+      </div>
+      <div class="diagnostic-check-summary">
+        ${trace ? `
+          Run: ${esc(trace.runId || "-")} |
+          Status: ${esc(trace.status || "-")} |
+          Last: ${esc(trace.lastCheckpoint || trace.lastCompletedCheckpoint || "-")} |
+          Current: ${esc(trace.currentCheckpoint || "-")} |
+          Failing: ${esc(trace.failingCheckpoint || "-")} |
+          Elapsed: ${Number(trace.elapsedMs || 0)} ms |
+          Cleanup: ${esc(trace.cleanupStatus || "-")}
+          ${trace.errorMessage ? `<br>Error: ${esc(trace.errorMessage)}` : ""}
+          <br>Metrics:
+          source reads=${Number(metrics.sourceSheetReadCount || 0)},
+          index=${Number(metrics.indexBuildMs || 0)} ms,
+          queue=${Number(metrics.queueBuildMs || 0)} ms,
+          total=${Number(metrics.totalMs || 0)} ms,
+          longest=${esc(longest.name || "none")} ${Number(longest.elapsedMs || 0)} ms
+        ` : esc(traceError || "Workspace runtime trace not loaded")}
+      </div>
+    </div>
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Workspace Recovery Status</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isRecoveryLoading ? "disabled" : ""}
+          onclick="auditWorkspaceReadModelFoundationDiagnosticRecoveryFromAdmin()">
+          ${isRecoveryLoading ? "Checking..." : "Check Workspace Recovery Status"}
+        </button>
+      </div>
+      <div class="diagnostic-check-summary">
+        ${recovery ? `
+          Run: ${esc(recovery.runId || "-")} |
+          Status: ${esc(recovery.status || "-")} |
+          Cleanup: ${esc(recovery.cleanupStatus || "NOT_REQUIRED")} |
+          Cleanup safe: ${recovery.cleanupSafe === false ? "NO" : "YES"} |
+          Sequence retained: ${(recovery.sequenceRetained || recovery.sequenceProtected) ? "YES" : "NO"}
+          ${recovery.ownershipStatus ? `<br>Ownership: ${esc(recovery.ownershipStatus)}` : ""}
+          ${recoverySummaryText ? `<br>${esc(recoverySummaryText)}` : ""}
+        ` : esc(recoveryError || "Workspace recovery audit not loaded")}
+      </div>
+    </div>
+  `;
+}
+
 function getDeveloperDiagnosticStatusClass(status) {
   const key = String(status || "").trim().toUpperCase().replace(/\s+/g, "_");
 
@@ -10196,7 +10295,8 @@ function isRuntimeRecoveryDeveloperDiagnosticSuite(suiteId) {
     id === PAYMENT_FOUNDATION_SUITE_ID ||
     id === PAYMENT_CORRECTION_FOUNDATION_SUITE_ID ||
     id === RECEIPT_FOUNDATION_SUITE_ID ||
-    id === TAX_INVOICE_FOUNDATION_SUITE_ID;
+    id === TAX_INVOICE_FOUNDATION_SUITE_ID ||
+    id === WORKSPACE_READ_MODEL_FOUNDATION_SUITE_ID;
 }
 
 function canRunBillDraftDiagnostic() {
@@ -10513,7 +10613,7 @@ function reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
   result.status = nextStatus;
   result.durationMs = elapsedMs;
   result.cleanup = {
-    required: true,
+    required: cleanupStatus !== "NOT_REQUIRED",
     status: cleanupStatus
   };
   diagnostics.results[suite] = result;
@@ -10636,6 +10736,10 @@ async function loadDeveloperDiagnosticRuntimeTraceAfterTimeoutFromAdmin(suite) {
   if (suite === TAX_INVOICE_FOUNDATION_SUITE_ID) {
     await loadLatestTaxInvoiceFoundationRuntimeTraceFromAdmin();
     return state.admin.developerDiagnostics.taxInvoiceRuntimeTrace;
+  }
+  if (suite === WORKSPACE_READ_MODEL_FOUNDATION_SUITE_ID) {
+    await loadLatestWorkspaceReadModelFoundationRuntimeTraceFromAdmin();
+    return state.admin.developerDiagnostics.workspaceRuntimeTrace;
   }
   return null;
 }
@@ -12186,6 +12290,156 @@ async function executeTaxInvoiceFoundationRecoveryCleanupFromAdmin() {
     showToast(diagnostics.taxInvoiceRecoveryCleanupMessage, "error");
   } finally {
     diagnostics.loadingTaxInvoiceRecoveryCleanup = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadLatestWorkspaceReadModelFoundationRuntimeTraceFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingWorkspaceRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingWorkspaceRuntimeTrace = true;
+  diagnostics.workspaceRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "getLatestWorkspaceReadModelFoundationRuntimeTrace");
+    form.append("token", state.admin.token);
+
+    const json = await postFormAction(form);
+    diagnostics.workspaceRuntimeTrace = json.data?.trace || null;
+    if (diagnostics.workspaceRuntimeTrace?.runId) {
+      diagnostics.workspaceRunId = diagnostics.workspaceRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        WORKSPACE_READ_MODEL_FOUNDATION_SUITE_ID,
+        { trace: diagnostics.workspaceRuntimeTrace }
+      );
+    }
+    if (!diagnostics.workspaceRuntimeTrace) {
+      diagnostics.workspaceRuntimeTraceError =
+        "No persistent Workspace trace found";
+    }
+  } catch (err) {
+    diagnostics.workspaceRuntimeTrace = null;
+    diagnostics.workspaceRuntimeTraceError =
+      err.message || "Workspace trace unavailable";
+    showToast(diagnostics.workspaceRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingWorkspaceRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadWorkspaceReadModelFoundationProgressFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingWorkspaceRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingWorkspaceRuntimeTrace = true;
+  diagnostics.workspaceRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "getWorkspaceReadModelFoundationDiagnosticProgress");
+    form.append("token", state.admin.token);
+    if (diagnostics.workspaceRunId) {
+      form.append("runId", diagnostics.workspaceRunId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.workspaceRuntimeTrace = json.data?.progress || null;
+    if (diagnostics.workspaceRuntimeTrace?.runId) {
+      diagnostics.workspaceRunId = diagnostics.workspaceRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        WORKSPACE_READ_MODEL_FOUNDATION_SUITE_ID,
+        { trace: diagnostics.workspaceRuntimeTrace }
+      );
+    }
+    if (!diagnostics.workspaceRuntimeTrace) {
+      diagnostics.workspaceRuntimeTraceError =
+        "No persistent Workspace progress found";
+    }
+  } catch (err) {
+    diagnostics.workspaceRuntimeTrace = null;
+    diagnostics.workspaceRuntimeTraceError =
+      err.message || "Workspace progress unavailable";
+    showToast(diagnostics.workspaceRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingWorkspaceRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function auditWorkspaceReadModelFoundationDiagnosticRecoveryFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingWorkspaceRecoveryAudit) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingWorkspaceRecoveryAudit = true;
+  diagnostics.workspaceRecoveryError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "auditWorkspaceReadModelFoundationDiagnosticRecovery");
+    form.append("token", state.admin.token);
+    if (diagnostics.workspaceRunId) {
+      form.append("runId", diagnostics.workspaceRunId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.workspaceRecoveryAudit = json.data?.recovery || null;
+    if (diagnostics.workspaceRecoveryAudit?.runId) {
+      diagnostics.workspaceRunId = diagnostics.workspaceRecoveryAudit.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        WORKSPACE_READ_MODEL_FOUNDATION_SUITE_ID,
+        { recovery: diagnostics.workspaceRecoveryAudit }
+      );
+    }
+    if (!diagnostics.workspaceRecoveryAudit) {
+      diagnostics.workspaceRecoveryError =
+        "No Workspace recovery state found";
+    }
+  } catch (err) {
+    diagnostics.workspaceRecoveryError =
+      err.message || "Workspace recovery audit unavailable";
+    showToast(diagnostics.workspaceRecoveryError, "error");
+  } finally {
+    diagnostics.loadingWorkspaceRecoveryAudit = false;
     renderDeveloperDiagnosticsSheet();
   }
 }
