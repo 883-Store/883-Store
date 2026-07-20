@@ -6633,6 +6633,13 @@ Object.assign(window, {
   confirmPaymentFoundationRecoveryCleanupFromAdmin,
   closePaymentFoundationRecoveryCleanupConfirmation,
   executePaymentFoundationRecoveryCleanupFromAdmin,
+  loadLatestReceivableWorkspaceAcceptanceRuntimeTraceFromAdmin,
+  loadReceivableWorkspaceAcceptanceProgressFromAdmin,
+  auditReceivableWorkspaceAcceptanceRecoveryFromAdmin,
+  confirmReceivableWorkspaceAcceptanceRecoveryCleanupFromAdmin,
+  updateReceivableWorkspaceAcceptanceCleanupButtonState,
+  closeReceivableWorkspaceAcceptanceRecoveryCleanupConfirmation,
+  executeReceivableWorkspaceAcceptanceRecoveryCleanupFromAdmin,
   loadLatestPaymentCorrectionFoundationRuntimeTraceFromAdmin,
   loadPaymentCorrectionFoundationProgressFromAdmin,
   auditPaymentCorrectionFoundationDiagnosticRecoveryFromAdmin,
@@ -7076,6 +7083,17 @@ const state = {
       paymentRecoveryError: "",
       paymentRecoveryCleanupMessage: "",
       paymentRunId: "",
+      loadingReceivableWorkspaceRuntimeTrace: false,
+      receivableWorkspaceRuntimeTrace: null,
+      receivableWorkspaceRuntimeTraceError: "",
+      loadingReceivableWorkspaceRecoveryAudit: false,
+      loadingReceivableWorkspaceRecoveryCleanup: false,
+      receivableWorkspaceRecoveryAudit: null,
+      receivableWorkspaceRecoveryError: "",
+      receivableWorkspaceRecoveryCleanupMessage: "",
+      receivableWorkspaceRecoveryCleanupRunId: "",
+      receivableWorkspaceRecoveryCleanupTimeoutRunId: "",
+      receivableWorkspaceRunId: "",
       loadingReceiptRuntimeTrace: false,
       receiptRuntimeTrace: null,
       receiptRuntimeTraceError: "",
@@ -9568,6 +9586,17 @@ function resetDeveloperDiagnosticsState() {
   state.admin.developerDiagnostics.paymentRecoveryError = "";
   state.admin.developerDiagnostics.paymentRecoveryCleanupMessage = "";
   state.admin.developerDiagnostics.paymentRunId = "";
+  state.admin.developerDiagnostics.loadingReceivableWorkspaceRuntimeTrace = false;
+  state.admin.developerDiagnostics.receivableWorkspaceRuntimeTrace = null;
+  state.admin.developerDiagnostics.receivableWorkspaceRuntimeTraceError = "";
+  state.admin.developerDiagnostics.loadingReceivableWorkspaceRecoveryAudit = false;
+  state.admin.developerDiagnostics.loadingReceivableWorkspaceRecoveryCleanup = false;
+  state.admin.developerDiagnostics.receivableWorkspaceRecoveryAudit = null;
+  state.admin.developerDiagnostics.receivableWorkspaceRecoveryError = "";
+  state.admin.developerDiagnostics.receivableWorkspaceRecoveryCleanupMessage = "";
+  state.admin.developerDiagnostics.receivableWorkspaceRecoveryCleanupRunId = "";
+  state.admin.developerDiagnostics.receivableWorkspaceRecoveryCleanupTimeoutRunId = "";
+  state.admin.developerDiagnostics.receivableWorkspaceRunId = "";
   state.admin.developerDiagnostics.loadingPaymentCorrectionRuntimeTrace = false;
   state.admin.developerDiagnostics.paymentCorrectionRuntimeTrace = null;
   state.admin.developerDiagnostics.paymentCorrectionRuntimeTraceError = "";
@@ -9782,6 +9811,7 @@ function renderDeveloperDiagnosticResultCard(suite) {
     ? "RUNNING"
     : String(result?.status || "NOT_RUN").trim().toUpperCase().replace(/\s+/g, "_");
   const statusLabel = status === "NOT_RUN" ? "NOT RUN" : status;
+  const detailsOpen = shouldKeepDeveloperDiagnosticDetailsOpen(suite.id);
 
   return `
     <div class="card admin-card diagnostic-result-card">
@@ -9805,13 +9835,16 @@ function renderDeveloperDiagnosticResultCard(suite) {
           ${esc(result?.cleanup?.required ? result.cleanup.status : "NOT_REQUIRED")}
         </div>
       </div>
-      <details>
+      <details ${detailsOpen ? "open" : ""}>
         <summary aria-label="${escAttr(`${suite.label} details`)}">Details</summary>
         ${isBillFoundationDiagnosticSuite(suite.id)
           ? renderBillFoundationRuntimeTracePanel()
           : ""}
         ${suite.id === PAYMENT_FOUNDATION_SUITE_ID
           ? renderPaymentFoundationRuntimeRecoveryPanel()
+          : ""}
+        ${suite.id === RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID
+          ? renderReceivableWorkspaceAcceptanceRuntimeRecoveryPanel()
           : ""}
         ${suite.id === PAYMENT_CORRECTION_FOUNDATION_SUITE_ID
           ? renderPaymentCorrectionFoundationRuntimeRecoveryPanel()
@@ -9995,6 +10028,134 @@ function renderPaymentFoundationRuntimeRecoveryPanel() {
           ${recoverySummaryText ? `<br>${esc(recoverySummaryText)}` : ""}
           ${recoveryCleanupMessage ? `<br>${esc(recoveryCleanupMessage)}` : ""}
         ` : esc(recoveryError || "Payment recovery audit not loaded")}
+      </div>
+    </div>
+  `;
+}
+
+function shouldKeepDeveloperDiagnosticDetailsOpen(suiteId) {
+  const diagnostics = state.admin.developerDiagnostics;
+  const id = String(suiteId || "").trim();
+  if (id === RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID) {
+    return !!(
+      diagnostics.loadingReceivableWorkspaceRuntimeTrace ||
+      diagnostics.loadingReceivableWorkspaceRecoveryAudit ||
+      diagnostics.loadingReceivableWorkspaceRecoveryCleanup ||
+      diagnostics.receivableWorkspaceRuntimeTrace ||
+      diagnostics.receivableWorkspaceRecoveryAudit ||
+      diagnostics.receivableWorkspaceRuntimeTraceError ||
+      diagnostics.receivableWorkspaceRecoveryError ||
+      diagnostics.receivableWorkspaceRecoveryCleanupMessage
+    );
+  }
+  return false;
+}
+
+function getReceivableWorkspaceAcceptanceRunIdInputValue() {
+  return String(
+    document.getElementById("receivableWorkspaceAcceptanceRecoveryRunId")?.value || ""
+  ).trim();
+}
+
+function getReceivableWorkspaceAcceptanceCurrentRunId() {
+  const diagnostics = state.admin.developerDiagnostics;
+  return String(
+    diagnostics.receivableWorkspaceRunId ||
+    diagnostics.receivableWorkspaceRecoveryAudit?.runId ||
+    diagnostics.receivableWorkspaceRuntimeTrace?.runId ||
+    ""
+  ).trim();
+}
+
+function renderReceivableWorkspaceAcceptanceRuntimeRecoveryPanel() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const trace = diagnostics.receivableWorkspaceRuntimeTrace;
+  const isLoading = diagnostics.loadingReceivableWorkspaceRuntimeTrace;
+  const traceError = diagnostics.receivableWorkspaceRuntimeTraceError;
+  const recovery = diagnostics.receivableWorkspaceRecoveryAudit;
+  const isRecoveryLoading = diagnostics.loadingReceivableWorkspaceRecoveryAudit;
+  const isRecoveryCleanupLoading =
+    diagnostics.loadingReceivableWorkspaceRecoveryCleanup;
+  const recoveryError = diagnostics.receivableWorkspaceRecoveryError;
+  const recoveryCleanupMessage =
+    diagnostics.receivableWorkspaceRecoveryCleanupMessage;
+  const runId = getReceivableWorkspaceAcceptanceCurrentRunId();
+  const recoverySummary = recovery?.summary || {};
+  const recoverySummaryText = recovery
+    ? Object.keys(recoverySummary)
+        .map(key => {
+          const item = recoverySummary[key] || {};
+          return `${key}: ${Number(item.exists || 0)} exists / ${Number(item.missing || 0)} missing`;
+        })
+        .join(" | ")
+    : "";
+
+  return `
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Receivable Workspace Runtime Trace</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadLatestReceivableWorkspaceAcceptanceRuntimeTraceFromAdmin()">
+          ${isLoading ? "Loading..." : "Latest Receivable Workspace Runtime Trace"}
+        </button>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadReceivableWorkspaceAcceptanceProgressFromAdmin()">
+          ${isLoading ? "Loading..." : "Receivable Workspace Progress"}
+        </button>
+      </div>
+      <label class="display-inventory-help" for="receivableWorkspaceAcceptanceRecoveryRunId">
+        Exact runId for recovery / cleanup
+      </label>
+      <input id="receivableWorkspaceAcceptanceRecoveryRunId"
+        type="text"
+        autocomplete="off"
+        value="${escAttr(runId)}"
+        style="width:100%;max-width:520px"
+        placeholder="RECVWS-RUN-...">
+      <div class="diagnostic-check-summary">
+        ${trace ? `
+          Run: ${esc(trace.runId || "-")} |
+          Status: ${esc(trace.status || "-")} |
+          Last: ${esc(trace.lastCheckpoint || trace.lastCompletedCheckpoint || "-")} |
+          Current: ${esc(trace.currentCheckpoint || "-")} |
+          Failing: ${esc(trace.failingCheckpoint || "-")} |
+          Elapsed: ${Number(trace.elapsedMs || 0)} ms |
+          Cleanup: ${esc(trace.cleanupStatus || "-")}
+          ${trace.errorMessage ? `<br>Error: ${esc(trace.errorMessage)}` : ""}
+          ${trace.recordCountSummary ? `<br>Manifest: ${esc(JSON.stringify(trace.recordCountSummary))}` : ""}
+        ` : esc(traceError || "Receivable Workspace runtime trace not loaded")}
+      </div>
+    </div>
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Receivable Workspace Recovery Status</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isRecoveryLoading ? "disabled" : ""}
+          onclick="auditReceivableWorkspaceAcceptanceRecoveryFromAdmin()">
+          ${isRecoveryLoading ? "Checking..." : "Check Receivable Workspace Recovery Status"}
+        </button>
+        <button class="btn btn-danger diagnostic-suite-button" type="button"
+          ${isRecoveryCleanupLoading ? "disabled" : ""}
+          onclick="confirmReceivableWorkspaceAcceptanceRecoveryCleanupFromAdmin()">
+          ${isRecoveryCleanupLoading ? "Cleaning..." : "Cleanup Receivable Workspace Run"}
+        </button>
+      </div>
+      <div class="display-inventory-help">
+        TEST-only exact cleanup. Requires a visible runId and typed confirmation. No broad cleanup, no sequence rollback, and no automatic retry after timeout.
+      </div>
+      <div class="diagnostic-check-summary">
+        ${recovery ? `
+          Run: ${esc(recovery.runId || "-")} |
+          Status: ${esc(recovery.status || "-")} |
+          Cleanup: ${esc(recovery.cleanupStatus || "-")} |
+          Cleanup safe: ${recovery.cleanupSafe === false ? "NO" : "YES"} |
+          Sequence retained: ${(recovery.sequenceRetained || recovery.sequenceProtected) ? "YES" : "NO"}
+          ${recovery.ownershipStatus ? `<br>Ownership: ${esc(recovery.ownershipStatus)}` : ""}
+          ${recoverySummaryText ? `<br>${esc(recoverySummaryText)}` : ""}
+          ${recoveryCleanupMessage ? `<br>${esc(recoveryCleanupMessage)}` : ""}
+        ` : esc(recoveryError || "Receivable Workspace recovery audit not loaded")}
       </div>
     </div>
   `;
@@ -10422,6 +10583,7 @@ function isRuntimeRecoveryDeveloperDiagnosticSuite(suiteId) {
   const id = String(suiteId || "").trim();
   return isBillFoundationDiagnosticSuite(id) ||
     id === PAYMENT_FOUNDATION_SUITE_ID ||
+    id === RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID ||
     id === PAYMENT_CORRECTION_FOUNDATION_SUITE_ID ||
     id === RECEIPT_FOUNDATION_SUITE_ID ||
     id === TAX_INVOICE_FOUNDATION_SUITE_ID ||
@@ -10853,6 +11015,10 @@ async function loadDeveloperDiagnosticRuntimeTraceAfterTimeoutFromAdmin(suite) {
   if (suite === PAYMENT_FOUNDATION_SUITE_ID) {
     await loadLatestPaymentFoundationRuntimeTraceFromAdmin();
     return state.admin.developerDiagnostics.paymentRuntimeTrace;
+  }
+  if (suite === RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID) {
+    await loadLatestReceivableWorkspaceAcceptanceRuntimeTraceFromAdmin();
+    return state.admin.developerDiagnostics.receivableWorkspaceRuntimeTrace;
   }
   if (suite === PAYMENT_CORRECTION_FOUNDATION_SUITE_ID) {
     await loadLatestPaymentCorrectionFoundationRuntimeTraceFromAdmin();
@@ -11450,6 +11616,386 @@ async function executePaymentFoundationRecoveryCleanupFromAdmin() {
     showToast(diagnostics.paymentRecoveryCleanupMessage, "error");
   } finally {
     diagnostics.loadingPaymentRecoveryCleanup = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadLatestReceivableWorkspaceAcceptanceRuntimeTraceFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingReceivableWorkspaceRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingReceivableWorkspaceRuntimeTrace = true;
+  diagnostics.receivableWorkspaceRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "getLatestReceivableWorkspaceAcceptanceRuntimeTrace");
+    form.append("token", state.admin.token);
+
+    const json = await postFormAction(form);
+    diagnostics.receivableWorkspaceRuntimeTrace = json.data?.trace || null;
+    if (diagnostics.receivableWorkspaceRuntimeTrace?.runId) {
+      diagnostics.receivableWorkspaceRunId =
+        diagnostics.receivableWorkspaceRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID,
+        { trace: diagnostics.receivableWorkspaceRuntimeTrace }
+      );
+    }
+    if (!diagnostics.receivableWorkspaceRuntimeTrace) {
+      diagnostics.receivableWorkspaceRuntimeTraceError =
+        "No persistent Receivable Workspace trace found";
+    }
+  } catch (err) {
+    diagnostics.receivableWorkspaceRuntimeTrace = null;
+    diagnostics.receivableWorkspaceRuntimeTraceError =
+      err.message || "Receivable Workspace trace unavailable";
+    showToast(diagnostics.receivableWorkspaceRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingReceivableWorkspaceRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadReceivableWorkspaceAcceptanceProgressFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingReceivableWorkspaceRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingReceivableWorkspaceRuntimeTrace = true;
+  diagnostics.receivableWorkspaceRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const runId = getReceivableWorkspaceAcceptanceRunIdInputValue();
+    const form = new URLSearchParams();
+    form.append("action", "getReceivableWorkspaceAcceptanceDiagnosticProgress");
+    form.append("token", state.admin.token);
+    if (runId) {
+      form.append("runId", runId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.receivableWorkspaceRuntimeTrace = json.data?.progress || null;
+    if (diagnostics.receivableWorkspaceRuntimeTrace?.runId) {
+      diagnostics.receivableWorkspaceRunId =
+        diagnostics.receivableWorkspaceRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID,
+        { trace: diagnostics.receivableWorkspaceRuntimeTrace }
+      );
+    }
+    if (!diagnostics.receivableWorkspaceRuntimeTrace) {
+      diagnostics.receivableWorkspaceRuntimeTraceError =
+        "No persistent Receivable Workspace progress found";
+    }
+  } catch (err) {
+    diagnostics.receivableWorkspaceRuntimeTrace = null;
+    diagnostics.receivableWorkspaceRuntimeTraceError =
+      err.message || "Receivable Workspace progress unavailable";
+    showToast(diagnostics.receivableWorkspaceRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingReceivableWorkspaceRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function auditReceivableWorkspaceAcceptanceRecoveryFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingReceivableWorkspaceRecoveryAudit) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingReceivableWorkspaceRecoveryAudit = true;
+  diagnostics.receivableWorkspaceRecoveryError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const runId = getReceivableWorkspaceAcceptanceRunIdInputValue();
+    const form = new URLSearchParams();
+    form.append("action", "auditReceivableWorkspaceAcceptanceRecovery");
+    form.append("token", state.admin.token);
+    if (runId) {
+      form.append("runId", runId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.receivableWorkspaceRecoveryAudit = json.data?.recovery || null;
+    if (diagnostics.receivableWorkspaceRecoveryAudit?.runId) {
+      diagnostics.receivableWorkspaceRunId =
+        diagnostics.receivableWorkspaceRecoveryAudit.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID,
+        { recovery: diagnostics.receivableWorkspaceRecoveryAudit }
+      );
+      const cleanupStatus = normalizeDeveloperDiagnosticStatus(
+        diagnostics.receivableWorkspaceRecoveryAudit.cleanupStatus
+      );
+      if (cleanupStatus && cleanupStatus !== "RUNNING") {
+        diagnostics.receivableWorkspaceRecoveryCleanupTimeoutRunId = "";
+      }
+    }
+    if (!diagnostics.receivableWorkspaceRecoveryAudit) {
+      diagnostics.receivableWorkspaceRecoveryError =
+        "No Receivable Workspace recovery manifest found";
+    }
+  } catch (err) {
+    diagnostics.receivableWorkspaceRecoveryError =
+      err.message || "Receivable Workspace recovery audit unavailable";
+    showToast(diagnostics.receivableWorkspaceRecoveryError, "error");
+  } finally {
+    diagnostics.loadingReceivableWorkspaceRecoveryAudit = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+function confirmReceivableWorkspaceAcceptanceRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (
+    diagnostics.runningSuite ||
+    diagnostics.loadingReceivableWorkspaceRecoveryAudit ||
+    diagnostics.loadingReceivableWorkspaceRecoveryCleanup
+  ) {
+    return;
+  }
+
+  const runId = getReceivableWorkspaceAcceptanceRunIdInputValue();
+  if (!runId) {
+    showToast("Enter the exact Receivable Workspace runId before cleanup.", "warning");
+    return;
+  }
+  if (
+    diagnostics.receivableWorkspaceRecoveryCleanupTimeoutRunId &&
+    diagnostics.receivableWorkspaceRecoveryCleanupTimeoutRunId === runId
+  ) {
+    showToast(
+      "Cleanup may still be running. Check Receivable Workspace Recovery Status before retrying.",
+      "warning"
+    );
+    return;
+  }
+  diagnostics.receivableWorkspaceRecoveryCleanupRunId = runId;
+
+  confirmSheet.setAttribute(
+    "aria-labelledby",
+    "receivableWorkspaceRecoveryCleanupConfirmTitle"
+  );
+  confirmSheet.classList.add("developer-diagnostic-confirm-sheet");
+  confirmSheet.innerHTML = `
+    <h3 id="receivableWorkspaceRecoveryCleanupConfirmTitle">Cleanup Receivable Workspace Run</h3>
+    <div class="display-inventory-help">
+      TEST-only exact cleanup for run ${esc(runId)}. It deletes only exact tracked TEST-DIAG Bill, Customer, Contact, and fixture records for this run. It does not roll back Bill number sequences and does not refresh Workspace automatically.
+    </div>
+    <label class="display-inventory-help" for="receivableWorkspaceRecoveryCleanupConfirmation">
+      Type CLEANUP_TEST_DIAG_RECEIVABLE_WORKSPACE_RUN to confirm.
+    </label>
+    <input id="receivableWorkspaceRecoveryCleanupConfirmation"
+      type="text"
+      autocomplete="off"
+      style="width:100%;max-width:520px"
+      placeholder="CLEANUP_TEST_DIAG_RECEIVABLE_WORKSPACE_RUN"
+      oninput="updateReceivableWorkspaceAcceptanceCleanupButtonState()">
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closeReceivableWorkspaceAcceptanceRecoveryCleanupConfirmation()">
+        Cancel
+      </button>
+      <button id="receivableWorkspaceRecoveryCleanupSubmit"
+        class="btn btn-danger"
+        type="button"
+        disabled
+        onclick="executeReceivableWorkspaceAcceptanceRecoveryCleanupFromAdmin()">
+        Cleanup Receivable Workspace Run
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+  updateReceivableWorkspaceAcceptanceCleanupButtonState();
+}
+
+function updateReceivableWorkspaceAcceptanceCleanupButtonState() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const button = document.getElementById("receivableWorkspaceRecoveryCleanupSubmit");
+  if (!button) return;
+  const confirmation = String(
+    document.getElementById("receivableWorkspaceRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  const runId = String(
+    diagnostics.receivableWorkspaceRecoveryCleanupRunId || ""
+  ).trim();
+  button.disabled = !runId ||
+    confirmation !== "CLEANUP_TEST_DIAG_RECEIVABLE_WORKSPACE_RUN" ||
+    !!diagnostics.loadingReceivableWorkspaceRecoveryCleanup;
+}
+
+function closeReceivableWorkspaceAcceptanceRecoveryCleanupConfirmation() {
+  const diagnostics = state.admin.developerDiagnostics;
+  diagnostics.receivableWorkspaceRecoveryCleanupRunId = "";
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  confirmSheet.classList.remove("developer-diagnostic-confirm-sheet");
+  closeOverlay(confirmSheet);
+}
+
+function updateReceivableWorkspaceAcceptanceCardAfterRecoveryCleanup(cleanup) {
+  const diagnostics = state.admin.developerDiagnostics;
+  const cleanupStatus = String(cleanup && cleanup.status || "FAIL")
+    .trim()
+    .toUpperCase();
+  const cleanupSummary = String(cleanup && cleanup.summary || "").trim();
+  const current =
+    diagnostics.results[RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID] || {
+      suite: RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID,
+      status: cleanupStatus === "PASS" ? "PARTIAL" : "FAIL",
+      checks: []
+    };
+  const checks = Array.isArray(current.checks) ? current.checks.slice() : [];
+  const nextCheck = {
+    name: "receivable_workspace_recovery_cleanup",
+    status: cleanupStatus,
+    summary: cleanupSummary || "Receivable Workspace recovery cleanup completed"
+  };
+  const index = checks.findIndex(check => check.name === nextCheck.name);
+  if (index === -1) {
+    checks.push(nextCheck);
+  } else {
+    checks[index] = nextCheck;
+  }
+  current.checks = checks;
+  current.cleanup = {
+    required: true,
+    status: cleanupStatus
+  };
+  if (cleanupStatus !== "PASS") {
+    current.status = "FAIL";
+  } else if (!current.status || current.status === "NOT_RUN") {
+    current.status = "PARTIAL";
+  }
+  diagnostics.results[RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID] = current;
+}
+
+async function executeReceivableWorkspaceAcceptanceRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingReceivableWorkspaceRecoveryCleanup) return;
+
+  const runId = String(
+    diagnostics.receivableWorkspaceRecoveryCleanupRunId || ""
+  ).trim();
+  const confirmation = String(
+    document.getElementById("receivableWorkspaceRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  if (!runId) {
+    showToast("Receivable Workspace cleanup runId is required", "warning");
+    return;
+  }
+  if (confirmation !== "CLEANUP_TEST_DIAG_RECEIVABLE_WORKSPACE_RUN") {
+    showToast(
+      "Receivable Workspace cleanup confirmation is required",
+      "warning"
+    );
+    return;
+  }
+
+  closeReceivableWorkspaceAcceptanceRecoveryCleanupConfirmation();
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingReceivableWorkspaceRecoveryCleanup = true;
+  diagnostics.receivableWorkspaceRecoveryError = "";
+  diagnostics.receivableWorkspaceRecoveryCleanupMessage = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "cleanupReceivableWorkspaceAcceptanceRecovery");
+    form.append("token", state.admin.token);
+    form.append("runId", runId);
+    form.append("confirmation", confirmation);
+
+    const json = await postFormAction(form);
+    const cleanup = json.data?.cleanup || {};
+    diagnostics.receivableWorkspaceRuntimeTrace = json.data?.progress || null;
+    diagnostics.receivableWorkspaceRecoveryAudit = json.data?.recovery || null;
+    if (diagnostics.receivableWorkspaceRuntimeTrace?.runId) {
+      diagnostics.receivableWorkspaceRunId =
+        diagnostics.receivableWorkspaceRuntimeTrace.runId;
+    } else if (diagnostics.receivableWorkspaceRecoveryAudit?.runId) {
+      diagnostics.receivableWorkspaceRunId =
+        diagnostics.receivableWorkspaceRecoveryAudit.runId;
+    }
+    diagnostics.receivableWorkspaceRecoveryCleanupTimeoutRunId = "";
+    diagnostics.receivableWorkspaceRecoveryCleanupMessage =
+      `Cleanup ${cleanup.status || "-"}: ${cleanup.summary || "-"}`;
+    updateReceivableWorkspaceAcceptanceCardAfterRecoveryCleanup(cleanup);
+    reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+      RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID,
+      {
+        trace: diagnostics.receivableWorkspaceRuntimeTrace,
+        recovery: diagnostics.receivableWorkspaceRecoveryAudit,
+        cleanup
+      }
+    );
+    showToast(
+      cleanup.status === "PASS"
+        ? "Receivable Workspace cleanup PASS"
+        : "Receivable Workspace cleanup completed",
+      cleanup.status === "PASS" ? "success" : "warning"
+    );
+  } catch (err) {
+    const message =
+      err.message || "Receivable Workspace recovery cleanup unavailable";
+    if (isDeveloperDiagnosticTimeoutMessage(message)) {
+      diagnostics.receivableWorkspaceRecoveryCleanupTimeoutRunId = runId;
+      diagnostics.receivableWorkspaceRecoveryCleanupMessage =
+        "Cleanup request timed out on the client. The backend may still be running; check Receivable Workspace Recovery Status before retrying.";
+      showToast(diagnostics.receivableWorkspaceRecoveryCleanupMessage, "warning");
+    } else {
+      diagnostics.receivableWorkspaceRecoveryCleanupMessage = message;
+      diagnostics.receivableWorkspaceRecoveryError =
+        diagnostics.receivableWorkspaceRecoveryCleanupMessage;
+      showToast(diagnostics.receivableWorkspaceRecoveryCleanupMessage, "error");
+    }
+  } finally {
+    diagnostics.loadingReceivableWorkspaceRecoveryCleanup = false;
     renderDeveloperDiagnosticsSheet();
   }
 }
