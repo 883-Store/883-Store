@@ -1618,6 +1618,101 @@ body[data-theme="cute"] .shop-subtitle{
     line-height:1.6;
   }
 
+  #adminDashboardSheet .finance-legal-detail-panel{
+    display:grid;
+    gap:14px;
+    width:100%;
+    max-width:980px;
+    margin:0 auto;
+    padding-bottom:max(28px, env(safe-area-inset-bottom, 0px));
+  }
+
+  #adminDashboardSheet .finance-legal-detail-header{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:8px;
+  }
+
+  #adminDashboardSheet .finance-legal-detail-card{
+    min-width:0;
+    padding:16px;
+    background:#FFFFFF;
+    border:1px solid var(--ds-border, var(--border));
+    border-radius:8px;
+    box-shadow:var(--ds-shadow-card, var(--shadow-card));
+  }
+
+  #adminDashboardSheet .finance-legal-detail-card h4{
+    margin:0 0 12px;
+    color:var(--ds-neutral, var(--text));
+    font-size:16px;
+  }
+
+  #adminDashboardSheet .finance-legal-detail-grid,
+  #adminDashboardSheet .finance-legal-detail-money-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:10px;
+  }
+
+  #adminDashboardSheet .finance-legal-detail-field{
+    min-width:0;
+    display:grid;
+    gap:4px;
+    padding:10px;
+    background:var(--ds-background, #F8FAFC);
+    border:1px solid var(--ds-border, var(--border));
+    border-radius:8px;
+  }
+
+  #adminDashboardSheet .finance-legal-detail-field span{
+    color:var(--ds-neutral-light, #4B5563);
+    font-size:12px;
+  }
+
+  #adminDashboardSheet .finance-legal-detail-field strong,
+  #adminDashboardSheet .finance-legal-detail-value{
+    min-width:0;
+    color:var(--ds-neutral, var(--text));
+    overflow-wrap:anywhere;
+  }
+
+  #adminDashboardSheet .finance-legal-detail-money{
+    text-align:right;
+  }
+
+  #adminDashboardSheet .finance-legal-detail-list{
+    display:grid;
+    gap:10px;
+  }
+
+  #adminDashboardSheet .finance-legal-detail-item,
+  #adminDashboardSheet .finance-legal-detail-reference{
+    min-width:0;
+    display:grid;
+    gap:8px;
+    padding:12px;
+    background:var(--ds-background, #F8FAFC);
+    border:1px solid var(--ds-border, var(--border));
+    border-radius:8px;
+  }
+
+  #adminDashboardSheet .finance-legal-detail-line{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px 12px;
+    color:var(--ds-neutral-light, #4B5563);
+    font-size:13px;
+    line-height:1.5;
+  }
+
+  #adminDashboardSheet .finance-legal-detail-related-note{
+    color:var(--ds-neutral-light, #4B5563);
+    font-size:13px;
+    line-height:1.6;
+  }
+
   #adminDashboardSheet .business-dashboard-toolbar,
   #adminDashboardSheet .business-dashboard-range,
   #adminDashboardSheet .business-dashboard-panel-actions,
@@ -1929,8 +2024,14 @@ body[data-theme="cute"] .shop-subtitle{
     #adminSourceableWorkspaceSheet .sourceable-workspace-data-grid,
     #adminDashboardSheet .business-dashboard-kpi-grid,
     #adminDashboardSheet .business-dashboard-inventory-grid,
-    #adminDashboardSheet .business-dashboard-sourceable-grid{
+    #adminDashboardSheet .business-dashboard-sourceable-grid,
+    #adminDashboardSheet .finance-legal-detail-grid,
+    #adminDashboardSheet .finance-legal-detail-money-grid{
       grid-template-columns:minmax(0, 1fr);
+    }
+
+    #adminDashboardSheet .finance-legal-detail-money{
+      text-align:left;
     }
   }
 
@@ -6630,6 +6731,25 @@ const state = {
       datasets: {},
       loadingKeys: {},
       errors: {}
+    },
+    workspace: {
+      summary: null,
+      loading: false,
+      error: "",
+      requestId: 0,
+      lastLoadedAt: ""
+    },
+    financeLegalDetail: {
+      open: false,
+      type: "",
+      recordId: "",
+      title: "",
+      loading: false,
+      error: "",
+      data: null,
+      history: [],
+      requestId: 0,
+      workspaceScrollTop: 0
     },
     deliveryNote: {
       poInput: "",
@@ -15343,6 +15463,8 @@ async function enterAdmin(){
   } catch (err) {
     console.warn("enterAdmin: preload orders failed", err);
   }
+
+  openAdminWorkspace();
 }
 
 // ✅ STEP 1: UI-only mode switch (ไม่ยุ่ง session/token)
@@ -15429,6 +15551,11 @@ function closeTopSheet(){
         closeAdminOrderSheet();
       } else if (sheet === adminStockSheet) {
         closeStockTimelineSheet();
+      } else if (
+        sheet === adminDashboardSheet &&
+        getFinanceLegalDetailState().open
+      ) {
+        closeFinanceLegalDetailSheet();
       } else {
         closeOverlay(sheet);
       }
@@ -16065,6 +16192,790 @@ function getBusinessDashboardReadableError(error) {
     return t("sessionExpiredLoginAgain", "Session หมดอายุ กรุณา login ใหม่");
   }
   return message || "โหลดข้อมูลไม่สำเร็จ";
+}
+
+function getAdminWorkspaceState() {
+  if (!state.admin.workspace) {
+    state.admin.workspace = {
+      summary: null,
+      loading: false,
+      error: "",
+      requestId: 0,
+      lastLoadedAt: ""
+    };
+  }
+  return state.admin.workspace;
+}
+
+function ensureAdminSessionForWorkspace() {
+  if (
+    state.mode !== "admin" ||
+    !state.admin.loggedIn ||
+    !state.admin.token ||
+    isAdminSessionExpired()
+  ) {
+    showToast(t("sessionExpiredLoginAgain", "Session หมดอายุ กรุณา login ใหม่"), "warning");
+    exitAdmin();
+    return false;
+  }
+  return true;
+}
+
+async function fetchWorkspaceSummary() {
+  const form = new URLSearchParams();
+  form.append("action", "getWorkspaceSummary");
+  form.append("token", state.admin.token);
+  const json = await postFormAction(form);
+  return json.data || {};
+}
+
+function getWorkspaceReadableError(error) {
+  const message = String(error?.message || error || "").trim();
+  if (isPermissionDeniedError(message)) {
+    return t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้");
+  }
+  if (isAuthError(message)) {
+    return t("sessionExpiredLoginAgain", "Session หมดอายุ กรุณา login ใหม่");
+  }
+  if (message.includes(t("connectionSlowRetry", "การเชื่อมต่อช้าเกินไป กรุณาลองใหม่อีกครั้ง"))) {
+    return t("connectionSlowRetry", "การเชื่อมต่อช้าเกินไป กรุณาลองใหม่อีกครั้ง");
+  }
+  return "Workspace is temporarily unavailable. Use the existing menu and refresh again later.";
+}
+
+function getFinanceLegalDetailState() {
+  if (!state.admin.financeLegalDetail) {
+    state.admin.financeLegalDetail = {
+      open: false,
+      type: "",
+      recordId: "",
+      title: "",
+      loading: false,
+      error: "",
+      data: null,
+      history: [],
+      requestId: 0,
+      workspaceScrollTop: 0
+    };
+  }
+  return state.admin.financeLegalDetail;
+}
+
+function getFinanceLegalDetailReadableError(error) {
+  const message = String(error?.message || error || "").trim();
+  if (isPermissionDeniedError(message)) {
+    return t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้");
+  }
+  if (isAuthError(message)) {
+    return t("sessionExpiredLoginAgain", "Session หมดอายุ กรุณา login ใหม่");
+  }
+  if (/Bill not found/i.test(message)) {
+    return "ไม่พบใบแจ้งหนี้ที่เลือก";
+  }
+  if (/Bill ID is required/i.test(message)) {
+    return "Workspace row ไม่มีรหัสใบแจ้งหนี้สำหรับเปิดรายละเอียด";
+  }
+  if (message.includes(t("connectionSlowRetry", "การเชื่อมต่อช้าเกินไป กรุณาลองใหม่อีกครั้ง"))) {
+    return t("connectionSlowRetry", "การเชื่อมต่อช้าเกินไป กรุณาลองใหม่อีกครั้ง");
+  }
+  return message || "ไม่สามารถโหลดรายละเอียดได้";
+}
+
+function financeLegalValue(value, fallback = "-") {
+  if (value === undefined || value === null || value === "") return fallback;
+  return String(value);
+}
+
+function formatFinanceLegalMoney(value) {
+  if (value === undefined || value === null || value === "") return "-";
+  return formatBusinessDashboardMoney(value);
+}
+
+function formatFinanceLegalNumber(value) {
+  if (value === undefined || value === null || value === "") return "-";
+  return formatBusinessDashboardNumber(value);
+}
+
+function renderFinanceLegalDetailField(label, value, options = {}) {
+  const displayValue = options.date
+    ? formatThaiDate(value)
+    : options.money
+      ? formatFinanceLegalMoney(value)
+      : financeLegalValue(value);
+  const valueClass = options.money ? "finance-legal-detail-value finance-legal-detail-money" : "finance-legal-detail-value";
+  return `
+    <div class="finance-legal-detail-field">
+      <span>${esc(label)}</span>
+      <strong class="${valueClass}">${esc(displayValue)}</strong>
+    </div>
+  `;
+}
+
+function renderFinanceLegalDetailCard(title, contentHtml) {
+  return `
+    <section class="finance-legal-detail-card">
+      <h4>${esc(title)}</h4>
+      ${contentHtml || `<div class="empty-state">ยังไม่มีข้อมูลในส่วนนี้</div>`}
+    </section>
+  `;
+}
+
+function renderFinanceLegalDetailEmpty(message) {
+  return `<div class="empty-state">${esc(message || "ยังไม่มีข้อมูลในส่วนนี้")}</div>`;
+}
+
+function renderFinanceLegalDetailShell() {
+  const detail = getFinanceLegalDetailState();
+  const bill = detail.type === "bill" && detail.data ? detail.data : null;
+  const status = bill?.status || "";
+  const title = detail.title || "รายละเอียด";
+  const subtitle = detail.type === "bill"
+    ? "รายละเอียดใบแจ้งหนี้ | ดูอย่างเดียว"
+    : "รายละเอียด | ดูอย่างเดียว";
+  const body = detail.loading
+    ? `<div class="loading has-lottie">${renderLottieLoading(t("loadingData", "กำลังโหลดข้อมูล"), { size: 90 })}</div>`
+    : detail.error
+      ? `<div class="empty-state business-dashboard-unavailable" role="alert">${esc(detail.error)}</div>`
+      : bill
+        ? renderBillReadOnlyDetail(bill)
+        : renderFinanceLegalDetailEmpty("ยังไม่มีข้อมูลรายละเอียด");
+
+  adminDashboardSheet.innerHTML = `
+    <div class="finance-legal-detail-panel">
+      <div class="admin-sheet-topbar business-dashboard-topbar">
+        ${detail.history.length ? `
+          <button class="btn btn-outline back-btn" type="button"
+            onclick="backFinanceLegalDetail()">
+            ← กลับ
+          </button>
+        ` : ""}
+        <div class="business-dashboard-title-wrap">
+          <h3 id="adminDashboardSheetTitle">${esc(title)}</h3>
+          <div class="business-dashboard-subtitle">${esc(subtitle)}</div>
+        </div>
+        <button class="btn btn-outline" type="button"
+          onclick="closeFinanceLegalDetailSheet()"
+          aria-label="ปิดรายละเอียด">
+          ปิด
+        </button>
+      </div>
+      <div class="finance-legal-detail-header">
+        <span class="status-badge compact status-neutral">ดูอย่างเดียว</span>
+        ${status ? `<span class="status-badge compact ${getWorkspaceStatusClass(status)}">${esc(status)}</span>` : ""}
+        ${detail.recordId ? `<span class="status-badge compact status-neutral">${esc(detail.recordId)}</span>` : ""}
+      </div>
+      ${body}
+    </div>
+  `;
+}
+
+function closeFinanceLegalDetailSheet() {
+  const detail = getFinanceLegalDetailState();
+  const restoreScrollTop = Number(detail.workspaceScrollTop || 0);
+  detail.open = false;
+  detail.type = "";
+  detail.recordId = "";
+  detail.title = "";
+  detail.loading = false;
+  detail.error = "";
+  detail.data = null;
+  detail.history = [];
+  detail.requestId += 1;
+  detail.workspaceScrollTop = 0;
+  renderAdminWorkspaceSheet();
+  requestAnimationFrame(() => {
+    adminDashboardSheet.scrollTop = restoreScrollTop;
+  });
+}
+
+function backFinanceLegalDetail() {
+  const detail = getFinanceLegalDetailState();
+  if (!detail.history.length) {
+    closeFinanceLegalDetailSheet();
+    return;
+  }
+  const previous = detail.history.pop();
+  detail.type = previous.type || "";
+  detail.recordId = previous.recordId || "";
+  detail.title = previous.title || "";
+  detail.loading = false;
+  detail.error = "";
+  detail.data = previous.data || null;
+  detail.requestId += 1;
+  renderFinanceLegalDetailShell();
+}
+
+async function fetchBillDetailById(billId) {
+  const form = new URLSearchParams();
+  form.append("action", "getBill");
+  form.append("token", state.admin.token);
+  form.append("billId", billId);
+  const json = await postFormAction(form);
+  const bill = json?.data?.bill;
+  if (!bill || !bill.billId) {
+    throw new Error("Malformed Bill detail response");
+  }
+  return bill;
+}
+
+async function openFinanceLegalBillDetail(billId, context = {}) {
+  if (!ensureAdminSessionForWorkspace()) return;
+
+  const detail = getFinanceLegalDetailState();
+  if (!detail.open) {
+    detail.workspaceScrollTop = Number(adminDashboardSheet?.scrollTop || 0);
+  }
+
+  const normalizedBillId = String(billId || "").trim();
+  detail.open = true;
+  detail.type = "bill";
+  detail.recordId = normalizedBillId;
+  detail.title = context.title || "รายละเอียดใบแจ้งหนี้";
+  detail.loading = !!normalizedBillId;
+  detail.error = normalizedBillId
+    ? ""
+    : "Workspace row ไม่มีรหัสใบแจ้งหนี้สำหรับเปิดรายละเอียด";
+  detail.data = null;
+  detail.history = [];
+  detail.requestId += 1;
+  const requestId = detail.requestId;
+
+  renderFinanceLegalDetailShell();
+  if (!adminDashboardSheet.classList.contains("show")) {
+    openOverlay(adminDashboardSheet);
+  }
+  if (!normalizedBillId) return;
+
+  try {
+    const bill = await fetchBillDetailById(normalizedBillId);
+    if (requestId !== detail.requestId) return;
+    detail.data = bill;
+    detail.title = bill.billNumber || bill.billId || "รายละเอียดใบแจ้งหนี้";
+  } catch (err) {
+    if (requestId !== detail.requestId) return;
+    detail.error = getFinanceLegalDetailReadableError(err);
+  } finally {
+    if (requestId === detail.requestId) {
+      detail.loading = false;
+      renderFinanceLegalDetailShell();
+    }
+  }
+}
+
+function renderBillReadOnlyDetail(bill) {
+  const items = Array.isArray(bill?.items) ? bill.items : [];
+  const links = getBillFulfillmentLinksForDetail(bill);
+  return `
+    ${renderBillDetailHeaderCard(bill)}
+    ${renderBillDetailCustomerCard(bill)}
+    ${renderBillDetailDateCard(bill)}
+    ${renderBillDetailAmountCard(bill)}
+    ${renderBillDetailItemsCard(items)}
+    ${renderBillDetailFulfillmentCard(links)}
+    ${renderBillDetailReceivableCard(bill)}
+    ${renderBillDetailRelatedDocumentsCard(bill)}
+  `;
+}
+
+function renderBillDetailHeaderCard(bill) {
+  return renderFinanceLegalDetailCard("หัวเอกสาร", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("เลขที่ใบแจ้งหนี้", bill.billNumber || bill.billId)}
+      ${renderFinanceLegalDetailField("รหัสเอกสาร", bill.billId)}
+      ${renderFinanceLegalDetailField("สถานะ", bill.status)}
+      ${renderFinanceLegalDetailField("ดูอย่างเดียว", "ไม่มีปุ่มแก้ไข / ออกเอกสาร / ยกเลิก")}
+    </div>
+  `);
+}
+
+function renderBillDetailCustomerCard(bill) {
+  return renderFinanceLegalDetailCard("ลูกค้า", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("ชื่อลูกค้า", bill.customerName || bill.customerId)}
+      ${renderFinanceLegalDetailField("รหัสลูกค้า", bill.customerId)}
+      ${renderFinanceLegalDetailField("ผู้ติดต่อวางบิล", bill.billingContactName || bill.billingContactId)}
+      ${renderFinanceLegalDetailField("รหัสผู้ติดต่อ", bill.billingContactId)}
+    </div>
+  `);
+}
+
+function renderBillDetailDateCard(bill) {
+  return renderFinanceLegalDetailCard("วันที่", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("วันที่ออกเอกสาร", bill.billDate, { date: true })}
+      ${renderFinanceLegalDetailField("วันที่ออกเลข", bill.issuedAt, { date: true })}
+      ${renderFinanceLegalDetailField("วันครบกำหนด", bill.dueDate, { date: true })}
+      ${renderFinanceLegalDetailField("อัปเดตล่าสุด", bill.updatedAt || bill.createdAt, { date: true })}
+    </div>
+  `);
+}
+
+function renderBillDetailAmountCard(bill) {
+  return renderFinanceLegalDetailCard("ยอดเงิน", `
+    <div class="finance-legal-detail-money-grid">
+      ${renderFinanceLegalDetailField("ยอดก่อนภาษี", bill.netBeforeVat, { money: true })}
+      ${renderFinanceLegalDetailField("VAT", bill.vatAmount, { money: true })}
+      ${renderFinanceLegalDetailField("ยอดรวม", bill.grandTotal, { money: true })}
+      ${renderFinanceLegalDetailField("VAT snapshot", `${formatFinanceLegalNumber(bill.vatRateSnapshot)}%`)}
+      ${renderFinanceLegalDetailField("Subtotal", bill.subtotal, { money: true })}
+      ${renderFinanceLegalDetailField("ส่วนลดท้ายบิล", bill.billDiscountAmount, { money: true })}
+    </div>
+  `);
+}
+
+function renderBillDetailItemsCard(items) {
+  if (!items.length) {
+    return renderFinanceLegalDetailCard("รายการสินค้า", renderFinanceLegalDetailEmpty("ยังไม่มีรายการสินค้าในใบแจ้งหนี้นี้"));
+  }
+  return renderFinanceLegalDetailCard("รายการสินค้า", `
+    <div class="finance-legal-detail-list">
+      ${items.map(item => `
+        <div class="finance-legal-detail-item">
+          <div class="business-dashboard-list-head">
+            <div class="business-dashboard-list-title">${esc(item.productNameSnapshot || item.productId || item.billItemId || "-")}</div>
+            <span class="status-badge compact status-neutral">${esc(formatFinanceLegalNumber(item.quantity))}</span>
+          </div>
+          <div class="finance-legal-detail-line">
+            <span>Product: ${esc(item.productId || "-")}</span>
+            <span>Unit: ${esc(formatFinanceLegalMoney(item.unitPriceSnapshot))}</span>
+            <span>Line total: ${esc(formatFinanceLegalMoney(item.lineNet))}</span>
+            ${Number(item.lineDiscountAmount || 0) ? `<span>Discount: ${esc(formatFinanceLegalMoney(item.lineDiscountAmount))}</span>` : ""}
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `);
+}
+
+function getBillFulfillmentLinksForDetail(bill) {
+  const items = Array.isArray(bill?.items) ? bill.items : [];
+  return items.flatMap(item =>
+    (Array.isArray(item.links) ? item.links : []).map(link => ({
+      ...link,
+      billItemId: item.billItemId,
+      productNameSnapshot: item.productNameSnapshot
+    }))
+  );
+}
+
+function renderBillDetailFulfillmentCard(links) {
+  if (!links.length) {
+    return renderFinanceLegalDetailCard("Fulfillment References", renderFinanceLegalDetailEmpty("ยังไม่มี Fulfillment reference ใน response นี้"));
+  }
+  return renderFinanceLegalDetailCard("Fulfillment References", `
+    <div class="finance-legal-detail-list">
+      ${links.map(link => `
+        <div class="finance-legal-detail-reference">
+          <div class="business-dashboard-list-head">
+            <div class="business-dashboard-list-title">${esc(link.fulfillmentType || "-")}</div>
+            <span class="status-badge compact ${link.active ? "status-approved" : "status-neutral"}">${link.active ? "ACTIVE" : "RELEASED"}</span>
+          </div>
+          <div class="finance-legal-detail-line">
+            <span>Reference: ${esc(link.fulfillmentReferenceId || "-")}</span>
+            <span>Order: ${esc(link.orderId || "-")}</span>
+            <span>Product: ${esc(link.productId || "-")}</span>
+            <span>Billed qty: ${esc(formatFinanceLegalNumber(link.billedQuantity))}</span>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `);
+}
+
+function renderBillDetailReceivableCard(bill) {
+  const hasReceivable = bill.receivableStage || bill.remainingReceivable !== undefined || bill.confirmedPaymentId;
+  if (!hasReceivable) {
+    return renderFinanceLegalDetailCard("ยอดค้างรับ", renderFinanceLegalDetailEmpty("getBill ยังไม่ส่งข้อมูลยอดค้างรับสำหรับเอกสารนี้"));
+  }
+  return renderFinanceLegalDetailCard("ยอดค้างรับ", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("สถานะยอดค้างรับ", bill.receivableStage)}
+      ${renderFinanceLegalDetailField("ยอดคงเหลือ", bill.remainingReceivable, { money: bill.remainingReceivable !== null })}
+      ${renderFinanceLegalDetailField("เกินกำหนด", bill.isOverdue ? "ใช่" : "ไม่ใช่")}
+      ${renderFinanceLegalDetailField("Payment ที่มีผล", bill.confirmedPaymentId || "-")}
+      ${renderFinanceLegalDetailField("วันที่ Payment", bill.confirmedPaymentDate, { date: true })}
+    </div>
+  `);
+}
+
+function getBillRelatedDocumentsForDetail(bill) {
+  const related = [];
+  if (bill.confirmedPaymentId) {
+    related.push({
+      label: "การชำระเงิน (Payment)",
+      value: bill.confirmedPaymentId,
+      meta: bill.confirmedPaymentDate ? `วันที่ ${formatThaiDate(bill.confirmedPaymentDate)}` : ""
+    });
+  }
+  if (bill.receiptId || bill.receiptNumber) {
+    related.push({
+      label: "ใบรับเงิน (Receipt)",
+      value: bill.receiptNumber || bill.receiptId,
+      meta: bill.receiptId || ""
+    });
+  }
+  if (bill.taxInvoiceId || bill.taxInvoiceNumber) {
+    related.push({
+      label: "ใบกำกับภาษี (Tax Invoice)",
+      value: bill.taxInvoiceNumber || bill.taxInvoiceId,
+      meta: bill.taxInvoiceId || ""
+    });
+  }
+  return related;
+}
+
+function renderBillDetailRelatedDocumentsCard(bill) {
+  const related = getBillRelatedDocumentsForDetail(bill);
+  if (!related.length) {
+    return renderFinanceLegalDetailCard("เอกสารที่เกี่ยวข้อง", `
+      ${renderFinanceLegalDetailEmpty("getBill ยังไม่มี reference ของ Payment, Receipt หรือ Tax Invoice ให้แสดง")}
+      <div class="finance-legal-detail-related-note">รายละเอียดเอกสารที่เกี่ยวข้องจะเปิดใช้ในขั้นถัดไปเมื่อมี ID จาก read contract โดยไม่ fetch เพิ่มในรอบนี้</div>
+    `);
+  }
+  return renderFinanceLegalDetailCard("เอกสารที่เกี่ยวข้อง", `
+    <div class="finance-legal-detail-list">
+      ${related.map(item => `
+        <div class="finance-legal-detail-reference">
+          <div class="business-dashboard-list-head">
+            <div class="business-dashboard-list-title">${esc(item.label)}</div>
+            <span class="status-badge compact status-neutral">อ่านอย่างเดียว</span>
+          </div>
+          <div class="business-dashboard-list-meta">${esc(item.value || "-")}${item.meta ? ` | ${esc(item.meta)}` : ""}</div>
+          <div class="finance-legal-detail-related-note">รายละเอียดจะเปิดใช้ในขั้นถัดไป</div>
+        </div>
+      `).join("")}
+    </div>
+  `);
+}
+
+function openAdminWorkspace() {
+  if (!ensureAdminSessionForWorkspace()) return;
+
+  const workspace = getAdminWorkspaceState();
+  state.admin.dashboardMode = "WORKSPACE";
+  closeOverlay(adminStockSheet);
+  state.search = "";
+  workspace.error = "";
+  renderAdminWorkspaceSheet();
+  openOverlay(adminDashboardSheet);
+  refreshAdminWorkspace({ silent: true });
+}
+
+async function refreshAdminWorkspace(options = {}) {
+  if (!ensureAdminSessionForWorkspace()) return;
+  const workspace = getAdminWorkspaceState();
+  if (workspace.loading) return;
+
+  const requestId = workspace.requestId + 1;
+  workspace.requestId = requestId;
+  workspace.loading = true;
+  workspace.error = "";
+  renderAdminWorkspaceSheet();
+
+  try {
+    const summary = await fetchWorkspaceSummary();
+    if (requestId !== workspace.requestId) return;
+    workspace.summary = summary;
+    workspace.lastLoadedAt = new Date().toISOString();
+  } catch (err) {
+    if (requestId !== workspace.requestId) return;
+    workspace.error = getWorkspaceReadableError(err);
+    if (!options.silent) {
+      showToast(workspace.error, "error");
+    }
+  } finally {
+    if (requestId === workspace.requestId) {
+      workspace.loading = false;
+      renderAdminWorkspaceSheet();
+    }
+  }
+}
+
+function getWorkspaceSummarySections(summary) {
+  return Array.isArray(summary?.sections) ? summary.sections : [];
+}
+
+function getWorkspaceSummaryWarnings(summary) {
+  return Array.isArray(summary?.warnings) ? summary.warnings : [];
+}
+
+function getWorkspaceSummaryPartialErrors(summary) {
+  return Array.isArray(summary?.partialErrors) ? summary.partialErrors : [];
+}
+
+function getWorkspaceStatusClass(status) {
+  const key = String(status || "").trim().toUpperCase();
+  if (["PAID", "COMPLETE", "COMPLETED", "READY", "ISSUED", "APPROVED"].includes(key)) {
+    return "status-approved";
+  }
+  if (["PENDING", "OPEN", "DRAFT", "REOPENED", "WAITING_FOR_FULFILLMENT", "NEEDS_RECONFIRM"].includes(key)) {
+    return "status-pending";
+  }
+  if (["BLOCKED", "OVERDUE", "SHORTAGE", "VOID", "INCOMPLETE", "MISSING"].includes(key)) {
+    return "status-rejected";
+  }
+  return "status-neutral";
+}
+
+function renderWorkspaceSummaryCards(summary) {
+  const sections = getWorkspaceSummarySections(summary);
+  if (!sections.length) return "";
+  return `
+    <div class="business-dashboard-kpi-grid">
+      ${sections.map(section => `
+        <div class="business-dashboard-card">
+          <div class="business-dashboard-kpi-label">${esc(section.label || section.id || "-")}</div>
+          <div class="business-dashboard-kpi-value">${formatBusinessDashboardNumber(section.count || 0)}</div>
+          <div class="business-dashboard-kpi-meta">
+            ${section.hasMore ? "More rows available in source module" : "Bounded Workspace queue"}
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderWorkspaceNoticeList(items, options = {}) {
+  const list = Array.isArray(items) ? items : [];
+  if (!list.length) return "";
+  const label = options.label || "Workspace notice";
+  const message = options.message || `${list.length} Workspace section(s) need attention.`;
+  return `
+    <div class="empty-state business-dashboard-unavailable" role="status">
+      <strong>${esc(label)}</strong><br>
+      ${esc(message)}
+    </div>
+  `;
+}
+
+function getWorkspaceRowDateMeta(row) {
+  const parts = [];
+  if (row?.relevantDate) {
+    parts.push(`Date ${formatThaiDate(row.relevantDate)}`);
+  }
+  if (row?.dueDate) {
+    parts.push(`Due ${formatThaiDate(row.dueDate)}`);
+  }
+  return parts.join(" | ");
+}
+
+function isWorkspaceDrillDownSupported(row) {
+  const module = String(row?.drillDown?.module || "").trim();
+  return [
+    "orders",
+    "pending_deliveries",
+    "source_allocations",
+    "source_fulfillments",
+    "partner_requests",
+    "bills"
+  ].includes(module);
+}
+
+function renderWorkspaceDrillDownButton(section, row) {
+  if (!isWorkspaceDrillDownSupported(row)) {
+    return `
+      <button class="btn btn-outline" type="button" disabled aria-disabled="true"
+        title="Detail screen not available in Phase 1">
+        Detail unavailable
+      </button>
+    `;
+  }
+  return `
+    <button class="btn btn-outline" type="button"
+      onclick="openWorkspaceDrillDown(${toInlineJsStringLiteral(section.id)}, ${toInlineJsStringLiteral(row.id)})">
+      Open
+    </button>
+  `;
+}
+
+function renderWorkspaceQueueRow(section, row) {
+  const status = row?.status || "-";
+  const dateMeta = getWorkspaceRowDateMeta(row);
+  return `
+    <div class="business-dashboard-list-row">
+      <div class="business-dashboard-list-head">
+        <div class="business-dashboard-list-title">${esc(row?.primaryLabel || row?.id || "-")}</div>
+        <span class="status-badge compact ${getWorkspaceStatusClass(status)}">${esc(status)}</span>
+      </div>
+      <div class="business-dashboard-list-meta">
+        ${esc(row?.secondaryLabel || row?.id || "-")}
+        ${dateMeta ? ` | ${esc(dateMeta)}` : ""}
+        ${row?.priority ? ` | Priority ${esc(row.priority)}` : ""}
+      </div>
+      <div class="business-dashboard-row-actions">
+        ${renderWorkspaceDrillDownButton(section, row)}
+      </div>
+    </div>
+  `;
+}
+
+function renderWorkspaceQueueSection(section, options = {}) {
+  const rows = Array.isArray(section?.rows) ? section.rows : [];
+  const title = options.primary ? `${section.label || section.id} · Primary` : (section.label || section.id || "Workspace queue");
+  const content = rows.length
+    ? `
+        ${rows.map(row => renderWorkspaceQueueRow(section, row)).join("")}
+        ${section.hasMore ? `<div class="business-dashboard-note">Showing bounded rows. More items exist in the source module.</div>` : ""}
+      `
+    : `<div class="empty-state">No actionable rows in this queue.</div>`;
+  return renderBusinessDashboardPanel(title, [], null, content);
+}
+
+function renderWorkspaceQueues(summary) {
+  const sections = getWorkspaceSummarySections(summary);
+  const activeSections = sections.filter(section =>
+    Number(section?.count || 0) > 0 || (Array.isArray(section?.rows) && section.rows.length > 0)
+  );
+  if (!sections.length || !activeSections.length) {
+    return renderEmptyStateLottie(
+      "No Workspace actions",
+      "Returned sections have no actionable rows right now.",
+      { className: "workspace-empty-state", size: 118 }
+    );
+  }
+
+  const primary = activeSections[0];
+  const secondary = activeSections.slice(1);
+  return `
+    ${renderWorkspaceQueueSection(primary, { primary: true })}
+    ${secondary.length ? `
+      <div class="business-dashboard-pending-grid">
+        ${secondary.map(section => renderWorkspaceQueueSection(section)).join("")}
+      </div>
+    ` : ""}
+  `;
+}
+
+function renderAdminWorkspaceSheet() {
+  const workspace = getAdminWorkspaceState();
+  const summary = workspace.summary || null;
+  const role = summary?.role || state.admin.role || "-";
+  const generatedAt = summary?.generatedAt
+    ? formatThaiDate(summary.generatedAt)
+    : "Not loaded";
+  const lastLoadedAt = workspace.lastLoadedAt
+    ? formatThaiDate(workspace.lastLoadedAt)
+    : "-";
+  const warnings = getWorkspaceSummaryWarnings(summary);
+  const partialErrors = getWorkspaceSummaryPartialErrors(summary);
+
+  adminDashboardSheet.innerHTML = `
+    <div class="business-dashboard-panel">
+      <div class="admin-sheet-topbar business-dashboard-topbar">
+        <button class="btn btn-outline back-btn"
+          onclick="backToAdminMainMenu()">
+          ${t("backToMenu", "← กลับเมนู")}
+        </button>
+        <div class="business-dashboard-title-wrap">
+          <h3 id="adminDashboardSheetTitle">Workspace</h3>
+          <div class="business-dashboard-subtitle">Role-scoped operational queues | Read-only</div>
+        </div>
+      </div>
+
+      <div class="business-dashboard-toolbar">
+        <div class="business-dashboard-panel-actions">
+          <span class="status-badge compact status-approved">TEST</span>
+          <span class="status-badge compact status-neutral">Role: ${esc(role)}</span>
+          <button class="btn btn-primary business-dashboard-refresh-btn ${workspace.loading ? "is-loading" : ""}" type="button"
+            ${workspace.loading ? "disabled" : ""}
+            onclick="refreshAdminWorkspace()">
+            ${workspace.loading ? "Refreshing" : "Refresh"}
+          </button>
+        </div>
+        <div class="business-dashboard-meta">
+          Generated: ${esc(generatedAt)} | Last loaded: ${esc(lastLoadedAt)}
+        </div>
+      </div>
+
+      ${workspace.error ? `
+        <div class="empty-state business-dashboard-unavailable" role="alert">
+          ${esc(workspace.error)}
+        </div>
+      ` : ""}
+
+      ${workspace.loading && !summary ? `<div class="loading has-lottie">${renderLottieLoading(t("loadingData", "Loading data"), { size: 90 })}</div>` : ""}
+
+      ${summary ? `
+        ${warnings.length ? renderWorkspaceNoticeList(warnings, {
+          label: "Readiness warning",
+          message: `${warnings.length} readiness warning(s) returned by Workspace.`
+        }) : ""}
+        ${partialErrors.length ? renderWorkspaceNoticeList(partialErrors, {
+          label: "Partial Workspace data",
+          message: `${partialErrors.length} section(s) are unavailable. Other queues remain visible.`
+        }) : ""}
+        ${renderWorkspaceSummaryCards(summary)}
+        ${renderWorkspaceQueues(summary)}
+      ` : (!workspace.loading && !workspace.error ? renderEmptyStateLottie(
+        "Workspace not loaded",
+        "Use Refresh to load role-scoped queues.",
+        { className: "workspace-empty-state", size: 118 }
+      ) : "")}
+    </div>
+  `;
+}
+
+function findWorkspaceRow(sectionId, rowId) {
+  const summary = getAdminWorkspaceState().summary;
+  const section = getWorkspaceSummarySections(summary).find(item =>
+    String(item?.id || "") === String(sectionId || "")
+  );
+  if (!section) return null;
+  const row = (Array.isArray(section.rows) ? section.rows : []).find(item =>
+    String(item?.id || "") === String(rowId || "")
+  );
+  return row ? { section, row } : null;
+}
+
+async function openWorkspaceDrillDown(sectionId, rowId) {
+  if (!ensureAdminSessionForWorkspace()) return;
+  const match = findWorkspaceRow(sectionId, rowId);
+  const row = match?.row || null;
+  const drillDown = row?.drillDown || {};
+  const module = String(drillDown.module || "").trim();
+
+  if (module === "orders") {
+    const orderId = String(drillDown.orderId || row?.id || "").trim();
+    if (!orderId) return;
+    const orders = Array.isArray(state.admin.orders) ? state.admin.orders : [];
+    if (!orders.some(order => order.orderId === orderId)) {
+      showToast("Order detail is not loaded. Use Pending Orders from the menu.", "info");
+      return;
+    }
+    closeOverlay(adminDashboardSheet);
+    openAdminOrder(orderId);
+    return;
+  }
+
+  if (module === "pending_deliveries") {
+    closeOverlay(adminDashboardSheet);
+    openPendingDeliverySheet();
+    return;
+  }
+
+  if (module === "source_allocations" || module === "source_fulfillments") {
+    state.admin.sourceableWorkspace.activeTab =
+      module === "source_allocations" ? "allocation" : "fulfillment";
+    closeOverlay(adminDashboardSheet);
+    openSourceableWorkspaceSheet();
+    return;
+  }
+
+  if (module === "partner_requests") {
+    closeOverlay(adminDashboardSheet);
+    openPartnerRequestsSheet();
+    return;
+  }
+
+  if (module === "bills") {
+    const billId = String(drillDown.billId || row?.id || "").trim();
+    openFinanceLegalBillDetail(billId, {
+      title: row?.primaryLabel || billId || "รายละเอียดใบแจ้งหนี้"
+    });
+    return;
+  }
+
+  showToast("Detail screen not available in Phase 1", "info");
 }
 
 function getBusinessDashboardDataLoaders() {
@@ -17134,6 +18045,11 @@ function renderAdminMenuInStockSheet() {
     <div class="menu-group">
       <div class="menu-section-label">${t("overview", "ภาพรวม")}</div>
       <button class="btn btn-primary"
+        onclick="closeStockMenuSheetThen(openAdminWorkspace)">
+        Workspace
+      </button>
+
+      <button class="btn btn-secondary"
         onclick="closeStockMenuSheetThen(handleOpenDashboard)">
         ${t("dashboardShort", "ภาพรวมธุรกิจ")}
       </button>
@@ -24174,6 +25090,11 @@ function openMainMenu(triggerEl){
               <div class="menu-group">
                 <div class="menu-section-label">${t("overview", "ภาพรวม")}</div>
                 <button class="btn btn-primary"
+                  onclick="closeMainMenu(); openAdminWorkspace();">
+                  Workspace
+                </button>
+
+                <button class="btn btn-secondary"
                   onclick="closeMainMenu(); handleOpenDashboard();">
                   ${t("dashboardShort", "ภาพรวมธุรกิจ")}
                 </button>
