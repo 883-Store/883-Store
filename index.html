@@ -13489,9 +13489,30 @@ async function openPaymentCorrectionWorkspaceAcceptanceDetailFromAdmin() {
     showToast("Payment Correction Detail is unavailable", "error");
     return;
   }
-  await openFinanceLegalPaymentCorrectionDetail(correctionId, {
-    title: correctionId
-  });
+  const hadDiagnosticsOpen =
+    !!adminDeveloperDiagnosticsSheet?.classList.contains("show");
+  if (hadDiagnosticsOpen) {
+    closeDeveloperDiagnosticsSheet();
+  }
+  try {
+    await openFinanceLegalPaymentCorrectionDetail(correctionId, {
+      title: correctionId
+    });
+    if (!adminDashboardSheet?.classList.contains("show")) {
+      throw new Error("Payment Correction Detail did not open");
+    }
+  } catch (err) {
+    if (
+      hadDiagnosticsOpen &&
+      !adminDeveloperDiagnosticsSheet?.classList.contains("show")
+    ) {
+      await openDeveloperDiagnosticsSheet();
+    }
+    showToast(
+      err.message || "Payment Correction Detail is unavailable",
+      "error"
+    );
+  }
 }
 
 async function loadLatestReceiptFoundationRuntimeTraceFromAdmin() {
