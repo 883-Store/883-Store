@@ -16858,6 +16858,18 @@ function getFinanceLegalDetailReadableError(error) {
   if (/Receivable identity mismatch/i.test(message)) {
     return "ข้อมูลยอดค้างรับไม่ตรงกับรายการที่เลือก";
   }
+  if (/Payment not found/i.test(message)) {
+    return "ไม่พบการชำระเงินที่เลือก";
+  }
+  if (/paymentId is required/i.test(message)) {
+    return "Workspace row ไม่มีรหัสการชำระเงินสำหรับเปิดรายละเอียด";
+  }
+  if (/Malformed Payment detail response/i.test(message)) {
+    return "รูปแบบข้อมูลการชำระเงินไม่ถูกต้อง";
+  }
+  if (/Payment identity mismatch/i.test(message)) {
+    return "ข้อมูลการชำระเงินไม่ตรงกับรายการที่เลือก";
+  }
   if (message.includes(t("connectionSlowRetry", "การเชื่อมต่อช้าเกินไป กรุณาลองใหม่อีกครั้ง"))) {
     return t("connectionSlowRetry", "การเชื่อมต่อช้าเกินไป กรุณาลองใหม่อีกครั้ง");
   }
@@ -16914,6 +16926,9 @@ function getFinanceLegalDetailStatus(detail) {
   if (detail.type === "receivable" && detail.data) {
     return detail.data.receivableStage || detail.data.status || "";
   }
+  if (detail.type === "payment" && detail.data) {
+    return detail.data.payment?.status || "";
+  }
   return "";
 }
 
@@ -16923,6 +16938,9 @@ function getFinanceLegalDetailSubtitle(detail) {
   }
   if (detail.type === "receivable") {
     return "รายละเอียดยอดค้างรับ | ดูอย่างเดียว";
+  }
+  if (detail.type === "payment") {
+    return "รายละเอียดการชำระเงิน | ดูอย่างเดียว";
   }
   return "รายละเอียด | ดูอย่างเดียว";
 }
@@ -16939,6 +16957,9 @@ function renderFinanceLegalDetailBody(detail) {
   }
   if (detail.type === "receivable" && detail.data) {
     return renderReceivableReadOnlyDetail(detail.data);
+  }
+  if (detail.type === "payment" && detail.data) {
+    return renderPaymentReadOnlyDetail(detail.data);
   }
   return renderFinanceLegalDetailEmpty("ยังไม่มีข้อมูลรายละเอียด");
 }
@@ -17019,6 +17040,9 @@ function getFinanceLegalDetailTitle(type, data, fallback) {
   if (type === "receivable") {
     return data?.billNumber || data?.billId || fallback || "ยอดค้างรับ";
   }
+  if (type === "payment") {
+    return data?.payment?.paymentId || fallback || "การชำระเงิน";
+  }
   return fallback || "รายละเอียด";
 }
 
@@ -17097,9 +17121,30 @@ async function fetchReceivableDetailByBillId(billId) {
   return receivable;
 }
 
+async function fetchPaymentDetailById(paymentId) {
+  const form = new URLSearchParams();
+  form.append("action", "getPayment");
+  form.append("token", state.admin.token);
+  form.append("paymentId", paymentId);
+  const json = await postFormAction(form);
+  const payment = json?.data?.payment;
+  const receivable = json?.data?.receivable || {};
+  if (!payment || !payment.paymentId) {
+    throw new Error("Malformed Payment detail response");
+  }
+  if (String(payment.paymentId || "").trim() !== String(paymentId || "").trim()) {
+    throw new Error("Payment identity mismatch");
+  }
+  return {
+    payment,
+    receivable
+  };
+}
+
 async function fetchFinanceLegalDetailByType(type, recordId) {
   if (type === "bill") return fetchBillDetailById(recordId);
   if (type === "receivable") return fetchReceivableDetailByBillId(recordId);
+  if (type === "payment") return fetchPaymentDetailById(recordId);
   throw new Error("Unsupported detail type");
 }
 
@@ -17139,7 +17184,9 @@ async function openFinanceLegalDetail(type, recordId, context = {}) {
     ? ""
     : (normalizedType === "receivable"
       ? "Workspace row ไม่มีรหัส Bill สำหรับเปิดยอดค้างรับ"
-      : "Workspace row ไม่มีรหัสใบแจ้งหนี้สำหรับเปิดรายละเอียด");
+      : normalizedType === "payment"
+        ? "Workspace row ไม่มีรหัสการชำระเงินสำหรับเปิดรายละเอียด"
+        : "Workspace row ไม่มีรหัสใบแจ้งหนี้สำหรับเปิดรายละเอียด");
   detail.data = null;
   detail.pendingKey = detail.loading ? targetKey : "";
   detail.requestId += 1;
@@ -17195,6 +17242,10 @@ async function openFinanceLegalBillDetail(billId, context = {}) {
 
 async function openFinanceLegalReceivableDetail(billId, context = {}) {
   return openFinanceLegalDetail("receivable", billId, context);
+}
+
+async function openFinanceLegalPaymentDetail(paymentId, context = {}) {
+  return openFinanceLegalDetail("payment", paymentId, context);
 }
 
 async function openRelatedFinanceLegalDetail(type, recordId, title) {
@@ -17361,6 +17412,170 @@ function getReceivableStageLabel(stage) {
   if (key === "PAID") return "ชำระครบ";
   if (key === "NOT_APPLICABLE") return "ไม่เกี่ยวข้อง";
   return stage || "-";
+}
+
+function isPaymentEffectiveForReceivable(payment, receivable) {
+  const paymentId = String(payment?.paymentId || "").trim();
+  const confirmedPaymentId = String(receivable?.confirmedPaymentId || "").trim();
+  return !!paymentId && paymentId === confirmedPaymentId;
+}
+
+function getPaymentEffectiveStateLabel(payment, receivable) {
+  return isPaymentEffectiveForReceivable(payment, receivable)
+    ? "มีผลต่อยอดค้างรับ"
+    : "ไม่มีผลต่อยอดค้างรับ";
+}
+
+function renderPaymentReadOnlyDetail(detail) {
+  const payment = detail?.payment || {};
+  const receivable = detail?.receivable || {};
+  return `
+    ${renderPaymentHeaderCard(payment, receivable)}
+    ${renderPaymentInformationCard(payment)}
+    ${renderPaymentBillCustomerCard(payment, receivable)}
+    ${renderPaymentReceivableImpactCard(payment, receivable)}
+    ${renderPaymentCorrectionContextCard(payment, receivable)}
+    ${renderPaymentReceiptContextCard(payment, receivable)}
+    ${renderPaymentRelatedDocumentsCard(payment)}
+  `;
+}
+
+function renderPaymentHeaderCard(payment, receivable) {
+  const isEffective = isPaymentEffectiveForReceivable(payment, receivable);
+  const effectiveLabel = getPaymentEffectiveStateLabel(payment, receivable);
+  return renderFinanceLegalDetailCard("การชำระเงิน", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("รหัสการชำระเงิน", payment.paymentId)}
+      ${renderFinanceLegalDetailField("สถานะ", payment.status)}
+      <div class="finance-legal-detail-field">
+        <span>ผลต่อยอดค้างรับ</span>
+        <strong class="finance-legal-detail-value">
+          <span class="status-badge compact ${isEffective ? "status-approved" : "status-neutral"}">${esc(effectiveLabel)}</span>
+        </strong>
+      </div>
+      ${renderFinanceLegalDetailField("ดูอย่างเดียว", "ไม่มีปุ่มแก้ไข / ยืนยัน / แก้ไขรายการ / ออกเอกสาร / ลบ")}
+    </div>
+  `);
+}
+
+function renderPaymentInformationCard(payment) {
+  return renderFinanceLegalDetailCard("ข้อมูลการชำระเงิน", `
+    <div class="finance-legal-detail-money-grid">
+      ${renderFinanceLegalDetailField("จำนวนเงิน", payment.amount, { money: true })}
+      ${renderFinanceLegalDetailField("วิธีชำระเงิน", payment.paymentMethod)}
+      ${renderFinanceLegalDetailField("วันที่ชำระ", payment.paymentDate, { date: true })}
+      ${renderFinanceLegalDetailField("เลขอ้างอิง", payment.referenceNumber || "-")}
+      ${renderFinanceLegalDetailField("บันทึกเมื่อ", payment.recordedAt, { date: true })}
+      ${renderFinanceLegalDetailField("บันทึกโดย", payment.recordedBy)}
+      ${renderFinanceLegalDetailField("สร้างเมื่อ", payment.createdAt, { date: true })}
+      ${renderFinanceLegalDetailField("อัปเดตล่าสุด", payment.updatedAt, { date: true })}
+    </div>
+  `);
+}
+
+function renderPaymentBillCustomerCard(payment, receivable) {
+  return renderFinanceLegalDetailCard("Bill และลูกค้า", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("Bill ID", payment.billId)}
+      ${renderFinanceLegalDetailField("เลขที่ Bill", payment.billNumber || receivable?.billNumber || "-")}
+      ${renderFinanceLegalDetailField("รหัสลูกค้า", payment.customerId)}
+      ${(payment.customerName || receivable?.customerName) ? renderFinanceLegalDetailField("ชื่อลูกค้า", payment.customerName || receivable.customerName) : ""}
+    </div>
+  `);
+}
+
+function renderPaymentReceivableImpactCard(payment, receivable) {
+  const effectiveLabel = getPaymentEffectiveStateLabel(payment, receivable);
+  return renderFinanceLegalDetailCard("ผลต่อยอดค้างรับ", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("สถานะยอดค้างรับ", getReceivableStageLabel(receivable?.receivableStage))}
+      ${renderFinanceLegalDetailField("ยอดคงเหลือ", receivable?.remainingReceivable, {
+        money: receivable?.remainingReceivable !== null && receivable?.remainingReceivable !== undefined
+      })}
+      ${renderFinanceLegalDetailField("Payment ที่มีผล", receivable?.confirmedPaymentId || "-")}
+      ${renderFinanceLegalDetailField("ผลของรายการนี้", effectiveLabel)}
+      ${receivable?.confirmedPaymentDate ? renderFinanceLegalDetailField("วันที่ Payment ที่มีผล", receivable.confirmedPaymentDate, { date: true }) : ""}
+      ${receivable?.reopenedAt ? renderFinanceLegalDetailField("Reopened at", receivable.reopenedAt, { date: true }) : ""}
+      ${receivable?.reopenedReason ? renderFinanceLegalDetailField("Reopened reason", receivable.reopenedReason) : ""}
+    </div>
+  `);
+}
+
+function renderPaymentCorrectionContextCard(payment, receivable) {
+  const correctionId =
+    payment?.correctionId ||
+    payment?.paymentCorrectionId ||
+    receivable?.correctionId ||
+    receivable?.paymentCorrectionId ||
+    receivable?.reopenedByCorrectionId ||
+    "";
+  const correctedAt = payment?.correctedAt || receivable?.reopenedAt || "";
+  const reason = payment?.correctionReason || receivable?.reopenedReason || "";
+  if (!correctionId && !correctedAt && !reason) {
+    return renderFinanceLegalDetailCard("รายการแก้ไขการชำระเงิน", `
+      ${renderFinanceLegalDetailEmpty("รายการแก้ไขการชำระเงิน: รายละเอียดยังไม่พร้อม")}
+      <div class="finance-legal-detail-related-note">ไม่ค้นหา Payment Correction เพิ่มใน Payment Detail P0</div>
+    `);
+  }
+  return renderFinanceLegalDetailCard("รายการแก้ไขการชำระเงิน", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("Correction ID", correctionId || "-")}
+      ${renderFinanceLegalDetailField("Corrected at", correctedAt, { date: true })}
+      ${renderFinanceLegalDetailField("Reason", reason || "-")}
+    </div>
+    <div class="finance-legal-detail-related-note">Payment Correction แสดงเป็นข้อมูลอ้างอิงเท่านั้นใน P0</div>
+  `);
+}
+
+function renderPaymentReceiptContextCard(payment, receivable) {
+  const receiptId = payment?.receiptId || receivable?.receiptId || "";
+  const receiptNumber = payment?.receiptNumber || receivable?.receiptNumber || "";
+  const receiptStatus = payment?.receiptStatus || receivable?.receiptStatus || "";
+  if (!receiptId && !receiptNumber && !receiptStatus) {
+    return renderFinanceLegalDetailCard("ใบรับเงินที่เกี่ยวข้อง", `
+      ${renderFinanceLegalDetailEmpty("ใบรับเงินที่เกี่ยวข้อง: ยังไม่มีข้อมูลที่เปิดรายละเอียดได้")}
+      <div class="finance-legal-detail-related-note">การเปิด Payment Detail ไม่ได้หมายความว่ามี Receipt แล้ว</div>
+    `);
+  }
+  return renderFinanceLegalDetailCard("ใบรับเงินที่เกี่ยวข้อง", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("Receipt ID", receiptId || "-")}
+      ${renderFinanceLegalDetailField("Receipt number", receiptNumber || "-")}
+      ${renderFinanceLegalDetailField("Receipt status", receiptStatus || "-")}
+    </div>
+    <div class="finance-legal-detail-related-note">Receipt แสดงเป็นข้อมูลอ้างอิงเท่านั้นใน P0</div>
+  `);
+}
+
+function renderPaymentRelatedDocumentsCard(payment) {
+  const billId = String(payment?.billId || "").trim();
+  if (!billId) {
+    return renderFinanceLegalDetailCard("เอกสารที่เกี่ยวข้อง", renderFinanceLegalDetailEmpty("ไม่มี canonical Bill ID สำหรับเปิดรายละเอียดที่เกี่ยวข้อง"));
+  }
+  return renderFinanceLegalDetailCard("เอกสารที่เกี่ยวข้อง", `
+    <div class="finance-legal-detail-list">
+      <div class="finance-legal-detail-reference">
+        <div class="business-dashboard-list-head">
+          <div class="business-dashboard-list-title">ใบแจ้งหนี้ที่เกี่ยวข้อง</div>
+          <span class="status-badge compact status-neutral">ดูอย่างเดียว</span>
+        </div>
+        <div class="business-dashboard-list-meta">${esc(payment.billNumber || billId)}</div>
+        <div class="finance-legal-detail-related-note">
+          ${renderFinanceLegalDetailLinkButton("bill", billId, payment.billNumber || billId, "เปิดรายละเอียด")}
+        </div>
+      </div>
+      <div class="finance-legal-detail-reference">
+        <div class="business-dashboard-list-head">
+          <div class="business-dashboard-list-title">ยอดค้างรับที่เกี่ยวข้อง</div>
+          <span class="status-badge compact status-neutral">ดูอย่างเดียว</span>
+        </div>
+        <div class="business-dashboard-list-meta">${esc(billId)}</div>
+        <div class="finance-legal-detail-related-note">
+          ${renderFinanceLegalDetailLinkButton("receivable", billId, billId, "เปิดรายละเอียด")}
+        </div>
+      </div>
+    </div>
+  `);
 }
 
 function renderReceivableReadOnlyDetail(receivable) {
@@ -17670,7 +17885,11 @@ function getWorkspaceRowDateMeta(row) {
   return parts.join(" | ");
 }
 
-function isWorkspaceDrillDownSupported(row) {
+function isWorkspaceDrillDownSupported(section, row) {
+  const sectionId = String(section?.id || "").trim();
+  if (sectionId === "receipts_ready_to_issue") {
+    return !!String(row?.drillDown?.paymentId || "").trim();
+  }
   const module = String(row?.drillDown?.module || "").trim();
   return [
     "orders",
@@ -17684,7 +17903,7 @@ function isWorkspaceDrillDownSupported(row) {
 }
 
 function renderWorkspaceDrillDownButton(section, row) {
-  if (!isWorkspaceDrillDownSupported(row)) {
+  if (!isWorkspaceDrillDownSupported(section, row)) {
     return `
       <button class="btn btn-outline" type="button" disabled aria-disabled="true"
         title="Detail screen not available in Phase 1">
@@ -17845,6 +18064,18 @@ async function openWorkspaceDrillDown(sectionId, rowId) {
   const row = match?.row || null;
   const drillDown = row?.drillDown || {};
   const module = String(drillDown.module || "").trim();
+
+  if (String(sectionId || "").trim() === "receipts_ready_to_issue") {
+    const paymentId = String(drillDown.paymentId || "").trim();
+    if (!paymentId) {
+      showToast("Workspace row ไม่มีรหัสการชำระเงินสำหรับเปิดรายละเอียด", "warning");
+      return;
+    }
+    openFinanceLegalPaymentDetail(paymentId, {
+      title: row?.primaryLabel || paymentId || "การชำระเงิน"
+    });
+    return;
+  }
 
   if (module === "orders") {
     const orderId = String(drillDown.orderId || row?.id || "").trim();
