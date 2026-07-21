@@ -6660,6 +6660,14 @@ Object.assign(window, {
   confirmReceiptFoundationRecoveryCleanupFromAdmin,
   closeReceiptFoundationRecoveryCleanupConfirmation,
   executeReceiptFoundationRecoveryCleanupFromAdmin,
+  loadLatestReceiptDetailWorkspaceAcceptanceRuntimeTraceFromAdmin,
+  loadReceiptDetailWorkspaceAcceptanceProgressFromAdmin,
+  auditReceiptDetailWorkspaceAcceptanceRecoveryFromAdmin,
+  confirmReceiptDetailWorkspaceAcceptanceRecoveryCleanupFromAdmin,
+  updateReceiptDetailWorkspaceAcceptanceCleanupButtonState,
+  closeReceiptDetailWorkspaceAcceptanceRecoveryCleanupConfirmation,
+  executeReceiptDetailWorkspaceAcceptanceRecoveryCleanupFromAdmin,
+  openReceiptDetailWorkspaceAcceptanceDetailFromAdmin,
   loadLatestTaxInvoiceFoundationRuntimeTraceFromAdmin,
   loadTaxInvoiceFoundationProgressFromAdmin,
   auditTaxInvoiceFoundationDiagnosticRecoveryFromAdmin,
@@ -7133,6 +7141,29 @@ const state = {
       receiptRecoveryError: "",
       receiptRecoveryCleanupMessage: "",
       receiptRunId: "",
+      loadingReceiptDetailIssuedWorkspaceRuntimeTrace: false,
+      receiptDetailIssuedWorkspaceRuntimeTrace: null,
+      receiptDetailIssuedWorkspaceRuntimeTraceError: "",
+      loadingReceiptDetailIssuedWorkspaceRecoveryAudit: false,
+      loadingReceiptDetailIssuedWorkspaceRecoveryCleanup: false,
+      receiptDetailIssuedWorkspaceRecoveryAudit: null,
+      receiptDetailIssuedWorkspaceRecoveryError: "",
+      receiptDetailIssuedWorkspaceRecoveryCleanupMessage: "",
+      receiptDetailIssuedWorkspaceRecoveryCleanupRunId: "",
+      receiptDetailIssuedWorkspaceRecoveryCleanupTimeoutRunId: "",
+      receiptDetailIssuedWorkspaceRunId: "",
+      loadingReceiptDetailVoidWorkspaceRuntimeTrace: false,
+      receiptDetailVoidWorkspaceRuntimeTrace: null,
+      receiptDetailVoidWorkspaceRuntimeTraceError: "",
+      loadingReceiptDetailVoidWorkspaceRecoveryAudit: false,
+      loadingReceiptDetailVoidWorkspaceRecoveryCleanup: false,
+      receiptDetailVoidWorkspaceRecoveryAudit: null,
+      receiptDetailVoidWorkspaceRecoveryError: "",
+      receiptDetailVoidWorkspaceRecoveryCleanupMessage: "",
+      receiptDetailVoidWorkspaceRecoveryCleanupRunId: "",
+      receiptDetailVoidWorkspaceRecoveryCleanupTimeoutRunId: "",
+      receiptDetailVoidWorkspaceRunId: "",
+      receiptDetailWorkspaceRecoveryCleanupSuiteId: "",
       loadingTaxInvoiceRuntimeTrace: false,
       taxInvoiceRuntimeTrace: null,
       taxInvoiceRuntimeTraceError: "",
@@ -9426,9 +9457,55 @@ const RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID = "receivable_workspace_acceptanc
 const PAYMENT_CORRECTION_FOUNDATION_SUITE_ID = "payment_correction_foundation";
 const PAYMENT_CORRECTION_WORKSPACE_ACCEPTANCE_SUITE_ID = "payment_correction_workspace_acceptance_fixture";
 const RECEIPT_FOUNDATION_SUITE_ID = "receipt_foundation";
+const RECEIPT_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID = "receipt_detail_issued_workspace_acceptance";
+const RECEIPT_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID = "receipt_detail_void_workspace_acceptance";
 const TAX_INVOICE_FOUNDATION_SUITE_ID = "tax_invoice_foundation";
 const WORKSPACE_READ_MODEL_FOUNDATION_SUITE_ID = "workspace_read_model_foundation";
 const DISPLAY_UI_INTEGRATION_TEST_PREFIX = "TEST-UI-DISPLAY-";
+const RECEIPT_DETAIL_WORKSPACE_ACCEPTANCE_CONFIGS = Object.freeze({
+  [RECEIPT_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID]: Object.freeze({
+    suiteId: RECEIPT_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID,
+    label: "Receipt Detail ISSUED",
+    traceAction: "getLatestReceiptDetailIssuedWorkspaceAcceptanceRuntimeTrace",
+    progressAction: "getReceiptDetailIssuedWorkspaceAcceptanceDiagnosticProgress",
+    recoveryAction: "auditReceiptDetailIssuedWorkspaceAcceptanceRecovery",
+    cleanupAction: "cleanupReceiptDetailIssuedWorkspaceAcceptanceRecovery",
+    confirmation: "CLEANUP_TEST_DIAG_RECEIPT_DETAIL_ISSUED_RUN",
+    runIdPlaceholder: "RCPTDTLISS-RUN-...",
+    traceKey: "receiptDetailIssuedWorkspaceRuntimeTrace",
+    traceErrorKey: "receiptDetailIssuedWorkspaceRuntimeTraceError",
+    loadingTraceKey: "loadingReceiptDetailIssuedWorkspaceRuntimeTrace",
+    recoveryKey: "receiptDetailIssuedWorkspaceRecoveryAudit",
+    recoveryErrorKey: "receiptDetailIssuedWorkspaceRecoveryError",
+    loadingRecoveryKey: "loadingReceiptDetailIssuedWorkspaceRecoveryAudit",
+    loadingCleanupKey: "loadingReceiptDetailIssuedWorkspaceRecoveryCleanup",
+    cleanupMessageKey: "receiptDetailIssuedWorkspaceRecoveryCleanupMessage",
+    cleanupRunIdKey: "receiptDetailIssuedWorkspaceRecoveryCleanupRunId",
+    cleanupTimeoutRunIdKey: "receiptDetailIssuedWorkspaceRecoveryCleanupTimeoutRunId",
+    runIdKey: "receiptDetailIssuedWorkspaceRunId"
+  }),
+  [RECEIPT_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID]: Object.freeze({
+    suiteId: RECEIPT_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID,
+    label: "Receipt Detail VOID",
+    traceAction: "getLatestReceiptDetailVoidWorkspaceAcceptanceRuntimeTrace",
+    progressAction: "getReceiptDetailVoidWorkspaceAcceptanceDiagnosticProgress",
+    recoveryAction: "auditReceiptDetailVoidWorkspaceAcceptanceRecovery",
+    cleanupAction: "cleanupReceiptDetailVoidWorkspaceAcceptanceRecovery",
+    confirmation: "CLEANUP_TEST_DIAG_RECEIPT_DETAIL_VOID_RUN",
+    runIdPlaceholder: "RCPTDTLVOID-RUN-...",
+    traceKey: "receiptDetailVoidWorkspaceRuntimeTrace",
+    traceErrorKey: "receiptDetailVoidWorkspaceRuntimeTraceError",
+    loadingTraceKey: "loadingReceiptDetailVoidWorkspaceRuntimeTrace",
+    recoveryKey: "receiptDetailVoidWorkspaceRecoveryAudit",
+    recoveryErrorKey: "receiptDetailVoidWorkspaceRecoveryError",
+    loadingRecoveryKey: "loadingReceiptDetailVoidWorkspaceRecoveryAudit",
+    loadingCleanupKey: "loadingReceiptDetailVoidWorkspaceRecoveryCleanup",
+    cleanupMessageKey: "receiptDetailVoidWorkspaceRecoveryCleanupMessage",
+    cleanupRunIdKey: "receiptDetailVoidWorkspaceRecoveryCleanupRunId",
+    cleanupTimeoutRunIdKey: "receiptDetailVoidWorkspaceRecoveryCleanupTimeoutRunId",
+    runIdKey: "receiptDetailVoidWorkspaceRunId"
+  })
+});
 
 const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
   {
@@ -9558,6 +9635,18 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     mutationDescription: "Run after Payment Correction Foundation PASS. Creates isolated TEST-DIAG Receipt, Payment Correction, replacement Payment, Payment, and Bill fixtures, verifies Receipt issue/VOID, numbering, Correction guard, exact cleanup, and retained Receipt/Bill sequence rows."
   },
   {
+    id: RECEIPT_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID,
+    label: "Receipt Detail ISSUED Fixture",
+    mutation: true,
+    mutationDescription: "Run only for Receipt Detail runtime acceptance. Creates one isolated TEST-DIAG ISSUED Receipt, persists the canonical receiptId/runId, and defers exact cleanup."
+  },
+  {
+    id: RECEIPT_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID,
+    label: "Receipt Detail VOID Fixture",
+    mutation: true,
+    mutationDescription: "Run only for Receipt Detail runtime acceptance. Creates one isolated TEST-DIAG VOID Receipt, verifies receipts_voided carries receiptId, persists the canonical receiptId/runId, and defers exact cleanup."
+  },
+  {
     id: "legal_identity_foundation",
     label: "Legal Identity Foundation",
     mutation: true,
@@ -9681,6 +9770,29 @@ function resetDeveloperDiagnosticsState() {
   state.admin.developerDiagnostics.receiptRecoveryError = "";
   state.admin.developerDiagnostics.receiptRecoveryCleanupMessage = "";
   state.admin.developerDiagnostics.receiptRunId = "";
+  state.admin.developerDiagnostics.loadingReceiptDetailIssuedWorkspaceRuntimeTrace = false;
+  state.admin.developerDiagnostics.receiptDetailIssuedWorkspaceRuntimeTrace = null;
+  state.admin.developerDiagnostics.receiptDetailIssuedWorkspaceRuntimeTraceError = "";
+  state.admin.developerDiagnostics.loadingReceiptDetailIssuedWorkspaceRecoveryAudit = false;
+  state.admin.developerDiagnostics.loadingReceiptDetailIssuedWorkspaceRecoveryCleanup = false;
+  state.admin.developerDiagnostics.receiptDetailIssuedWorkspaceRecoveryAudit = null;
+  state.admin.developerDiagnostics.receiptDetailIssuedWorkspaceRecoveryError = "";
+  state.admin.developerDiagnostics.receiptDetailIssuedWorkspaceRecoveryCleanupMessage = "";
+  state.admin.developerDiagnostics.receiptDetailIssuedWorkspaceRecoveryCleanupRunId = "";
+  state.admin.developerDiagnostics.receiptDetailIssuedWorkspaceRecoveryCleanupTimeoutRunId = "";
+  state.admin.developerDiagnostics.receiptDetailIssuedWorkspaceRunId = "";
+  state.admin.developerDiagnostics.loadingReceiptDetailVoidWorkspaceRuntimeTrace = false;
+  state.admin.developerDiagnostics.receiptDetailVoidWorkspaceRuntimeTrace = null;
+  state.admin.developerDiagnostics.receiptDetailVoidWorkspaceRuntimeTraceError = "";
+  state.admin.developerDiagnostics.loadingReceiptDetailVoidWorkspaceRecoveryAudit = false;
+  state.admin.developerDiagnostics.loadingReceiptDetailVoidWorkspaceRecoveryCleanup = false;
+  state.admin.developerDiagnostics.receiptDetailVoidWorkspaceRecoveryAudit = null;
+  state.admin.developerDiagnostics.receiptDetailVoidWorkspaceRecoveryError = "";
+  state.admin.developerDiagnostics.receiptDetailVoidWorkspaceRecoveryCleanupMessage = "";
+  state.admin.developerDiagnostics.receiptDetailVoidWorkspaceRecoveryCleanupRunId = "";
+  state.admin.developerDiagnostics.receiptDetailVoidWorkspaceRecoveryCleanupTimeoutRunId = "";
+  state.admin.developerDiagnostics.receiptDetailVoidWorkspaceRunId = "";
+  state.admin.developerDiagnostics.receiptDetailWorkspaceRecoveryCleanupSuiteId = "";
   state.admin.developerDiagnostics.loadingTaxInvoiceRuntimeTrace = false;
   state.admin.developerDiagnostics.taxInvoiceRuntimeTrace = null;
   state.admin.developerDiagnostics.taxInvoiceRuntimeTraceError = "";
@@ -9923,6 +10035,9 @@ function renderDeveloperDiagnosticResultCard(suite) {
           : ""}
         ${suite.id === RECEIPT_FOUNDATION_SUITE_ID
           ? renderReceiptFoundationRuntimeRecoveryPanel()
+          : ""}
+        ${isReceiptDetailWorkspaceAcceptanceSuite(suite.id)
+          ? renderReceiptDetailWorkspaceAcceptanceRuntimeRecoveryPanel(suite.id)
           : ""}
         ${suite.id === TAX_INVOICE_FOUNDATION_SUITE_ID
           ? renderTaxInvoiceFoundationRuntimeRecoveryPanel()
@@ -10679,6 +10794,178 @@ function renderReceiptFoundationRuntimeRecoveryPanel() {
   `;
 }
 
+function isReceiptDetailWorkspaceAcceptanceSuite(suiteId) {
+  return !!RECEIPT_DETAIL_WORKSPACE_ACCEPTANCE_CONFIGS[
+    String(suiteId || "").trim()
+  ];
+}
+
+function getReceiptDetailWorkspaceAcceptanceConfig(suiteId) {
+  return RECEIPT_DETAIL_WORKSPACE_ACCEPTANCE_CONFIGS[
+    String(suiteId || "").trim()
+  ] || null;
+}
+
+function getReceiptDetailWorkspaceAcceptanceRunIdInputValue(suiteId) {
+  const config = getReceiptDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return "";
+  return String(
+    document.getElementById(`${config.suiteId}RecoveryRunId`)?.value || ""
+  ).trim();
+}
+
+function getReceiptDetailWorkspaceAcceptanceCurrentRunId(suiteId) {
+  const config = getReceiptDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return "";
+  const diagnostics = state.admin.developerDiagnostics;
+  return String(
+    diagnostics[config.runIdKey] ||
+    diagnostics.results?.[config.suiteId]?.runId ||
+    diagnostics[config.recoveryKey]?.runId ||
+    diagnostics[config.traceKey]?.runId ||
+    ""
+  ).trim();
+}
+
+function getReceiptDetailWorkspaceAcceptanceRetainedFixture(suiteId) {
+  const config = getReceiptDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return {};
+  const diagnostics = state.admin.developerDiagnostics;
+  return diagnostics[config.traceKey]?.retainedFixture ||
+    diagnostics[config.recoveryKey]?.retainedFixture ||
+    {};
+}
+
+function getReceiptDetailWorkspaceAcceptanceReceiptId(suiteId) {
+  const fixture = getReceiptDetailWorkspaceAcceptanceRetainedFixture(suiteId);
+  return String(fixture.receiptId || "").trim();
+}
+
+function renderReceiptDetailWorkspaceAcceptanceRuntimeRecoveryPanel(suiteId) {
+  const config = getReceiptDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return "";
+  const diagnostics = state.admin.developerDiagnostics;
+  const trace = diagnostics[config.traceKey];
+  const isLoading = diagnostics[config.loadingTraceKey];
+  const traceError = diagnostics[config.traceErrorKey];
+  const recovery = diagnostics[config.recoveryKey];
+  const isRecoveryLoading = diagnostics[config.loadingRecoveryKey];
+  const isRecoveryCleanupLoading = diagnostics[config.loadingCleanupKey];
+  const recoveryError = diagnostics[config.recoveryErrorKey];
+  const recoveryCleanupMessage = diagnostics[config.cleanupMessageKey];
+  const runId = getReceiptDetailWorkspaceAcceptanceCurrentRunId(config.suiteId);
+  const retainedFixture =
+    getReceiptDetailWorkspaceAcceptanceRetainedFixture(config.suiteId);
+  const receiptId = getReceiptDetailWorkspaceAcceptanceReceiptId(config.suiteId);
+  const recoverySummary = recovery?.summary || {};
+  const recoverySummaryText = recovery
+    ? Object.keys(recoverySummary)
+        .map(key => {
+          const item = recoverySummary[key] || {};
+          return `${key}: ${Number(item.exists || 0)} exists / ${Number(item.missing || 0)} missing`;
+        })
+        .join(" | ")
+    : "";
+  const retainedFixtureText = retainedFixture && retainedFixture.receiptId
+    ? [
+        `Receipt: ${retainedFixture.receiptId || "-"}`,
+        `Number: ${retainedFixture.receiptNumber || "-"}`,
+        `Payment: ${retainedFixture.paymentId || "-"}`,
+        `Bill: ${retainedFixture.billId || "-"}`,
+        `Customer: ${retainedFixture.customerId || "-"}`,
+        `Expected receipt: ${retainedFixture.expectedReceiptStatus || "-"}`,
+        `Expected receivable: ${retainedFixture.expectedReceivableStage || "-"}`
+      ].join(" | ")
+    : "";
+
+  return `
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>${esc(config.label)} Runtime Trace</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadLatestReceiptDetailWorkspaceAcceptanceRuntimeTraceFromAdmin(${toInlineJsStringLiteral(config.suiteId)})">
+          ${isLoading ? "Loading..." : `Latest ${config.label} Runtime Trace`}
+        </button>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadReceiptDetailWorkspaceAcceptanceProgressFromAdmin(${toInlineJsStringLiteral(config.suiteId)})">
+          ${isLoading ? "Loading..." : `${config.label} Progress`}
+        </button>
+      </div>
+      <label class="display-inventory-help" for="${escAttr(config.suiteId)}RecoveryRunId">
+        Exact runId for recovery / cleanup
+      </label>
+      <input id="${escAttr(config.suiteId)}RecoveryRunId"
+        type="text"
+        autocomplete="off"
+        value="${escAttr(runId)}"
+        style="width:100%;max-width:560px"
+        placeholder="${escAttr(config.runIdPlaceholder)}">
+      <div class="diagnostic-check-summary">
+        ${trace ? `
+          Run: ${esc(trace.runId || "-")} |
+          Status: ${esc(trace.status || "-")} |
+          Last: ${esc(trace.lastCheckpoint || trace.lastCompletedCheckpoint || "-")} |
+          Current: ${esc(trace.currentCheckpoint || "-")} |
+          Failing: ${esc(trace.failingCheckpoint || "-")} |
+          Elapsed: ${Number(trace.elapsedMs || 0)} ms |
+          Cleanup: ${esc(trace.cleanupStatus || "-")}
+          ${trace.errorMessage ? `<br>Error: ${esc(trace.errorMessage)}` : ""}
+          ${trace.recordCountSummary ? `<br>Manifest: ${esc(JSON.stringify(trace.recordCountSummary))}` : ""}
+          ${retainedFixtureText ? `<br>Retained fixture: ${esc(retainedFixtureText)}` : ""}
+        ` : esc(traceError || `${config.label} runtime trace not loaded`)}
+      </div>
+    </div>
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>${esc(config.label)} Detail</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${receiptId ? "" : "disabled"}
+          onclick="openReceiptDetailWorkspaceAcceptanceDetailFromAdmin(${toInlineJsStringLiteral(config.suiteId)})">
+          Open Receipt Detail
+        </button>
+      </div>
+      <div class="diagnostic-check-summary">
+        ${receiptId
+          ? `Uses retained receiptId ${esc(receiptId)} from persisted TEST fixture state.`
+          : "Load Latest Runtime Trace or Recovery Status before opening detail."}
+      </div>
+    </div>
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>${esc(config.label)} Recovery Status</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isRecoveryLoading ? "disabled" : ""}
+          onclick="auditReceiptDetailWorkspaceAcceptanceRecoveryFromAdmin(${toInlineJsStringLiteral(config.suiteId)})">
+          ${isRecoveryLoading ? "Checking..." : `Check ${config.label} Recovery Status`}
+        </button>
+        <button class="btn btn-danger diagnostic-suite-button" type="button"
+          ${isRecoveryCleanupLoading ? "disabled" : ""}
+          onclick="confirmReceiptDetailWorkspaceAcceptanceRecoveryCleanupFromAdmin(${toInlineJsStringLiteral(config.suiteId)})">
+          ${isRecoveryCleanupLoading ? "Cleaning..." : `Cleanup ${config.label} Run`}
+        </button>
+      </div>
+      <div class="display-inventory-help">
+        TEST-only exact cleanup. Requires a visible runId and typed confirmation. No broad cleanup, no sequence rollback, no automatic retry, and no Workspace refresh after cleanup.
+      </div>
+      <div class="diagnostic-check-summary">
+        ${recovery ? `
+          Run: ${esc(recovery.runId || "-")} |
+          Status: ${esc(recovery.status || "-")} |
+          Cleanup: ${esc(recovery.cleanupStatus || "-")} |
+          Cleanup safe: ${recovery.cleanupSafe === false ? "NO" : "YES"} |
+          Sequence retained: ${(recovery.sequenceRetained || recovery.sequenceProtected) ? "YES" : "NO"}
+          ${recovery.ownershipStatus ? `<br>Ownership: ${esc(recovery.ownershipStatus)}` : ""}
+          ${recoverySummaryText ? `<br>${esc(recoverySummaryText)}` : ""}
+          ${retainedFixtureText ? `<br>Retained fixture: ${esc(retainedFixtureText)}` : ""}
+          ${recoveryCleanupMessage ? `<br>${esc(recoveryCleanupMessage)}` : ""}
+        ` : esc(recoveryError || `${config.label} recovery audit not loaded`)}
+      </div>
+    </div>
+  `;
+}
+
 function renderTaxInvoiceFoundationRuntimeRecoveryPanel() {
   const diagnostics = state.admin.developerDiagnostics;
   const trace = diagnostics.taxInvoiceRuntimeTrace;
@@ -11395,6 +11682,13 @@ async function loadDeveloperDiagnosticRuntimeTraceAfterTimeoutFromAdmin(suite) {
   if (suite === RECEIPT_FOUNDATION_SUITE_ID) {
     await loadLatestReceiptFoundationRuntimeTraceFromAdmin();
     return state.admin.developerDiagnostics.receiptRuntimeTrace;
+  }
+  if (isReceiptDetailWorkspaceAcceptanceSuite(suite)) {
+    await loadLatestReceiptDetailWorkspaceAcceptanceRuntimeTraceFromAdmin(suite);
+    const config = getReceiptDetailWorkspaceAcceptanceConfig(suite);
+    return config
+      ? state.admin.developerDiagnostics[config.traceKey]
+      : null;
   }
   if (suite === TAX_INVOICE_FOUNDATION_SUITE_ID) {
     await loadLatestTaxInvoiceFoundationRuntimeTraceFromAdmin();
@@ -13832,6 +14126,450 @@ async function executeReceiptFoundationRecoveryCleanupFromAdmin() {
   } finally {
     diagnostics.loadingReceiptRecoveryCleanup = false;
     renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadLatestReceiptDetailWorkspaceAcceptanceRuntimeTraceFromAdmin(suiteId) {
+  const config = getReceiptDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return;
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics[config.loadingTraceKey]) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics[config.loadingTraceKey] = true;
+  diagnostics[config.traceErrorKey] = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", config.traceAction);
+    form.append("token", state.admin.token);
+
+    const json = await postFormAction(form);
+    diagnostics[config.traceKey] = json.data?.trace || null;
+    if (diagnostics[config.traceKey]?.runId) {
+      diagnostics[config.runIdKey] = diagnostics[config.traceKey].runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        config.suiteId,
+        { trace: diagnostics[config.traceKey] }
+      );
+    }
+    if (!diagnostics[config.traceKey]) {
+      diagnostics[config.traceErrorKey] =
+        `No persistent ${config.label} trace found`;
+    }
+  } catch (err) {
+    diagnostics[config.traceKey] = null;
+    diagnostics[config.traceErrorKey] =
+      err.message || `${config.label} trace unavailable`;
+    showToast(diagnostics[config.traceErrorKey], "error");
+  } finally {
+    diagnostics[config.loadingTraceKey] = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadReceiptDetailWorkspaceAcceptanceProgressFromAdmin(suiteId) {
+  const config = getReceiptDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return;
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics[config.loadingTraceKey]) return;
+  const previousTrace = diagnostics[config.traceKey];
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics[config.loadingTraceKey] = true;
+  diagnostics[config.traceErrorKey] = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const runId = getReceiptDetailWorkspaceAcceptanceRunIdInputValue(
+      config.suiteId
+    );
+    const form = new URLSearchParams();
+    form.append("action", config.progressAction);
+    form.append("token", state.admin.token);
+    if (runId) {
+      form.append("runId", runId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    const progress = json.data?.progress || null;
+    if (progress) {
+      diagnostics[config.traceKey] = progress;
+    }
+    if (progress?.runId) {
+      diagnostics[config.runIdKey] = progress.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        config.suiteId,
+        { trace: progress }
+      );
+    }
+    if (!progress) {
+      diagnostics[config.traceKey] = previousTrace;
+      diagnostics[config.traceErrorKey] =
+        `No persistent ${config.label} progress found`;
+    }
+  } catch (err) {
+    diagnostics[config.traceKey] = previousTrace;
+    diagnostics[config.traceErrorKey] =
+      err.message || `${config.label} progress unavailable`;
+    showToast(diagnostics[config.traceErrorKey], "error");
+  } finally {
+    diagnostics[config.loadingTraceKey] = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function auditReceiptDetailWorkspaceAcceptanceRecoveryFromAdmin(suiteId) {
+  const config = getReceiptDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return;
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics[config.loadingRecoveryKey]) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics[config.loadingRecoveryKey] = true;
+  diagnostics[config.recoveryErrorKey] = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const runId = getReceiptDetailWorkspaceAcceptanceRunIdInputValue(
+      config.suiteId
+    );
+    const form = new URLSearchParams();
+    form.append("action", config.recoveryAction);
+    form.append("token", state.admin.token);
+    if (runId) {
+      form.append("runId", runId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics[config.recoveryKey] = json.data?.recovery || null;
+    if (diagnostics[config.recoveryKey]?.runId) {
+      diagnostics[config.runIdKey] = diagnostics[config.recoveryKey].runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        config.suiteId,
+        { recovery: diagnostics[config.recoveryKey] }
+      );
+      const cleanupStatus = normalizeDeveloperDiagnosticStatus(
+        diagnostics[config.recoveryKey].cleanupStatus
+      );
+      if (cleanupStatus && cleanupStatus !== "RUNNING") {
+        diagnostics[config.cleanupTimeoutRunIdKey] = "";
+      }
+    }
+    if (!diagnostics[config.recoveryKey]) {
+      diagnostics[config.recoveryErrorKey] =
+        `No ${config.label} recovery manifest found`;
+    }
+  } catch (err) {
+    diagnostics[config.recoveryErrorKey] =
+      err.message || `${config.label} recovery audit unavailable`;
+    showToast(diagnostics[config.recoveryErrorKey], "error");
+  } finally {
+    diagnostics[config.loadingRecoveryKey] = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+function confirmReceiptDetailWorkspaceAcceptanceRecoveryCleanupFromAdmin(suiteId) {
+  const config = getReceiptDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return;
+  const diagnostics = state.admin.developerDiagnostics;
+  if (
+    diagnostics.runningSuite ||
+    diagnostics[config.loadingRecoveryKey] ||
+    diagnostics[config.loadingCleanupKey]
+  ) {
+    return;
+  }
+
+  const runId = getReceiptDetailWorkspaceAcceptanceRunIdInputValue(
+    config.suiteId
+  );
+  if (!runId) {
+    showToast(`Enter the exact ${config.label} runId before cleanup.`, "warning");
+    return;
+  }
+  if (
+    diagnostics[config.cleanupTimeoutRunIdKey] &&
+    diagnostics[config.cleanupTimeoutRunIdKey] === runId
+  ) {
+    showToast(
+      `Cleanup may still be running. Check ${config.label} Recovery Status before retrying.`,
+      "warning"
+    );
+    return;
+  }
+  diagnostics.receiptDetailWorkspaceRecoveryCleanupSuiteId = config.suiteId;
+  diagnostics[config.cleanupRunIdKey] = runId;
+
+  confirmSheet.setAttribute(
+    "aria-labelledby",
+    "receiptDetailWorkspaceRecoveryCleanupConfirmTitle"
+  );
+  confirmSheet.classList.add("developer-diagnostic-confirm-sheet");
+  confirmSheet.innerHTML = `
+    <h3 id="receiptDetailWorkspaceRecoveryCleanupConfirmTitle">Cleanup ${esc(config.label)} Run</h3>
+    <div class="display-inventory-help">
+      TEST-only exact cleanup for run ${esc(runId)}. It deletes only exact tracked TEST-DIAG Receipt, Payment, Bill, Customer, Contact, and fixture records for this run. It does not roll back Receipt or Bill number sequences and does not refresh Workspace automatically.
+    </div>
+    <label class="display-inventory-help" for="receiptDetailWorkspaceRecoveryCleanupConfirmation">
+      Type ${esc(config.confirmation)} to confirm.
+    </label>
+    <input id="receiptDetailWorkspaceRecoveryCleanupConfirmation"
+      type="text"
+      autocomplete="off"
+      style="width:100%;max-width:560px"
+      placeholder="${escAttr(config.confirmation)}"
+      oninput="updateReceiptDetailWorkspaceAcceptanceCleanupButtonState()">
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closeReceiptDetailWorkspaceAcceptanceRecoveryCleanupConfirmation()">
+        Cancel
+      </button>
+      <button id="receiptDetailWorkspaceRecoveryCleanupSubmit"
+        class="btn btn-danger"
+        type="button"
+        disabled
+        onclick="executeReceiptDetailWorkspaceAcceptanceRecoveryCleanupFromAdmin()">
+        Cleanup ${esc(config.label)} Run
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+  updateReceiptDetailWorkspaceAcceptanceCleanupButtonState();
+}
+
+function updateReceiptDetailWorkspaceAcceptanceCleanupButtonState() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const suiteId = diagnostics.receiptDetailWorkspaceRecoveryCleanupSuiteId;
+  const config = getReceiptDetailWorkspaceAcceptanceConfig(suiteId);
+  const button = document.getElementById(
+    "receiptDetailWorkspaceRecoveryCleanupSubmit"
+  );
+  if (!button || !config) return;
+  const confirmation = String(
+    document.getElementById("receiptDetailWorkspaceRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  const runId = String(diagnostics[config.cleanupRunIdKey] || "").trim();
+  button.disabled = !runId ||
+    confirmation !== config.confirmation ||
+    !!diagnostics[config.loadingCleanupKey];
+}
+
+function closeReceiptDetailWorkspaceAcceptanceRecoveryCleanupConfirmation() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const config = getReceiptDetailWorkspaceAcceptanceConfig(
+    diagnostics.receiptDetailWorkspaceRecoveryCleanupSuiteId
+  );
+  if (config) {
+    diagnostics[config.cleanupRunIdKey] = "";
+  }
+  diagnostics.receiptDetailWorkspaceRecoveryCleanupSuiteId = "";
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  confirmSheet.classList.remove("developer-diagnostic-confirm-sheet");
+  closeOverlay(confirmSheet);
+}
+
+function updateReceiptDetailWorkspaceAcceptanceCardAfterRecoveryCleanup(
+  config,
+  cleanup
+) {
+  const diagnostics = state.admin.developerDiagnostics;
+  const cleanupStatus = String(cleanup && cleanup.status || "FAIL")
+    .trim()
+    .toUpperCase();
+  const cleanupSummary = String(cleanup && cleanup.summary || "").trim();
+  const current = diagnostics.results[config.suiteId] || {
+    suite: config.suiteId,
+    status: cleanupStatus === "PASS" ? "PARTIAL" : "FAIL",
+    checks: []
+  };
+  const checks = Array.isArray(current.checks) ? current.checks.slice() : [];
+  const nextCheck = {
+    name: "receipt_detail_workspace_recovery_cleanup",
+    status: cleanupStatus,
+    summary: cleanupSummary ||
+      `${config.label} recovery cleanup completed`
+  };
+  const index = checks.findIndex(check => check.name === nextCheck.name);
+  if (index === -1) {
+    checks.push(nextCheck);
+  } else {
+    checks[index] = nextCheck;
+  }
+  current.checks = checks;
+  current.cleanup = {
+    required: true,
+    status: cleanupStatus
+  };
+  if (cleanupStatus !== "PASS") {
+    current.status = "FAIL";
+  } else if (!current.status || current.status === "NOT_RUN") {
+    current.status = "PARTIAL";
+  }
+  diagnostics.results[config.suiteId] = current;
+}
+
+async function executeReceiptDetailWorkspaceAcceptanceRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const config = getReceiptDetailWorkspaceAcceptanceConfig(
+    diagnostics.receiptDetailWorkspaceRecoveryCleanupSuiteId
+  );
+  if (!config || diagnostics[config.loadingCleanupKey]) return;
+
+  const runId = String(diagnostics[config.cleanupRunIdKey] || "").trim();
+  const confirmation = String(
+    document.getElementById("receiptDetailWorkspaceRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  if (!runId) {
+    showToast(`${config.label} cleanup runId is required`, "warning");
+    return;
+  }
+  if (confirmation !== config.confirmation) {
+    showToast(`${config.label} cleanup confirmation is required`, "warning");
+    return;
+  }
+
+  closeReceiptDetailWorkspaceAcceptanceRecoveryCleanupConfirmation();
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics[config.loadingCleanupKey] = true;
+  diagnostics[config.recoveryErrorKey] = "";
+  diagnostics[config.cleanupMessageKey] = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", config.cleanupAction);
+    form.append("token", state.admin.token);
+    form.append("runId", runId);
+    form.append("confirmation", confirmation);
+
+    const json = await postFormAction(form);
+    const cleanup = json.data?.cleanup || {};
+    diagnostics[config.traceKey] = json.data?.progress || null;
+    diagnostics[config.recoveryKey] = json.data?.recovery || null;
+    if (diagnostics[config.traceKey]?.runId) {
+      diagnostics[config.runIdKey] = diagnostics[config.traceKey].runId;
+    } else if (diagnostics[config.recoveryKey]?.runId) {
+      diagnostics[config.runIdKey] = diagnostics[config.recoveryKey].runId;
+    }
+    diagnostics[config.cleanupTimeoutRunIdKey] = "";
+    diagnostics[config.cleanupMessageKey] =
+      `Cleanup ${cleanup.status || "-"}: ${cleanup.summary || "-"}`;
+    updateReceiptDetailWorkspaceAcceptanceCardAfterRecoveryCleanup(
+      config,
+      cleanup
+    );
+    reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+      config.suiteId,
+      {
+        trace: diagnostics[config.traceKey],
+        recovery: diagnostics[config.recoveryKey],
+        cleanup
+      }
+    );
+    showToast(
+      cleanup.status === "PASS"
+        ? `${config.label} cleanup PASS`
+        : `${config.label} cleanup completed`,
+      cleanup.status === "PASS" ? "success" : "warning"
+    );
+  } catch (err) {
+    const message =
+      err.message || `${config.label} recovery cleanup unavailable`;
+    if (isDeveloperDiagnosticTimeoutMessage(message)) {
+      diagnostics[config.cleanupTimeoutRunIdKey] = runId;
+      diagnostics[config.cleanupMessageKey] =
+        "Cleanup request timed out on the client. The backend may still be running; check Recovery Status before retrying.";
+      showToast(diagnostics[config.cleanupMessageKey], "warning");
+    } else {
+      diagnostics[config.cleanupMessageKey] = message;
+      diagnostics[config.recoveryErrorKey] = message;
+      showToast(message, "error");
+    }
+  } finally {
+    diagnostics[config.loadingCleanupKey] = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function openReceiptDetailWorkspaceAcceptanceDetailFromAdmin(suiteId) {
+  const config = getReceiptDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return;
+  const receiptId = getReceiptDetailWorkspaceAcceptanceReceiptId(config.suiteId);
+  if (!receiptId) {
+    showToast(
+      "Load Receipt Detail fixture runtime or recovery before opening detail.",
+      "warning"
+    );
+    return;
+  }
+  if (typeof openFinanceLegalReceiptDetail !== "function") {
+    showToast("Receipt Detail is unavailable", "error");
+    return;
+  }
+  const hadDiagnosticsOpen =
+    !!adminDeveloperDiagnosticsSheet?.classList.contains("show");
+  if (hadDiagnosticsOpen) {
+    closeDeveloperDiagnosticsSheet();
+  }
+  try {
+    await openFinanceLegalReceiptDetail(receiptId, {
+      title: receiptId
+    });
+    if (!adminDashboardSheet?.classList.contains("show")) {
+      throw new Error("Receipt Detail did not open");
+    }
+  } catch (err) {
+    if (
+      hadDiagnosticsOpen &&
+      !adminDeveloperDiagnosticsSheet?.classList.contains("show")
+    ) {
+      await openDeveloperDiagnosticsSheet();
+    }
+    showToast(err.message || "Receipt Detail is unavailable", "error");
   }
 }
 
@@ -18070,6 +18808,18 @@ function getFinanceLegalDetailReadableError(error) {
   if (/Payment Correction identity mismatch/i.test(message)) {
     return "ข้อมูลรายการแก้ไขการชำระเงินไม่ตรงกับรายการที่เลือก";
   }
+  if (/Receipt not found/i.test(message)) {
+    return "ไม่พบใบรับเงินที่เลือก";
+  }
+  if (/receiptId is required/i.test(message)) {
+    return "Workspace row ไม่มีรหัสใบรับเงินสำหรับเปิดรายละเอียด";
+  }
+  if (/Malformed Receipt detail response/i.test(message)) {
+    return "รูปแบบข้อมูลใบรับเงินไม่ถูกต้อง";
+  }
+  if (/Receipt identity mismatch/i.test(message)) {
+    return "ข้อมูลใบรับเงินไม่ตรงกับรายการที่เลือก";
+  }
   if (message.includes(t("connectionSlowRetry", "การเชื่อมต่อช้าเกินไป กรุณาลองใหม่อีกครั้ง"))) {
     return t("connectionSlowRetry", "การเชื่อมต่อช้าเกินไป กรุณาลองใหม่อีกครั้ง");
   }
@@ -18132,6 +18882,9 @@ function getFinanceLegalDetailStatus(detail) {
   if (detail.type === "payment_correction" && detail.data) {
     return detail.data.correctionType || "";
   }
+  if (detail.type === "receipt" && detail.data) {
+    return detail.data.status || "";
+  }
   return "";
 }
 
@@ -18147,6 +18900,9 @@ function getFinanceLegalDetailSubtitle(detail) {
   }
   if (detail.type === "payment_correction") {
     return "รายละเอียดรายการแก้ไขการชำระเงิน | ดูอย่างเดียว";
+  }
+  if (detail.type === "receipt") {
+    return "รายละเอียดใบรับเงิน | ดูอย่างเดียว";
   }
   return "รายละเอียด | ดูอย่างเดียว";
 }
@@ -18169,6 +18925,9 @@ function renderFinanceLegalDetailBody(detail) {
   }
   if (detail.type === "payment_correction" && detail.data) {
     return renderPaymentCorrectionReadOnlyDetail(detail.data);
+  }
+  if (detail.type === "receipt" && detail.data) {
+    return renderReceiptReadOnlyDetail(detail.data);
   }
   return renderFinanceLegalDetailEmpty("ยังไม่มีข้อมูลรายละเอียด");
 }
@@ -18254,6 +19013,9 @@ function getFinanceLegalDetailTitle(type, data, fallback) {
   }
   if (type === "payment_correction") {
     return data?.correctionId || fallback || "รายการแก้ไขการชำระเงิน";
+  }
+  if (type === "receipt") {
+    return data?.receiptNumber || data?.receiptId || fallback || "ใบรับเงิน";
   }
   return fallback || "รายละเอียด";
 }
@@ -18369,11 +19131,28 @@ async function fetchPaymentCorrectionDetailById(correctionId) {
   return correction;
 }
 
+async function fetchReceiptDetailById(receiptId) {
+  const form = new URLSearchParams();
+  form.append("action", "getReceipt");
+  form.append("token", state.admin.token);
+  form.append("receiptId", receiptId);
+  const json = await postFormAction(form);
+  const receipt = json?.data?.receipt;
+  if (!receipt || !receipt.receiptId) {
+    throw new Error("Malformed Receipt detail response");
+  }
+  if (String(receipt.receiptId || "").trim() !== String(receiptId || "").trim()) {
+    throw new Error("Receipt identity mismatch");
+  }
+  return receipt;
+}
+
 async function fetchFinanceLegalDetailByType(type, recordId) {
   if (type === "bill") return fetchBillDetailById(recordId);
   if (type === "receivable") return fetchReceivableDetailByBillId(recordId);
   if (type === "payment") return fetchPaymentDetailById(recordId);
   if (type === "payment_correction") return fetchPaymentCorrectionDetailById(recordId);
+  if (type === "receipt") return fetchReceiptDetailById(recordId);
   throw new Error("Unsupported detail type");
 }
 
@@ -18417,7 +19196,9 @@ async function openFinanceLegalDetail(type, recordId, context = {}) {
         ? "Workspace row ไม่มีรหัสการชำระเงินสำหรับเปิดรายละเอียด"
         : normalizedType === "payment_correction"
           ? "ไม่มีรหัสรายการแก้ไขการชำระเงินสำหรับเปิดรายละเอียด"
-          : "Workspace row ไม่มีรหัสใบแจ้งหนี้สำหรับเปิดรายละเอียด");
+          : normalizedType === "receipt"
+            ? "Workspace row ไม่มีรหัสใบรับเงินสำหรับเปิดรายละเอียด"
+            : "Workspace row ไม่มีรหัสใบแจ้งหนี้สำหรับเปิดรายละเอียด");
   detail.data = null;
   detail.pendingKey = detail.loading ? targetKey : "";
   detail.requestId += 1;
@@ -18481,6 +19262,10 @@ async function openFinanceLegalPaymentDetail(paymentId, context = {}) {
 
 async function openFinanceLegalPaymentCorrectionDetail(correctionId, context = {}) {
   return openFinanceLegalDetail("payment_correction", correctionId, context);
+}
+
+async function openFinanceLegalReceiptDetail(receiptId, context = {}) {
+  return openFinanceLegalDetail("receipt", receiptId, context);
 }
 
 async function openRelatedFinanceLegalDetail(type, recordId, title) {
@@ -18957,6 +19742,135 @@ function renderPaymentCorrectionReceiptContextCard() {
   `);
 }
 
+function renderReceiptReadOnlyDetail(receipt) {
+  return `
+    ${renderReceiptHeaderCard(receipt)}
+    ${renderReceiptInformationCard(receipt)}
+    ${renderReceiptVoidContextCard(receipt)}
+    ${renderReceiptRelatedIdentityCard(receipt)}
+    ${renderReceiptRelatedDocumentsCard(receipt)}
+    ${renderReceiptPaymentCorrectionContextCard()}
+  `;
+}
+
+function renderReceiptHeaderCard(receipt) {
+  const status = String(receipt?.status || "").trim();
+  return renderFinanceLegalDetailCard("ใบรับเงิน", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("เลขที่ใบรับเงิน", receipt.receiptNumber || "-")}
+      ${renderFinanceLegalDetailField("รหัสใบรับเงิน", receipt.receiptId)}
+      <div class="finance-legal-detail-field">
+        <span>สถานะ</span>
+        <strong class="finance-legal-detail-value">
+          ${status ? `<span class="status-badge compact ${getWorkspaceStatusClass(status)}">${esc(status)}</span>` : "-"}
+        </strong>
+      </div>
+      ${renderFinanceLegalDetailField("ดูอย่างเดียว", "ไม่มีปุ่มแก้ไข / ยกเลิก / ออกซ้ำ")}
+    </div>
+  `);
+}
+
+function renderReceiptInformationCard(receipt) {
+  return renderFinanceLegalDetailCard("ข้อมูลการออกใบรับเงิน", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("วันที่ออก", receipt.issuedAt, { date: true })}
+      ${renderFinanceLegalDetailField("ผู้ออกเอกสาร", receipt.issuedBy || "-")}
+      ${renderFinanceLegalDetailField("Request ID", receipt.requestId || "-")}
+    </div>
+  `);
+}
+
+function renderReceiptVoidContextCard(receipt) {
+  const status = String(receipt?.status || "").trim().toUpperCase();
+  if (status !== "VOID") {
+    return renderFinanceLegalDetailCard("สถานะการยกเลิก", `
+      <div class="finance-legal-detail-grid">
+        ${renderFinanceLegalDetailField("สถานะเอกสาร", receipt.status || "-")}
+        ${renderFinanceLegalDetailField("VOID", "ยังไม่ถูกยกเลิก")}
+      </div>
+    `);
+  }
+  return renderFinanceLegalDetailCard("สถานะการยกเลิก", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("VOID", "ยกเลิกเอกสารแล้ว")}
+      ${renderFinanceLegalDetailField("วันที่ยกเลิก", receipt.voidedAt, { date: true })}
+      ${renderFinanceLegalDetailField("ผู้ยกเลิก", receipt.voidedBy || "-")}
+      ${renderFinanceLegalDetailField("เหตุผล", receipt.voidReason || "-")}
+    </div>
+    <div class="finance-legal-detail-related-note">
+      ใบรับเงินถูกยกเลิก แต่การชำระเงินไม่ได้ถูกยกเลิกโดยอัตโนมัติ
+    </div>
+  `);
+}
+
+function renderReceiptRelatedIdentityCard(receipt) {
+  return renderFinanceLegalDetailCard("รหัสอ้างอิง", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("Payment ID", receipt.paymentId || "-")}
+      ${renderFinanceLegalDetailField("Bill ID", receipt.billId || "-")}
+      ${renderFinanceLegalDetailField("Customer ID", receipt.customerId || "-")}
+    </div>
+    <div class="finance-legal-detail-related-note">
+      Customer แสดงเป็นข้อมูลอ้างอิงเท่านั้นใน Receipt Detail P0
+    </div>
+  `);
+}
+
+function renderReceiptRelatedDocumentsCard(receipt) {
+  const paymentId = String(receipt?.paymentId || "").trim();
+  const billId = String(receipt?.billId || "").trim();
+  if (!paymentId && !billId) {
+    return renderFinanceLegalDetailCard("เอกสารที่เกี่ยวข้อง", renderFinanceLegalDetailEmpty("ไม่มี canonical Payment ID หรือ Bill ID สำหรับเปิดรายละเอียดที่เกี่ยวข้อง"));
+  }
+  return renderFinanceLegalDetailCard("เอกสารที่เกี่ยวข้อง", `
+    <div class="finance-legal-detail-list">
+      ${paymentId ? `
+        <div class="finance-legal-detail-reference">
+          <div class="business-dashboard-list-head">
+            <div class="business-dashboard-list-title">การชำระเงินที่เกี่ยวข้อง</div>
+            <span class="status-badge compact status-neutral">อ่านอย่างเดียว</span>
+          </div>
+          <div class="business-dashboard-list-meta">${esc(paymentId)}</div>
+          <div class="finance-legal-detail-related-note">
+            ${renderFinanceLegalDetailLinkButton("payment", paymentId, paymentId, "เปิดรายละเอียด")}
+          </div>
+        </div>
+      ` : ""}
+      ${billId ? `
+        <div class="finance-legal-detail-reference">
+          <div class="business-dashboard-list-head">
+            <div class="business-dashboard-list-title">ใบแจ้งหนี้ที่เกี่ยวข้อง</div>
+            <span class="status-badge compact status-neutral">อ่านอย่างเดียว</span>
+          </div>
+          <div class="business-dashboard-list-meta">${esc(billId)}</div>
+          <div class="finance-legal-detail-related-note">
+            ${renderFinanceLegalDetailLinkButton("bill", billId, billId, "เปิดรายละเอียด")}
+          </div>
+        </div>
+        <div class="finance-legal-detail-reference">
+          <div class="business-dashboard-list-head">
+            <div class="business-dashboard-list-title">ยอดค้างรับที่เกี่ยวข้อง</div>
+            <span class="status-badge compact status-neutral">อ่านอย่างเดียว</span>
+          </div>
+          <div class="business-dashboard-list-meta">${esc(billId)}</div>
+          <div class="finance-legal-detail-related-note">
+            ${renderFinanceLegalDetailLinkButton("receivable", billId, billId, "เปิดรายละเอียด")}
+          </div>
+        </div>
+      ` : ""}
+    </div>
+  `);
+}
+
+function renderReceiptPaymentCorrectionContextCard() {
+  return renderFinanceLegalDetailCard("Payment Correction Context", `
+    ${renderFinanceLegalDetailEmpty("getReceipt ยังไม่ส่ง canonical Payment Correction ID สำหรับเปิดรายละเอียด")}
+    <div class="finance-legal-detail-related-note">
+      แสดงเป็นข้อมูลอ้างอิงเท่านั้นใน Receipt Detail P0
+    </div>
+  `);
+}
+
 function renderReceivableReadOnlyDetail(receivable) {
   return `
     ${renderReceivableHeaderCard(receivable)}
@@ -19269,6 +20183,9 @@ function isWorkspaceDrillDownSupported(section, row) {
   if (sectionId === "receipts_ready_to_issue") {
     return !!String(row?.drillDown?.paymentId || "").trim();
   }
+  if (sectionId === "receipts_voided") {
+    return !!String(row?.drillDown?.receiptId || "").trim();
+  }
   const module = String(row?.drillDown?.module || "").trim();
   return [
     "orders",
@@ -19452,6 +20369,18 @@ async function openWorkspaceDrillDown(sectionId, rowId) {
     }
     openFinanceLegalPaymentDetail(paymentId, {
       title: row?.primaryLabel || paymentId || "การชำระเงิน"
+    });
+    return;
+  }
+
+  if (String(sectionId || "").trim() === "receipts_voided") {
+    const receiptId = String(drillDown.receiptId || "").trim();
+    if (!receiptId) {
+      showToast("Workspace row ไม่มีรหัสใบรับเงินสำหรับเปิดรายละเอียด", "warning");
+      return;
+    }
+    openFinanceLegalReceiptDetail(receiptId, {
+      title: row?.primaryLabel || receiptId || "ใบรับเงิน"
     });
     return;
   }
