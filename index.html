@@ -7083,6 +7083,17 @@ const state = {
       paymentRecoveryError: "",
       paymentRecoveryCleanupMessage: "",
       paymentRunId: "",
+      loadingPaymentWorkspaceRuntimeTrace: false,
+      paymentWorkspaceRuntimeTrace: null,
+      paymentWorkspaceRuntimeTraceError: "",
+      loadingPaymentWorkspaceRecoveryAudit: false,
+      loadingPaymentWorkspaceRecoveryCleanup: false,
+      paymentWorkspaceRecoveryAudit: null,
+      paymentWorkspaceRecoveryError: "",
+      paymentWorkspaceRecoveryCleanupMessage: "",
+      paymentWorkspaceRecoveryCleanupRunId: "",
+      paymentWorkspaceRecoveryCleanupTimeoutRunId: "",
+      paymentWorkspaceRunId: "",
       loadingReceivableWorkspaceRuntimeTrace: false,
       receivableWorkspaceRuntimeTrace: null,
       receivableWorkspaceRuntimeTraceError: "",
@@ -9390,6 +9401,7 @@ const BILL_FOUNDATION_DRAFT_SUITE_ID = "bill_foundation_draft";
 const BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID = "bill_foundation_draft_validation";
 const BILL_FOUNDATION_ISSUE_VOID_SUITE_ID = "bill_foundation_issue_void";
 const PAYMENT_FOUNDATION_SUITE_ID = "payment_foundation";
+const PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID = "payment_workspace_acceptance_fixture";
 const RECEIVABLE_FOUNDATION_SUITE_ID = "receivable_foundation";
 const RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID = "receivable_workspace_acceptance_fixture";
 const PAYMENT_CORRECTION_FOUNDATION_SUITE_ID = "payment_correction_foundation";
@@ -9490,6 +9502,12 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     mutationDescription: "Run after Bill Issue + VOID Foundation PASS. Creates isolated TEST-DIAG Payment and Bill fixtures, verifies full-payment validation, idempotency, derived receivable state, exact cleanup, and retained Bill sequence rows."
   },
   {
+    id: PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID,
+    label: "Payment Workspace Fixture",
+    mutation: true,
+    mutationDescription: "Run only for Workspace/Payment Detail runtime acceptance. Creates one isolated TEST-DIAG CONFIRMED Payment eligible for Receipts Ready To Issue, persists the runId, and defers exact cleanup."
+  },
+  {
     id: RECEIVABLE_FOUNDATION_SUITE_ID,
     label: "Receivable Foundation",
     mutation: true,
@@ -9586,6 +9604,17 @@ function resetDeveloperDiagnosticsState() {
   state.admin.developerDiagnostics.paymentRecoveryError = "";
   state.admin.developerDiagnostics.paymentRecoveryCleanupMessage = "";
   state.admin.developerDiagnostics.paymentRunId = "";
+  state.admin.developerDiagnostics.loadingPaymentWorkspaceRuntimeTrace = false;
+  state.admin.developerDiagnostics.paymentWorkspaceRuntimeTrace = null;
+  state.admin.developerDiagnostics.paymentWorkspaceRuntimeTraceError = "";
+  state.admin.developerDiagnostics.loadingPaymentWorkspaceRecoveryAudit = false;
+  state.admin.developerDiagnostics.loadingPaymentWorkspaceRecoveryCleanup = false;
+  state.admin.developerDiagnostics.paymentWorkspaceRecoveryAudit = null;
+  state.admin.developerDiagnostics.paymentWorkspaceRecoveryError = "";
+  state.admin.developerDiagnostics.paymentWorkspaceRecoveryCleanupMessage = "";
+  state.admin.developerDiagnostics.paymentWorkspaceRecoveryCleanupRunId = "";
+  state.admin.developerDiagnostics.paymentWorkspaceRecoveryCleanupTimeoutRunId = "";
+  state.admin.developerDiagnostics.paymentWorkspaceRunId = "";
   state.admin.developerDiagnostics.loadingReceivableWorkspaceRuntimeTrace = false;
   state.admin.developerDiagnostics.receivableWorkspaceRuntimeTrace = null;
   state.admin.developerDiagnostics.receivableWorkspaceRuntimeTraceError = "";
@@ -9843,6 +9872,9 @@ function renderDeveloperDiagnosticResultCard(suite) {
         ${suite.id === PAYMENT_FOUNDATION_SUITE_ID
           ? renderPaymentFoundationRuntimeRecoveryPanel()
           : ""}
+        ${suite.id === PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID
+          ? renderPaymentWorkspaceAcceptanceRuntimeRecoveryPanel()
+          : ""}
         ${suite.id === RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID
           ? renderReceivableWorkspaceAcceptanceRuntimeRecoveryPanel()
           : ""}
@@ -10033,9 +10065,131 @@ function renderPaymentFoundationRuntimeRecoveryPanel() {
   `;
 }
 
+function getPaymentWorkspaceAcceptanceRunIdInputValue() {
+  return String(
+    document.getElementById("paymentWorkspaceAcceptanceRecoveryRunId")?.value || ""
+  ).trim();
+}
+
+function getPaymentWorkspaceAcceptanceCurrentRunId() {
+  const diagnostics = state.admin.developerDiagnostics;
+  return String(
+    diagnostics.paymentWorkspaceRunId ||
+    diagnostics.paymentWorkspaceRecoveryAudit?.runId ||
+    diagnostics.paymentWorkspaceRuntimeTrace?.runId ||
+    ""
+  ).trim();
+}
+
+function renderPaymentWorkspaceAcceptanceRuntimeRecoveryPanel() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const trace = diagnostics.paymentWorkspaceRuntimeTrace;
+  const isLoading = diagnostics.loadingPaymentWorkspaceRuntimeTrace;
+  const traceError = diagnostics.paymentWorkspaceRuntimeTraceError;
+  const recovery = diagnostics.paymentWorkspaceRecoveryAudit;
+  const isRecoveryLoading = diagnostics.loadingPaymentWorkspaceRecoveryAudit;
+  const isRecoveryCleanupLoading =
+    diagnostics.loadingPaymentWorkspaceRecoveryCleanup;
+  const recoveryError = diagnostics.paymentWorkspaceRecoveryError;
+  const recoveryCleanupMessage =
+    diagnostics.paymentWorkspaceRecoveryCleanupMessage;
+  const runId = getPaymentWorkspaceAcceptanceCurrentRunId();
+  const recoverySummary = recovery?.summary || {};
+  const recoverySummaryText = recovery
+    ? Object.keys(recoverySummary)
+        .map(key => {
+          const item = recoverySummary[key] || {};
+          return `${key}: ${Number(item.exists || 0)} exists / ${Number(item.missing || 0)} missing`;
+        })
+        .join(" | ")
+    : "";
+
+  return `
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Payment Workspace Runtime Trace</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadLatestPaymentWorkspaceAcceptanceRuntimeTraceFromAdmin()">
+          ${isLoading ? "Loading..." : "Latest Payment Workspace Runtime Trace"}
+        </button>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadPaymentWorkspaceAcceptanceProgressFromAdmin()">
+          ${isLoading ? "Loading..." : "Payment Workspace Progress"}
+        </button>
+      </div>
+      <label class="display-inventory-help" for="paymentWorkspaceAcceptanceRecoveryRunId">
+        Exact runId for recovery / cleanup
+      </label>
+      <input id="paymentWorkspaceAcceptanceRecoveryRunId"
+        type="text"
+        autocomplete="off"
+        value="${escAttr(runId)}"
+        style="width:100%;max-width:520px"
+        placeholder="PAYWS-RUN-...">
+      <div class="diagnostic-check-summary">
+        ${trace ? `
+          Run: ${esc(trace.runId || "-")} |
+          Status: ${esc(trace.status || "-")} |
+          Last: ${esc(trace.lastCheckpoint || trace.lastCompletedCheckpoint || "-")} |
+          Current: ${esc(trace.currentCheckpoint || "-")} |
+          Failing: ${esc(trace.failingCheckpoint || "-")} |
+          Elapsed: ${Number(trace.elapsedMs || 0)} ms |
+          Cleanup: ${esc(trace.cleanupStatus || "-")}
+          ${trace.errorMessage ? `<br>Error: ${esc(trace.errorMessage)}` : ""}
+          ${trace.recordCountSummary ? `<br>Manifest: ${esc(JSON.stringify(trace.recordCountSummary))}` : ""}
+        ` : esc(traceError || "Payment Workspace runtime trace not loaded")}
+      </div>
+    </div>
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Payment Workspace Recovery Status</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isRecoveryLoading ? "disabled" : ""}
+          onclick="auditPaymentWorkspaceAcceptanceRecoveryFromAdmin()">
+          ${isRecoveryLoading ? "Checking..." : "Check Payment Workspace Recovery Status"}
+        </button>
+        <button class="btn btn-danger diagnostic-suite-button" type="button"
+          ${isRecoveryCleanupLoading ? "disabled" : ""}
+          onclick="confirmPaymentWorkspaceAcceptanceRecoveryCleanupFromAdmin()">
+          ${isRecoveryCleanupLoading ? "Cleaning..." : "Cleanup Payment Workspace Run"}
+        </button>
+      </div>
+      <div class="display-inventory-help">
+        TEST-only exact cleanup. Requires a visible runId and typed confirmation. No broad cleanup, no sequence rollback, no automatic retry, and no Workspace refresh after cleanup.
+      </div>
+      <div class="diagnostic-check-summary">
+        ${recovery ? `
+          Run: ${esc(recovery.runId || "-")} |
+          Status: ${esc(recovery.status || "-")} |
+          Cleanup: ${esc(recovery.cleanupStatus || "-")} |
+          Cleanup safe: ${recovery.cleanupSafe === false ? "NO" : "YES"} |
+          Sequence retained: ${(recovery.sequenceRetained || recovery.sequenceProtected) ? "YES" : "NO"}
+          ${recovery.ownershipStatus ? `<br>Ownership: ${esc(recovery.ownershipStatus)}` : ""}
+          ${recoverySummaryText ? `<br>${esc(recoverySummaryText)}` : ""}
+          ${recoveryCleanupMessage ? `<br>${esc(recoveryCleanupMessage)}` : ""}
+        ` : esc(recoveryError || "Payment Workspace recovery audit not loaded")}
+      </div>
+    </div>
+  `;
+}
+
 function shouldKeepDeveloperDiagnosticDetailsOpen(suiteId) {
   const diagnostics = state.admin.developerDiagnostics;
   const id = String(suiteId || "").trim();
+  if (id === PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID) {
+    return !!(
+      diagnostics.loadingPaymentWorkspaceRuntimeTrace ||
+      diagnostics.loadingPaymentWorkspaceRecoveryAudit ||
+      diagnostics.loadingPaymentWorkspaceRecoveryCleanup ||
+      diagnostics.paymentWorkspaceRuntimeTrace ||
+      diagnostics.paymentWorkspaceRecoveryAudit ||
+      diagnostics.paymentWorkspaceRuntimeTraceError ||
+      diagnostics.paymentWorkspaceRecoveryError ||
+      diagnostics.paymentWorkspaceRecoveryCleanupMessage
+    );
+  }
   if (id === RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID) {
     return !!(
       diagnostics.loadingReceivableWorkspaceRuntimeTrace ||
@@ -10583,6 +10737,7 @@ function isRuntimeRecoveryDeveloperDiagnosticSuite(suiteId) {
   const id = String(suiteId || "").trim();
   return isBillFoundationDiagnosticSuite(id) ||
     id === PAYMENT_FOUNDATION_SUITE_ID ||
+    id === PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID ||
     id === RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID ||
     id === PAYMENT_CORRECTION_FOUNDATION_SUITE_ID ||
     id === RECEIPT_FOUNDATION_SUITE_ID ||
@@ -11015,6 +11170,10 @@ async function loadDeveloperDiagnosticRuntimeTraceAfterTimeoutFromAdmin(suite) {
   if (suite === PAYMENT_FOUNDATION_SUITE_ID) {
     await loadLatestPaymentFoundationRuntimeTraceFromAdmin();
     return state.admin.developerDiagnostics.paymentRuntimeTrace;
+  }
+  if (suite === PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID) {
+    await loadLatestPaymentWorkspaceAcceptanceRuntimeTraceFromAdmin();
+    return state.admin.developerDiagnostics.paymentWorkspaceRuntimeTrace;
   }
   if (suite === RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID) {
     await loadLatestReceivableWorkspaceAcceptanceRuntimeTraceFromAdmin();
@@ -11616,6 +11775,386 @@ async function executePaymentFoundationRecoveryCleanupFromAdmin() {
     showToast(diagnostics.paymentRecoveryCleanupMessage, "error");
   } finally {
     diagnostics.loadingPaymentRecoveryCleanup = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadLatestPaymentWorkspaceAcceptanceRuntimeTraceFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingPaymentWorkspaceRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingPaymentWorkspaceRuntimeTrace = true;
+  diagnostics.paymentWorkspaceRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "getLatestPaymentWorkspaceAcceptanceRuntimeTrace");
+    form.append("token", state.admin.token);
+
+    const json = await postFormAction(form);
+    diagnostics.paymentWorkspaceRuntimeTrace = json.data?.trace || null;
+    if (diagnostics.paymentWorkspaceRuntimeTrace?.runId) {
+      diagnostics.paymentWorkspaceRunId =
+        diagnostics.paymentWorkspaceRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID,
+        { trace: diagnostics.paymentWorkspaceRuntimeTrace }
+      );
+    }
+    if (!diagnostics.paymentWorkspaceRuntimeTrace) {
+      diagnostics.paymentWorkspaceRuntimeTraceError =
+        "No persistent Payment Workspace trace found";
+    }
+  } catch (err) {
+    diagnostics.paymentWorkspaceRuntimeTrace = null;
+    diagnostics.paymentWorkspaceRuntimeTraceError =
+      err.message || "Payment Workspace trace unavailable";
+    showToast(diagnostics.paymentWorkspaceRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingPaymentWorkspaceRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadPaymentWorkspaceAcceptanceProgressFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingPaymentWorkspaceRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingPaymentWorkspaceRuntimeTrace = true;
+  diagnostics.paymentWorkspaceRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const runId = getPaymentWorkspaceAcceptanceRunIdInputValue();
+    const form = new URLSearchParams();
+    form.append("action", "getPaymentWorkspaceAcceptanceDiagnosticProgress");
+    form.append("token", state.admin.token);
+    if (runId) {
+      form.append("runId", runId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.paymentWorkspaceRuntimeTrace = json.data?.progress || null;
+    if (diagnostics.paymentWorkspaceRuntimeTrace?.runId) {
+      diagnostics.paymentWorkspaceRunId =
+        diagnostics.paymentWorkspaceRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID,
+        { trace: diagnostics.paymentWorkspaceRuntimeTrace }
+      );
+    }
+    if (!diagnostics.paymentWorkspaceRuntimeTrace) {
+      diagnostics.paymentWorkspaceRuntimeTraceError =
+        "No persistent Payment Workspace progress found";
+    }
+  } catch (err) {
+    diagnostics.paymentWorkspaceRuntimeTrace = null;
+    diagnostics.paymentWorkspaceRuntimeTraceError =
+      err.message || "Payment Workspace progress unavailable";
+    showToast(diagnostics.paymentWorkspaceRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingPaymentWorkspaceRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function auditPaymentWorkspaceAcceptanceRecoveryFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingPaymentWorkspaceRecoveryAudit) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingPaymentWorkspaceRecoveryAudit = true;
+  diagnostics.paymentWorkspaceRecoveryError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const runId = getPaymentWorkspaceAcceptanceRunIdInputValue();
+    const form = new URLSearchParams();
+    form.append("action", "auditPaymentWorkspaceAcceptanceRecovery");
+    form.append("token", state.admin.token);
+    if (runId) {
+      form.append("runId", runId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.paymentWorkspaceRecoveryAudit = json.data?.recovery || null;
+    if (diagnostics.paymentWorkspaceRecoveryAudit?.runId) {
+      diagnostics.paymentWorkspaceRunId =
+        diagnostics.paymentWorkspaceRecoveryAudit.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID,
+        { recovery: diagnostics.paymentWorkspaceRecoveryAudit }
+      );
+      const cleanupStatus = normalizeDeveloperDiagnosticStatus(
+        diagnostics.paymentWorkspaceRecoveryAudit.cleanupStatus
+      );
+      if (cleanupStatus && cleanupStatus !== "RUNNING") {
+        diagnostics.paymentWorkspaceRecoveryCleanupTimeoutRunId = "";
+      }
+    }
+    if (!diagnostics.paymentWorkspaceRecoveryAudit) {
+      diagnostics.paymentWorkspaceRecoveryError =
+        "No Payment Workspace recovery manifest found";
+    }
+  } catch (err) {
+    diagnostics.paymentWorkspaceRecoveryError =
+      err.message || "Payment Workspace recovery audit unavailable";
+    showToast(diagnostics.paymentWorkspaceRecoveryError, "error");
+  } finally {
+    diagnostics.loadingPaymentWorkspaceRecoveryAudit = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+function confirmPaymentWorkspaceAcceptanceRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (
+    diagnostics.runningSuite ||
+    diagnostics.loadingPaymentWorkspaceRecoveryAudit ||
+    diagnostics.loadingPaymentWorkspaceRecoveryCleanup
+  ) {
+    return;
+  }
+
+  const runId = getPaymentWorkspaceAcceptanceRunIdInputValue();
+  if (!runId) {
+    showToast("Enter the exact Payment Workspace runId before cleanup.", "warning");
+    return;
+  }
+  if (
+    diagnostics.paymentWorkspaceRecoveryCleanupTimeoutRunId &&
+    diagnostics.paymentWorkspaceRecoveryCleanupTimeoutRunId === runId
+  ) {
+    showToast(
+      "Cleanup may still be running. Check Payment Workspace Recovery Status before retrying.",
+      "warning"
+    );
+    return;
+  }
+  diagnostics.paymentWorkspaceRecoveryCleanupRunId = runId;
+
+  confirmSheet.setAttribute(
+    "aria-labelledby",
+    "paymentWorkspaceRecoveryCleanupConfirmTitle"
+  );
+  confirmSheet.classList.add("developer-diagnostic-confirm-sheet");
+  confirmSheet.innerHTML = `
+    <h3 id="paymentWorkspaceRecoveryCleanupConfirmTitle">Cleanup Payment Workspace Run</h3>
+    <div class="display-inventory-help">
+      TEST-only exact cleanup for run ${esc(runId)}. It deletes only exact tracked TEST-DIAG Payment, Bill, Customer, Contact, and fixture records for this run. It does not roll back Bill number sequences and does not refresh Workspace automatically.
+    </div>
+    <label class="display-inventory-help" for="paymentWorkspaceRecoveryCleanupConfirmation">
+      Type CLEANUP_TEST_DIAG_PAYMENT_WORKSPACE_RUN to confirm.
+    </label>
+    <input id="paymentWorkspaceRecoveryCleanupConfirmation"
+      type="text"
+      autocomplete="off"
+      style="width:100%;max-width:520px"
+      placeholder="CLEANUP_TEST_DIAG_PAYMENT_WORKSPACE_RUN"
+      oninput="updatePaymentWorkspaceAcceptanceCleanupButtonState()">
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closePaymentWorkspaceAcceptanceRecoveryCleanupConfirmation()">
+        Cancel
+      </button>
+      <button id="paymentWorkspaceRecoveryCleanupSubmit"
+        class="btn btn-danger"
+        type="button"
+        disabled
+        onclick="executePaymentWorkspaceAcceptanceRecoveryCleanupFromAdmin()">
+        Cleanup Payment Workspace Run
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+  updatePaymentWorkspaceAcceptanceCleanupButtonState();
+}
+
+function updatePaymentWorkspaceAcceptanceCleanupButtonState() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const button = document.getElementById("paymentWorkspaceRecoveryCleanupSubmit");
+  if (!button) return;
+  const confirmation = String(
+    document.getElementById("paymentWorkspaceRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  const runId = String(
+    diagnostics.paymentWorkspaceRecoveryCleanupRunId || ""
+  ).trim();
+  button.disabled = !runId ||
+    confirmation !== "CLEANUP_TEST_DIAG_PAYMENT_WORKSPACE_RUN" ||
+    !!diagnostics.loadingPaymentWorkspaceRecoveryCleanup;
+}
+
+function closePaymentWorkspaceAcceptanceRecoveryCleanupConfirmation() {
+  const diagnostics = state.admin.developerDiagnostics;
+  diagnostics.paymentWorkspaceRecoveryCleanupRunId = "";
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  confirmSheet.classList.remove("developer-diagnostic-confirm-sheet");
+  closeOverlay(confirmSheet);
+}
+
+function updatePaymentWorkspaceAcceptanceCardAfterRecoveryCleanup(cleanup) {
+  const diagnostics = state.admin.developerDiagnostics;
+  const cleanupStatus = String(cleanup && cleanup.status || "FAIL")
+    .trim()
+    .toUpperCase();
+  const cleanupSummary = String(cleanup && cleanup.summary || "").trim();
+  const current =
+    diagnostics.results[PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID] || {
+      suite: PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID,
+      status: cleanupStatus === "PASS" ? "PARTIAL" : "FAIL",
+      checks: []
+    };
+  const checks = Array.isArray(current.checks) ? current.checks.slice() : [];
+  const nextCheck = {
+    name: "payment_workspace_recovery_cleanup",
+    status: cleanupStatus,
+    summary: cleanupSummary || "Payment Workspace recovery cleanup completed"
+  };
+  const index = checks.findIndex(check => check.name === nextCheck.name);
+  if (index === -1) {
+    checks.push(nextCheck);
+  } else {
+    checks[index] = nextCheck;
+  }
+  current.checks = checks;
+  current.cleanup = {
+    required: true,
+    status: cleanupStatus
+  };
+  if (cleanupStatus !== "PASS") {
+    current.status = "FAIL";
+  } else if (!current.status || current.status === "NOT_RUN") {
+    current.status = "PARTIAL";
+  }
+  diagnostics.results[PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID] = current;
+}
+
+async function executePaymentWorkspaceAcceptanceRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingPaymentWorkspaceRecoveryCleanup) return;
+
+  const runId = String(
+    diagnostics.paymentWorkspaceRecoveryCleanupRunId || ""
+  ).trim();
+  const confirmation = String(
+    document.getElementById("paymentWorkspaceRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  if (!runId) {
+    showToast("Payment Workspace cleanup runId is required", "warning");
+    return;
+  }
+  if (confirmation !== "CLEANUP_TEST_DIAG_PAYMENT_WORKSPACE_RUN") {
+    showToast(
+      "Payment Workspace cleanup confirmation is required",
+      "warning"
+    );
+    return;
+  }
+
+  closePaymentWorkspaceAcceptanceRecoveryCleanupConfirmation();
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingPaymentWorkspaceRecoveryCleanup = true;
+  diagnostics.paymentWorkspaceRecoveryError = "";
+  diagnostics.paymentWorkspaceRecoveryCleanupMessage = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "cleanupPaymentWorkspaceAcceptanceRecovery");
+    form.append("token", state.admin.token);
+    form.append("runId", runId);
+    form.append("confirmation", confirmation);
+
+    const json = await postFormAction(form);
+    const cleanup = json.data?.cleanup || {};
+    diagnostics.paymentWorkspaceRuntimeTrace = json.data?.progress || null;
+    diagnostics.paymentWorkspaceRecoveryAudit = json.data?.recovery || null;
+    if (diagnostics.paymentWorkspaceRuntimeTrace?.runId) {
+      diagnostics.paymentWorkspaceRunId =
+        diagnostics.paymentWorkspaceRuntimeTrace.runId;
+    } else if (diagnostics.paymentWorkspaceRecoveryAudit?.runId) {
+      diagnostics.paymentWorkspaceRunId =
+        diagnostics.paymentWorkspaceRecoveryAudit.runId;
+    }
+    diagnostics.paymentWorkspaceRecoveryCleanupTimeoutRunId = "";
+    diagnostics.paymentWorkspaceRecoveryCleanupMessage =
+      `Cleanup ${cleanup.status || "-"}: ${cleanup.summary || "-"}`;
+    updatePaymentWorkspaceAcceptanceCardAfterRecoveryCleanup(cleanup);
+    reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+      PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID,
+      {
+        trace: diagnostics.paymentWorkspaceRuntimeTrace,
+        recovery: diagnostics.paymentWorkspaceRecoveryAudit,
+        cleanup
+      }
+    );
+    showToast(
+      cleanup.status === "PASS"
+        ? "Payment Workspace cleanup PASS"
+        : "Payment Workspace cleanup completed",
+      cleanup.status === "PASS" ? "success" : "warning"
+    );
+  } catch (err) {
+    const message =
+      err.message || "Payment Workspace recovery cleanup unavailable";
+    if (isDeveloperDiagnosticTimeoutMessage(message)) {
+      diagnostics.paymentWorkspaceRecoveryCleanupTimeoutRunId = runId;
+      diagnostics.paymentWorkspaceRecoveryCleanupMessage =
+        "Cleanup request timed out on the client. The backend may still be running; check Payment Workspace Recovery Status before retrying.";
+      showToast(diagnostics.paymentWorkspaceRecoveryCleanupMessage, "warning");
+    } else {
+      diagnostics.paymentWorkspaceRecoveryCleanupMessage = message;
+      diagnostics.paymentWorkspaceRecoveryError =
+        diagnostics.paymentWorkspaceRecoveryCleanupMessage;
+      showToast(diagnostics.paymentWorkspaceRecoveryCleanupMessage, "error");
+    }
+  } finally {
+    diagnostics.loadingPaymentWorkspaceRecoveryCleanup = false;
     renderDeveloperDiagnosticsSheet();
   }
 }
