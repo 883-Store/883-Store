@@ -13126,6 +13126,7 @@ async function loadLatestPaymentCorrectionWorkspaceAcceptanceRuntimeTraceFromAdm
 async function loadPaymentCorrectionWorkspaceAcceptanceProgressFromAdmin() {
   const diagnostics = state.admin.developerDiagnostics;
   if (diagnostics.loadingPaymentCorrectionWorkspaceRuntimeTrace) return;
+  const previousTrace = diagnostics.paymentCorrectionWorkspaceRuntimeTrace;
 
   if (!isDeveloperDiagnosticsAvailable()) {
     await refreshDeveloperDiagnosticsAvailability();
@@ -13153,22 +13154,25 @@ async function loadPaymentCorrectionWorkspaceAcceptanceProgressFromAdmin() {
     }
 
     const json = await postFormAction(form);
-    diagnostics.paymentCorrectionWorkspaceRuntimeTrace =
-      json.data?.progress || null;
-    if (diagnostics.paymentCorrectionWorkspaceRuntimeTrace?.runId) {
+    const progress = json.data?.progress || null;
+    if (progress) {
+      diagnostics.paymentCorrectionWorkspaceRuntimeTrace = progress;
+    }
+    if (progress?.runId) {
       diagnostics.paymentCorrectionWorkspaceRunId =
-        diagnostics.paymentCorrectionWorkspaceRuntimeTrace.runId;
+        progress.runId;
       reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
         PAYMENT_CORRECTION_WORKSPACE_ACCEPTANCE_SUITE_ID,
-        { trace: diagnostics.paymentCorrectionWorkspaceRuntimeTrace }
+        { trace: progress }
       );
     }
-    if (!diagnostics.paymentCorrectionWorkspaceRuntimeTrace) {
+    if (!progress) {
+      diagnostics.paymentCorrectionWorkspaceRuntimeTrace = previousTrace;
       diagnostics.paymentCorrectionWorkspaceRuntimeTraceError =
         "No persistent Payment Correction Workspace progress found";
     }
   } catch (err) {
-    diagnostics.paymentCorrectionWorkspaceRuntimeTrace = null;
+    diagnostics.paymentCorrectionWorkspaceRuntimeTrace = previousTrace;
     diagnostics.paymentCorrectionWorkspaceRuntimeTraceError =
       err.message || "Payment Correction Workspace progress unavailable";
     showToast(diagnostics.paymentCorrectionWorkspaceRuntimeTraceError, "error");
