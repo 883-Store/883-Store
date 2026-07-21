@@ -17409,6 +17409,18 @@ function getFinanceLegalDetailReadableError(error) {
   if (/Payment identity mismatch/i.test(message)) {
     return "ข้อมูลการชำระเงินไม่ตรงกับรายการที่เลือก";
   }
+  if (/Payment Correction not found/i.test(message)) {
+    return "ไม่พบรายการแก้ไขการชำระเงินที่เลือก";
+  }
+  if (/correctionId is required/i.test(message)) {
+    return "ไม่มีรหัสรายการแก้ไขการชำระเงินสำหรับเปิดรายละเอียด";
+  }
+  if (/Malformed Payment Correction detail response/i.test(message)) {
+    return "รูปแบบข้อมูลรายการแก้ไขการชำระเงินไม่ถูกต้อง";
+  }
+  if (/Payment Correction identity mismatch/i.test(message)) {
+    return "ข้อมูลรายการแก้ไขการชำระเงินไม่ตรงกับรายการที่เลือก";
+  }
   if (message.includes(t("connectionSlowRetry", "การเชื่อมต่อช้าเกินไป กรุณาลองใหม่อีกครั้ง"))) {
     return t("connectionSlowRetry", "การเชื่อมต่อช้าเกินไป กรุณาลองใหม่อีกครั้ง");
   }
@@ -17468,6 +17480,9 @@ function getFinanceLegalDetailStatus(detail) {
   if (detail.type === "payment" && detail.data) {
     return detail.data.payment?.status || "";
   }
+  if (detail.type === "payment_correction" && detail.data) {
+    return detail.data.correctionType || "";
+  }
   return "";
 }
 
@@ -17480,6 +17495,9 @@ function getFinanceLegalDetailSubtitle(detail) {
   }
   if (detail.type === "payment") {
     return "รายละเอียดการชำระเงิน | ดูอย่างเดียว";
+  }
+  if (detail.type === "payment_correction") {
+    return "รายละเอียดรายการแก้ไขการชำระเงิน | ดูอย่างเดียว";
   }
   return "รายละเอียด | ดูอย่างเดียว";
 }
@@ -17499,6 +17517,9 @@ function renderFinanceLegalDetailBody(detail) {
   }
   if (detail.type === "payment" && detail.data) {
     return renderPaymentReadOnlyDetail(detail.data);
+  }
+  if (detail.type === "payment_correction" && detail.data) {
+    return renderPaymentCorrectionReadOnlyDetail(detail.data);
   }
   return renderFinanceLegalDetailEmpty("ยังไม่มีข้อมูลรายละเอียด");
 }
@@ -17581,6 +17602,9 @@ function getFinanceLegalDetailTitle(type, data, fallback) {
   }
   if (type === "payment") {
     return data?.payment?.paymentId || fallback || "การชำระเงิน";
+  }
+  if (type === "payment_correction") {
+    return data?.correctionId || fallback || "รายการแก้ไขการชำระเงิน";
   }
   return fallback || "รายละเอียด";
 }
@@ -17680,10 +17704,27 @@ async function fetchPaymentDetailById(paymentId) {
   };
 }
 
+async function fetchPaymentCorrectionDetailById(correctionId) {
+  const form = new URLSearchParams();
+  form.append("action", "getPaymentCorrection");
+  form.append("token", state.admin.token);
+  form.append("correctionId", correctionId);
+  const json = await postFormAction(form);
+  const correction = json?.data?.correction;
+  if (!correction || !correction.correctionId) {
+    throw new Error("Malformed Payment Correction detail response");
+  }
+  if (String(correction.correctionId || "").trim() !== String(correctionId || "").trim()) {
+    throw new Error("Payment Correction identity mismatch");
+  }
+  return correction;
+}
+
 async function fetchFinanceLegalDetailByType(type, recordId) {
   if (type === "bill") return fetchBillDetailById(recordId);
   if (type === "receivable") return fetchReceivableDetailByBillId(recordId);
   if (type === "payment") return fetchPaymentDetailById(recordId);
+  if (type === "payment_correction") return fetchPaymentCorrectionDetailById(recordId);
   throw new Error("Unsupported detail type");
 }
 
@@ -17725,7 +17766,9 @@ async function openFinanceLegalDetail(type, recordId, context = {}) {
       ? "Workspace row ไม่มีรหัส Bill สำหรับเปิดยอดค้างรับ"
       : normalizedType === "payment"
         ? "Workspace row ไม่มีรหัสการชำระเงินสำหรับเปิดรายละเอียด"
-        : "Workspace row ไม่มีรหัสใบแจ้งหนี้สำหรับเปิดรายละเอียด");
+        : normalizedType === "payment_correction"
+          ? "ไม่มีรหัสรายการแก้ไขการชำระเงินสำหรับเปิดรายละเอียด"
+          : "Workspace row ไม่มีรหัสใบแจ้งหนี้สำหรับเปิดรายละเอียด");
   detail.data = null;
   detail.pendingKey = detail.loading ? targetKey : "";
   detail.requestId += 1;
@@ -17785,6 +17828,10 @@ async function openFinanceLegalReceivableDetail(billId, context = {}) {
 
 async function openFinanceLegalPaymentDetail(paymentId, context = {}) {
   return openFinanceLegalDetail("payment", paymentId, context);
+}
+
+async function openFinanceLegalPaymentCorrectionDetail(correctionId, context = {}) {
+  return openFinanceLegalDetail("payment_correction", correctionId, context);
 }
 
 async function openRelatedFinanceLegalDetail(type, recordId, title) {
@@ -18113,6 +18160,150 @@ function renderPaymentRelatedDocumentsCard(payment) {
           ${renderFinanceLegalDetailLinkButton("receivable", billId, billId, "เปิดรายละเอียด")}
         </div>
       </div>
+    </div>
+  `);
+}
+
+function getPaymentCorrectionTypeLabel(type) {
+  const key = String(type || "").trim().toUpperCase();
+  if (key === "REVERSAL") return "ย้อนผลการชำระเงิน";
+  return type || "-";
+}
+
+function renderPaymentCorrectionReadOnlyDetail(correction) {
+  return `
+    ${renderPaymentCorrectionHeaderCard(correction)}
+    ${renderPaymentCorrectionInformationCard(correction)}
+    ${renderPaymentCorrectionEffectiveStateCard()}
+    ${renderPaymentCorrectionPaymentReferenceCard(correction)}
+    ${renderPaymentCorrectionBillReferenceCard(correction)}
+    ${renderPaymentCorrectionReceivableReferenceCard(correction)}
+    ${renderPaymentCorrectionCustomerCard(correction)}
+    ${renderPaymentCorrectionReceiptContextCard()}
+  `;
+}
+
+function renderPaymentCorrectionHeaderCard(correction) {
+  return renderFinanceLegalDetailCard("รายการแก้ไขการชำระเงิน", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("รหัสรายการแก้ไข", correction.correctionId)}
+      ${renderFinanceLegalDetailField("ประเภทการแก้ไข", getPaymentCorrectionTypeLabel(correction.correctionType))}
+      ${renderFinanceLegalDetailField("Correction type", correction.correctionType || "-")}
+      ${renderFinanceLegalDetailField("ดูอย่างเดียว", "ไม่มีปุ่มแก้ไข / ลบ / ย้อนผลซ้ำ / คืนสถานะ / ออกเอกสาร")}
+    </div>
+  `);
+}
+
+function renderPaymentCorrectionInformationCard(correction) {
+  return renderFinanceLegalDetailCard("ข้อมูลรายการแก้ไข", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("เหตุผลการแก้ไข", correction.reason || "-")}
+      ${renderFinanceLegalDetailField("วันที่แก้ไข", correction.correctedAt, { date: true })}
+      ${renderFinanceLegalDetailField("ผู้ดำเนินการ", correction.correctedBy || "-")}
+      ${correction.requestId ? renderFinanceLegalDetailField("Request ID", correction.requestId) : ""}
+    </div>
+  `);
+}
+
+function renderPaymentCorrectionEffectiveStateCard() {
+  return renderFinanceLegalDetailCard("ผลต่อยอดค้างรับ", `
+    <div class="finance-legal-detail-list">
+      <div class="finance-legal-detail-reference">
+        <div class="business-dashboard-list-head">
+          <div class="business-dashboard-list-title">การชำระเงินเดิมยังถูกเก็บไว้</div>
+          <span class="status-badge compact status-neutral">CONFIRMED ที่จัดเก็บ</span>
+        </div>
+        <div class="finance-legal-detail-related-note">
+          รายการแก้ไขนี้ทำให้การชำระเงินเดิมไม่มีผลต่อยอดค้างรับ
+        </div>
+      </div>
+      <div class="finance-legal-detail-reference">
+        <div class="business-dashboard-list-head">
+          <div class="business-dashboard-list-title">เปิดยอดค้างรับอีกครั้ง</div>
+          <span class="status-badge compact status-pending">ไม่มีผลต่อยอดค้างรับ</span>
+        </div>
+        <div class="finance-legal-detail-related-note">
+          ยอดค้างรับอาจถูกเปิดกลับมาอีกครั้งตามสถานะ Receivable ที่เกี่ยวข้อง
+        </div>
+      </div>
+    </div>
+  `);
+}
+
+function renderPaymentCorrectionPaymentReferenceCard(correction) {
+  const paymentId = String(correction?.paymentId || "").trim();
+  if (!paymentId) {
+    return renderFinanceLegalDetailCard("การชำระเงินต้นทาง", renderFinanceLegalDetailEmpty("ไม่มี canonical Payment ID สำหรับเปิดรายละเอียด"));
+  }
+  return renderFinanceLegalDetailCard("การชำระเงินต้นทาง", `
+    <div class="finance-legal-detail-reference">
+      <div class="business-dashboard-list-head">
+        <div class="business-dashboard-list-title">การชำระเงินเดิมยังถูกเก็บไว้</div>
+        <span class="status-badge compact status-neutral">อ่านอย่างเดียว</span>
+      </div>
+      <div class="business-dashboard-list-meta">${esc(paymentId)}</div>
+      <div class="finance-legal-detail-related-note">
+        ${renderFinanceLegalDetailLinkButton("payment", paymentId, paymentId, "เปิดรายละเอียด")}
+      </div>
+    </div>
+  `);
+}
+
+function renderPaymentCorrectionBillReferenceCard(correction) {
+  const billId = String(correction?.billId || "").trim();
+  if (!billId) {
+    return renderFinanceLegalDetailCard("ใบแจ้งหนี้ที่เกี่ยวข้อง", renderFinanceLegalDetailEmpty("ไม่มี canonical Bill ID สำหรับเปิดรายละเอียด"));
+  }
+  return renderFinanceLegalDetailCard("ใบแจ้งหนี้ที่เกี่ยวข้อง", `
+    <div class="finance-legal-detail-reference">
+      <div class="business-dashboard-list-head">
+        <div class="business-dashboard-list-title">ใบแจ้งหนี้ที่เกี่ยวข้อง</div>
+        <span class="status-badge compact status-neutral">อ่านอย่างเดียว</span>
+      </div>
+      <div class="business-dashboard-list-meta">${esc(billId)}</div>
+      <div class="finance-legal-detail-related-note">
+        ${renderFinanceLegalDetailLinkButton("bill", billId, billId, "เปิดรายละเอียด")}
+      </div>
+    </div>
+  `);
+}
+
+function renderPaymentCorrectionReceivableReferenceCard(correction) {
+  const billId = String(correction?.billId || "").trim();
+  if (!billId) {
+    return renderFinanceLegalDetailCard("ยอดค้างรับที่เกี่ยวข้อง", renderFinanceLegalDetailEmpty("ไม่มี canonical Bill ID สำหรับเปิดยอดค้างรับ"));
+  }
+  return renderFinanceLegalDetailCard("ยอดค้างรับที่เกี่ยวข้อง", `
+    <div class="finance-legal-detail-reference">
+      <div class="business-dashboard-list-head">
+        <div class="business-dashboard-list-title">ยอดค้างรับที่เกี่ยวข้อง</div>
+        <span class="status-badge compact status-neutral">เปิดจาก Bill ID</span>
+      </div>
+      <div class="business-dashboard-list-meta">${esc(billId)}</div>
+      <div class="finance-legal-detail-related-note">
+        ยอดค้างรับอาจถูกเปิดกลับมาอีกครั้งหลังการย้อนผลการชำระเงิน
+      </div>
+      <div class="finance-legal-detail-related-note">
+        ${renderFinanceLegalDetailLinkButton("receivable", billId, billId, "เปิดรายละเอียด")}
+      </div>
+    </div>
+  `);
+}
+
+function renderPaymentCorrectionCustomerCard(correction) {
+  return renderFinanceLegalDetailCard("ลูกค้าที่เกี่ยวข้อง", `
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("รหัสลูกค้า", correction.customerId || "-")}
+    </div>
+    <div class="finance-legal-detail-related-note">ไม่ค้นหาข้อมูลลูกค้าเพิ่มเติมใน Payment Correction Detail P0</div>
+  `);
+}
+
+function renderPaymentCorrectionReceiptContextCard() {
+  return renderFinanceLegalDetailCard("บริบทใบรับเงิน", `
+    ${renderFinanceLegalDetailEmpty("ยังไม่มีการเชื่อมไปยังรายละเอียดใบรับเงิน")}
+    <div class="finance-legal-detail-related-note">
+      ต้องมี Receipt ID ที่ยืนยันได้ก่อนจึงจะเปิดรายละเอียดได้
     </div>
   `);
 }
