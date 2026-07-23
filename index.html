@@ -11227,6 +11227,42 @@ function getCreditNoteFoundationCurrentRunId() {
   ).trim();
 }
 
+function isCreditNoteFoundationTerminalState(state) {
+  const status = normalizeDeveloperDiagnosticStatus(state?.status);
+  return ["PASS", "COMPLETE", "FAIL", "FAILED", "TIMEOUT", "ABORTED"].includes(status);
+}
+
+function getCreditNoteFoundationCanonicalState(trace, recovery, currentRunId) {
+  if (!trace) return recovery || {};
+  if (!recovery) return trace || {};
+
+  const traceRunId = String(trace.runId || "").trim();
+  const recoveryRunId = String(recovery.runId || "").trim();
+  const visibleRunId = String(currentRunId || "").trim();
+
+  if (traceRunId && recoveryRunId && traceRunId !== recoveryRunId) {
+    if (visibleRunId === recoveryRunId) return recovery;
+    if (visibleRunId === traceRunId) return trace;
+    return trace;
+  }
+
+  const traceTerminal = isCreditNoteFoundationTerminalState(trace);
+  const recoveryTerminal = isCreditNoteFoundationTerminalState(recovery);
+  if (recoveryTerminal && !traceTerminal) return recovery;
+  if (traceTerminal && !recoveryTerminal) return trace;
+  if (recoveryTerminal) return recovery;
+  return trace;
+}
+
+function formatCreditNoteFoundationNoSettlementEvidence(state) {
+  if (!state || !state.runId) return "";
+  const results = state.noSettlementMutationResults;
+  if (results && typeof results === "object" && Object.keys(results).length) {
+    return JSON.stringify(results);
+  }
+  return "No-settlement evidence is not available from the selected Runtime/Recovery state.";
+}
+
 function renderCreditNoteFoundationRuntimeRecoveryPanel() {
   const diagnostics = state.admin.developerDiagnostics;
   const trace = diagnostics.creditNoteRuntimeTrace;
@@ -11243,11 +11279,14 @@ function renderCreditNoteFoundationRuntimeRecoveryPanel() {
     ? Object.keys(recoverySummary)
         .map(key => {
           const item = recoverySummary[key] || {};
-          return `${key}: ${Number(item.exists || 0)} exists / ${Number(item.missing || 0)} missing`;
+          const label = key === "creditNoteRequests"
+            ? "Credit Note request IDs"
+            : key;
+          return `${label}: ${Number(item.exists || 0)} exists / ${Number(item.missing || 0)} missing`;
         })
         .join(" | ")
     : "";
-  const canonical = trace || recovery || {};
+  const canonical = getCreditNoteFoundationCanonicalState(trace, recovery, runId);
   const canonicalText = canonical.creditNoteId || canonical.taxInvoiceId
     ? [
         `Credit Note: ${canonical.creditNoteId || "-"}`,
@@ -11258,9 +11297,7 @@ function renderCreditNoteFoundationRuntimeRecoveryPanel() {
         `Expected: ${canonical.expectedStatus || "-"}`
       ].join(" | ")
     : "";
-  const noSettlementText = canonical.noSettlementMutationResults
-    ? JSON.stringify(canonical.noSettlementMutationResults)
-    : "";
+  const noSettlementText = formatCreditNoteFoundationNoSettlementEvidence(canonical);
 
   return `
     <div class="diagnostic-check-row">
