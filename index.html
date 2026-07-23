@@ -6674,6 +6674,13 @@ Object.assign(window, {
   confirmTaxInvoiceFoundationRecoveryCleanupFromAdmin,
   closeTaxInvoiceFoundationRecoveryCleanupConfirmation,
   executeTaxInvoiceFoundationRecoveryCleanupFromAdmin,
+  loadLatestCreditNoteFoundationRuntimeTraceFromAdmin,
+  loadCreditNoteFoundationProgressFromAdmin,
+  auditCreditNoteFoundationDiagnosticRecoveryFromAdmin,
+  confirmCreditNoteFoundationRecoveryCleanupFromAdmin,
+  updateCreditNoteFoundationCleanupButtonState,
+  closeCreditNoteFoundationRecoveryCleanupConfirmation,
+  executeCreditNoteFoundationRecoveryCleanupFromAdmin,
   loadLatestTaxInvoiceDetailWorkspaceAcceptanceRuntimeTraceFromAdmin,
   loadTaxInvoiceDetailWorkspaceAcceptanceProgressFromAdmin,
   auditTaxInvoiceDetailWorkspaceAcceptanceRecoveryFromAdmin,
@@ -7181,6 +7188,17 @@ const state = {
       taxInvoiceRecoveryError: "",
       taxInvoiceRecoveryCleanupMessage: "",
       taxInvoiceRunId: "",
+      loadingCreditNoteRuntimeTrace: false,
+      creditNoteRuntimeTrace: null,
+      creditNoteRuntimeTraceError: "",
+      loadingCreditNoteRecoveryAudit: false,
+      loadingCreditNoteRecoveryCleanup: false,
+      creditNoteRecoveryAudit: null,
+      creditNoteRecoveryError: "",
+      creditNoteRecoveryCleanupMessage: "",
+      creditNoteRecoveryCleanupRunId: "",
+      creditNoteRecoveryCleanupTimeoutRunId: "",
+      creditNoteRunId: "",
       loadingTaxInvoiceDetailIssuedWorkspaceRuntimeTrace: false,
       taxInvoiceDetailIssuedWorkspaceRuntimeTrace: null,
       taxInvoiceDetailIssuedWorkspaceRuntimeTraceError: "",
@@ -9491,6 +9509,7 @@ const RECEIPT_FOUNDATION_SUITE_ID = "receipt_foundation";
 const RECEIPT_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID = "receipt_detail_issued_workspace_acceptance";
 const RECEIPT_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID = "receipt_detail_void_workspace_acceptance";
 const TAX_INVOICE_FOUNDATION_SUITE_ID = "tax_invoice_foundation";
+const CREDIT_NOTE_FOUNDATION_SUITE_ID = "credit_note_foundation";
 const TAX_INVOICE_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID = "tax_invoice_detail_issued_workspace_acceptance";
 const TAX_INVOICE_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID = "tax_invoice_detail_void_workspace_acceptance";
 const WORKSPACE_READ_MODEL_FOUNDATION_SUITE_ID = "workspace_read_model_foundation";
@@ -9737,6 +9756,12 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     mutationDescription: "Run after Legal Identity Foundation PASS. Creates isolated TEST-DIAG Tax Invoice, Legal Identity, Bill, Receipt, and Payment fixtures, verifies issue/VOID, TINV numbering, immutable VAT/legal snapshots, exact cleanup, and retained Tax Invoice/Bill/Receipt sequence rows."
   },
   {
+    id: CREDIT_NOTE_FOUNDATION_SUITE_ID,
+    label: "Credit Note Foundation",
+    mutation: true,
+    mutationDescription: "Run after Tax Invoice Foundation PASS. Creates isolated TEST-DIAG Credit Note, Tax Invoice, Legal Identity, Bill, Customer, Contact, Order, and Product fixtures, verifies issue/VOID, CN numbering, idempotency, no-settlement mutation, persisted recovery, and defers exact cleanup."
+  },
+  {
     id: TAX_INVOICE_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID,
     label: "Tax Invoice Detail ISSUED Fixture",
     mutation: true,
@@ -9892,6 +9917,17 @@ function resetDeveloperDiagnosticsState() {
   state.admin.developerDiagnostics.taxInvoiceRecoveryError = "";
   state.admin.developerDiagnostics.taxInvoiceRecoveryCleanupMessage = "";
   state.admin.developerDiagnostics.taxInvoiceRunId = "";
+  state.admin.developerDiagnostics.loadingCreditNoteRuntimeTrace = false;
+  state.admin.developerDiagnostics.creditNoteRuntimeTrace = null;
+  state.admin.developerDiagnostics.creditNoteRuntimeTraceError = "";
+  state.admin.developerDiagnostics.loadingCreditNoteRecoveryAudit = false;
+  state.admin.developerDiagnostics.loadingCreditNoteRecoveryCleanup = false;
+  state.admin.developerDiagnostics.creditNoteRecoveryAudit = null;
+  state.admin.developerDiagnostics.creditNoteRecoveryError = "";
+  state.admin.developerDiagnostics.creditNoteRecoveryCleanupMessage = "";
+  state.admin.developerDiagnostics.creditNoteRecoveryCleanupRunId = "";
+  state.admin.developerDiagnostics.creditNoteRecoveryCleanupTimeoutRunId = "";
+  state.admin.developerDiagnostics.creditNoteRunId = "";
   state.admin.developerDiagnostics.loadingTaxInvoiceDetailIssuedWorkspaceRuntimeTrace = false;
   state.admin.developerDiagnostics.taxInvoiceDetailIssuedWorkspaceRuntimeTrace = null;
   state.admin.developerDiagnostics.taxInvoiceDetailIssuedWorkspaceRuntimeTraceError = "";
@@ -10154,6 +10190,9 @@ function renderDeveloperDiagnosticResultCard(suite) {
           : ""}
         ${suite.id === TAX_INVOICE_FOUNDATION_SUITE_ID
           ? renderTaxInvoiceFoundationRuntimeRecoveryPanel()
+          : ""}
+        ${suite.id === CREDIT_NOTE_FOUNDATION_SUITE_ID
+          ? renderCreditNoteFoundationRuntimeRecoveryPanel()
           : ""}
         ${isTaxInvoiceDetailWorkspaceAcceptanceSuite(suite.id)
           ? renderTaxInvoiceDetailWorkspaceAcceptanceRuntimeRecoveryPanel(suite.id)
@@ -11177,6 +11216,127 @@ function renderTaxInvoiceFoundationRuntimeRecoveryPanel() {
   `;
 }
 
+function getCreditNoteFoundationCurrentRunId() {
+  const diagnostics = state.admin.developerDiagnostics;
+  return String(
+    document.getElementById("creditNoteFoundationRecoveryRunId")?.value ||
+    diagnostics.creditNoteRunId ||
+    diagnostics.creditNoteRecoveryAudit?.runId ||
+    diagnostics.creditNoteRuntimeTrace?.runId ||
+    ""
+  ).trim();
+}
+
+function renderCreditNoteFoundationRuntimeRecoveryPanel() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const trace = diagnostics.creditNoteRuntimeTrace;
+  const isLoading = diagnostics.loadingCreditNoteRuntimeTrace;
+  const traceError = diagnostics.creditNoteRuntimeTraceError;
+  const recovery = diagnostics.creditNoteRecoveryAudit;
+  const isRecoveryLoading = diagnostics.loadingCreditNoteRecoveryAudit;
+  const isRecoveryCleanupLoading = diagnostics.loadingCreditNoteRecoveryCleanup;
+  const recoveryError = diagnostics.creditNoteRecoveryError;
+  const recoveryCleanupMessage = diagnostics.creditNoteRecoveryCleanupMessage;
+  const runId = getCreditNoteFoundationCurrentRunId();
+  const recoverySummary = recovery?.summary || {};
+  const recoverySummaryText = recovery
+    ? Object.keys(recoverySummary)
+        .map(key => {
+          const item = recoverySummary[key] || {};
+          return `${key}: ${Number(item.exists || 0)} exists / ${Number(item.missing || 0)} missing`;
+        })
+        .join(" | ")
+    : "";
+  const canonical = trace || recovery || {};
+  const canonicalText = canonical.creditNoteId || canonical.taxInvoiceId
+    ? [
+        `Credit Note: ${canonical.creditNoteId || "-"}`,
+        `Number: ${canonical.creditNoteNumber || "-"}`,
+        `Tax Invoice: ${canonical.taxInvoiceId || "-"}`,
+        `Bill: ${canonical.billId || "-"}`,
+        `Customer: ${canonical.customerId || "-"}`,
+        `Expected: ${canonical.expectedStatus || "-"}`
+      ].join(" | ")
+    : "";
+  const noSettlementText = canonical.noSettlementMutationResults
+    ? JSON.stringify(canonical.noSettlementMutationResults)
+    : "";
+
+  return `
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Credit Note Runtime Trace</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadLatestCreditNoteFoundationRuntimeTraceFromAdmin()">
+          ${isLoading ? "Loading..." : "Latest Credit Note Runtime Trace"}
+        </button>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadCreditNoteFoundationProgressFromAdmin()">
+          ${isLoading ? "Loading..." : "Credit Note Progress"}
+        </button>
+      </div>
+      <label class="display-inventory-help" for="creditNoteFoundationRecoveryRunId">
+        Exact runId for recovery / cleanup
+      </label>
+      <input id="creditNoteFoundationRecoveryRunId"
+        type="text"
+        autocomplete="off"
+        value="${escAttr(runId)}"
+        style="width:100%;max-width:560px"
+        placeholder="CN-RUN-...">
+      <div class="diagnostic-check-summary">
+        ${trace ? `
+          Run: ${esc(trace.runId || "-")} |
+          Status: ${esc(trace.status || "-")} |
+          Last: ${esc(trace.lastCheckpoint || trace.lastCompletedCheckpoint || "-")} |
+          Current: ${esc(trace.currentCheckpoint || "-")} |
+          Failing: ${esc(trace.failingCheckpoint || "-")} |
+          Elapsed: ${Number(trace.elapsedMs || 0)} ms |
+          Cleanup: ${esc(trace.cleanupStatus || "-")}
+          ${trace.errorMessage ? `<br>Error: ${esc(trace.errorMessage)}` : ""}
+          ${trace.recordCountSummary ? `<br>Manifest: ${esc(JSON.stringify(trace.recordCountSummary))}` : ""}
+          ${canonicalText ? `<br>Canonical: ${esc(canonicalText)}` : ""}
+          ${noSettlementText ? `<br>No-settlement: ${esc(noSettlementText)}` : ""}
+        ` : esc(traceError || "Credit Note runtime trace not loaded")}
+      </div>
+    </div>
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Credit Note Recovery Status</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isRecoveryLoading ? "disabled" : ""}
+          onclick="auditCreditNoteFoundationDiagnosticRecoveryFromAdmin()">
+          ${isRecoveryLoading ? "Checking..." : "Check Credit Note Recovery Status"}
+        </button>
+        <button class="btn btn-danger diagnostic-suite-button" type="button"
+          ${isRecoveryCleanupLoading ? "disabled" : ""}
+          onclick="confirmCreditNoteFoundationRecoveryCleanupFromAdmin()">
+          ${isRecoveryCleanupLoading ? "Cleaning..." : "Cleanup Credit Note Recovery Run"}
+        </button>
+      </div>
+      <div class="display-inventory-help">
+        TEST-only exact cleanup. Requires visible exact runId and typed confirmation. Deletes exact tracked Credit Note fixtures first, retains Credit Note/Tax Invoice/Bill/Receipt sequences, performs no Workspace refresh, and never retries automatically.
+      </div>
+      <div class="diagnostic-check-summary">
+        ${recovery ? `
+          Run: ${esc(recovery.runId || "-")} |
+          Status: ${esc(recovery.status || "-")} |
+          Cleanup: ${esc(recovery.cleanupStatus || "-")} |
+          Cleanup safe: ${recovery.cleanupSafe === false ? "NO" : "YES"} |
+          Sequence retained: ${(recovery.sequenceRetained || recovery.sequenceProtected) ? "YES" : "NO"}
+          ${recovery.ownershipStatus ? `<br>Ownership: ${esc(recovery.ownershipStatus)}` : ""}
+          ${recoverySummaryText ? `<br>${esc(recoverySummaryText)}` : ""}
+          ${canonicalText ? `<br>Canonical: ${esc(canonicalText)}` : ""}
+          ${noSettlementText ? `<br>No-settlement: ${esc(noSettlementText)}` : ""}
+          ${recoveryCleanupMessage ? `<br>${esc(recoveryCleanupMessage)}` : ""}
+        ` : esc(recoveryError || "Credit Note recovery audit not loaded")}
+      </div>
+    </div>
+  `;
+}
+
 function isTaxInvoiceDetailWorkspaceAcceptanceSuite(suiteId) {
   return !!TAX_INVOICE_DETAIL_WORKSPACE_ACCEPTANCE_CONFIGS[
     String(suiteId || "").trim()
@@ -11540,6 +11700,7 @@ function isRuntimeRecoveryDeveloperDiagnosticSuite(suiteId) {
     id === PAYMENT_CORRECTION_WORKSPACE_ACCEPTANCE_SUITE_ID ||
     id === RECEIPT_FOUNDATION_SUITE_ID ||
     id === TAX_INVOICE_FOUNDATION_SUITE_ID ||
+    id === CREDIT_NOTE_FOUNDATION_SUITE_ID ||
     isTaxInvoiceDetailWorkspaceAcceptanceSuite(id) ||
     id === WORKSPACE_READ_MODEL_FOUNDATION_SUITE_ID;
 }
@@ -12000,6 +12161,10 @@ async function loadDeveloperDiagnosticRuntimeTraceAfterTimeoutFromAdmin(suite) {
   if (suite === TAX_INVOICE_FOUNDATION_SUITE_ID) {
     await loadLatestTaxInvoiceFoundationRuntimeTraceFromAdmin();
     return state.admin.developerDiagnostics.taxInvoiceRuntimeTrace;
+  }
+  if (suite === CREDIT_NOTE_FOUNDATION_SUITE_ID) {
+    await loadLatestCreditNoteFoundationRuntimeTraceFromAdmin();
+    return state.admin.developerDiagnostics.creditNoteRuntimeTrace;
   }
   if (isTaxInvoiceDetailWorkspaceAcceptanceSuite(suite)) {
     await loadLatestTaxInvoiceDetailWorkspaceAcceptanceRuntimeTraceFromAdmin(
@@ -15652,6 +15817,379 @@ async function executeTaxInvoiceFoundationRecoveryCleanupFromAdmin() {
     showToast(diagnostics.taxInvoiceRecoveryCleanupMessage, "error");
   } finally {
     diagnostics.loadingTaxInvoiceRecoveryCleanup = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadLatestCreditNoteFoundationRuntimeTraceFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingCreditNoteRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingCreditNoteRuntimeTrace = true;
+  diagnostics.creditNoteRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "getLatestCreditNoteFoundationRuntimeTrace");
+    form.append("token", state.admin.token);
+
+    const json = await postFormAction(form);
+    diagnostics.creditNoteRuntimeTrace = json.data?.trace || null;
+    if (diagnostics.creditNoteRuntimeTrace?.runId) {
+      diagnostics.creditNoteRunId = diagnostics.creditNoteRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        CREDIT_NOTE_FOUNDATION_SUITE_ID,
+        { trace: diagnostics.creditNoteRuntimeTrace }
+      );
+    }
+    if (!diagnostics.creditNoteRuntimeTrace) {
+      diagnostics.creditNoteRuntimeTraceError =
+        "No persistent Credit Note trace found";
+    }
+  } catch (err) {
+    diagnostics.creditNoteRuntimeTrace = null;
+    diagnostics.creditNoteRuntimeTraceError =
+      err.message || "Credit Note trace unavailable";
+    showToast(diagnostics.creditNoteRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingCreditNoteRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadCreditNoteFoundationProgressFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingCreditNoteRuntimeTrace) return;
+  const previousTrace = diagnostics.creditNoteRuntimeTrace;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingCreditNoteRuntimeTrace = true;
+  diagnostics.creditNoteRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const runId = getCreditNoteFoundationCurrentRunId();
+    const form = new URLSearchParams();
+    form.append("action", "getCreditNoteFoundationDiagnosticProgress");
+    form.append("token", state.admin.token);
+    if (runId) {
+      form.append("runId", runId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    const progress = json.data?.progress || null;
+    if (progress) {
+      diagnostics.creditNoteRuntimeTrace = progress;
+    }
+    if (progress?.runId) {
+      diagnostics.creditNoteRunId = progress.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        CREDIT_NOTE_FOUNDATION_SUITE_ID,
+        { trace: progress }
+      );
+    }
+    if (!progress) {
+      diagnostics.creditNoteRuntimeTrace = previousTrace;
+      diagnostics.creditNoteRuntimeTraceError =
+        "No persistent Credit Note progress found";
+    }
+  } catch (err) {
+    diagnostics.creditNoteRuntimeTrace = previousTrace;
+    diagnostics.creditNoteRuntimeTraceError =
+      err.message || "Credit Note progress unavailable";
+    showToast(diagnostics.creditNoteRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingCreditNoteRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function auditCreditNoteFoundationDiagnosticRecoveryFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingCreditNoteRecoveryAudit) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingCreditNoteRecoveryAudit = true;
+  diagnostics.creditNoteRecoveryError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const runId = getCreditNoteFoundationCurrentRunId();
+    const form = new URLSearchParams();
+    form.append("action", "auditCreditNoteFoundationDiagnosticRecovery");
+    form.append("token", state.admin.token);
+    if (runId) {
+      form.append("runId", runId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.creditNoteRecoveryAudit = json.data?.recovery || null;
+    if (diagnostics.creditNoteRecoveryAudit?.runId) {
+      diagnostics.creditNoteRunId = diagnostics.creditNoteRecoveryAudit.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        CREDIT_NOTE_FOUNDATION_SUITE_ID,
+        { recovery: diagnostics.creditNoteRecoveryAudit }
+      );
+      const cleanupStatus = normalizeDeveloperDiagnosticStatus(
+        diagnostics.creditNoteRecoveryAudit.cleanupStatus
+      );
+      if (cleanupStatus && cleanupStatus !== "RUNNING") {
+        diagnostics.creditNoteRecoveryCleanupTimeoutRunId = "";
+      }
+    }
+    if (!diagnostics.creditNoteRecoveryAudit) {
+      diagnostics.creditNoteRecoveryError =
+        "No Credit Note recovery manifest found";
+    }
+  } catch (err) {
+    diagnostics.creditNoteRecoveryError =
+      err.message || "Credit Note recovery audit unavailable";
+    showToast(diagnostics.creditNoteRecoveryError, "error");
+  } finally {
+    diagnostics.loadingCreditNoteRecoveryAudit = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+function confirmCreditNoteFoundationRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (
+    diagnostics.runningSuite ||
+    diagnostics.loadingCreditNoteRecoveryAudit ||
+    diagnostics.loadingCreditNoteRecoveryCleanup
+  ) {
+    return;
+  }
+
+  const runId = getCreditNoteFoundationCurrentRunId();
+  if (!runId) {
+    showToast("Enter the exact Credit Note runId before cleanup.", "warning");
+    return;
+  }
+  if (
+    diagnostics.creditNoteRecoveryCleanupTimeoutRunId &&
+    diagnostics.creditNoteRecoveryCleanupTimeoutRunId === runId
+  ) {
+    showToast(
+      "Cleanup may still be running. Check Credit Note Recovery Status before retrying.",
+      "warning"
+    );
+    return;
+  }
+  diagnostics.creditNoteRecoveryCleanupRunId = runId;
+
+  confirmSheet.setAttribute(
+    "aria-labelledby",
+    "creditNoteRecoveryCleanupConfirmTitle"
+  );
+  confirmSheet.classList.add("developer-diagnostic-confirm-sheet");
+  confirmSheet.innerHTML = `
+    <h3 id="creditNoteRecoveryCleanupConfirmTitle">Cleanup Credit Note Recovery Run</h3>
+    <div class="display-inventory-help">
+      TEST-only exact cleanup for run ${esc(runId)}. It deletes only exact tracked TEST-DIAG Credit Note, Tax Invoice, Legal Identity, Bill, Customer, Contact, Order, and Product fixtures. It keeps Credit Note, Tax Invoice, Bill, and Receipt number sequence rows and does not refresh Workspace automatically.
+    </div>
+    <label class="display-inventory-help" for="creditNoteRecoveryCleanupConfirmation">
+      Type CLEANUP_TEST_DIAG_CREDIT_NOTE_FOUNDATION_RUN to confirm.
+    </label>
+    <input id="creditNoteRecoveryCleanupConfirmation"
+      type="text"
+      autocomplete="off"
+      style="width:100%;max-width:560px"
+      placeholder="CLEANUP_TEST_DIAG_CREDIT_NOTE_FOUNDATION_RUN"
+      oninput="updateCreditNoteFoundationCleanupButtonState()">
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closeCreditNoteFoundationRecoveryCleanupConfirmation()">
+        Cancel
+      </button>
+      <button id="creditNoteRecoveryCleanupSubmit"
+        class="btn btn-danger"
+        type="button"
+        disabled
+        onclick="executeCreditNoteFoundationRecoveryCleanupFromAdmin()">
+        Cleanup Credit Note Recovery Run
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+  updateCreditNoteFoundationCleanupButtonState();
+}
+
+function updateCreditNoteFoundationCleanupButtonState() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const button = document.getElementById("creditNoteRecoveryCleanupSubmit");
+  if (!button) return;
+  const confirmation = String(
+    document.getElementById("creditNoteRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  const runId = String(diagnostics.creditNoteRecoveryCleanupRunId || "")
+    .trim();
+  button.disabled = !runId ||
+    confirmation !== "CLEANUP_TEST_DIAG_CREDIT_NOTE_FOUNDATION_RUN" ||
+    !!diagnostics.loadingCreditNoteRecoveryCleanup;
+}
+
+function closeCreditNoteFoundationRecoveryCleanupConfirmation() {
+  const diagnostics = state.admin.developerDiagnostics;
+  diagnostics.creditNoteRecoveryCleanupRunId = "";
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  confirmSheet.classList.remove("developer-diagnostic-confirm-sheet");
+  closeOverlay(confirmSheet);
+}
+
+function updateCreditNoteFoundationCardAfterRecoveryCleanup(cleanup) {
+  const diagnostics = state.admin.developerDiagnostics;
+  const cleanupStatus = String(cleanup && cleanup.status || "FAIL")
+    .trim()
+    .toUpperCase();
+  const cleanupSummary = String(cleanup && cleanup.summary || "").trim();
+  const current =
+    diagnostics.results[CREDIT_NOTE_FOUNDATION_SUITE_ID] || {
+      suite: CREDIT_NOTE_FOUNDATION_SUITE_ID,
+      status: cleanupStatus === "PASS" ? "PARTIAL" : "FAIL",
+      checks: []
+    };
+  const checks = Array.isArray(current.checks) ? current.checks.slice() : [];
+  const nextCheck = {
+    name: "credit_note_recovery_cleanup",
+    status: cleanupStatus,
+    summary: cleanupSummary || "Credit Note recovery cleanup completed"
+  };
+  const index = checks.findIndex(check => check.name === nextCheck.name);
+  if (index === -1) {
+    checks.push(nextCheck);
+  } else {
+    checks[index] = nextCheck;
+  }
+  current.checks = checks;
+  current.cleanup = {
+    required: true,
+    status: cleanupStatus
+  };
+  if (cleanupStatus !== "PASS") {
+    current.status = "FAIL";
+  } else if (!current.status || current.status === "NOT_RUN") {
+    current.status = "PARTIAL";
+  }
+  diagnostics.results[CREDIT_NOTE_FOUNDATION_SUITE_ID] = current;
+}
+
+async function executeCreditNoteFoundationRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingCreditNoteRecoveryCleanup) return;
+
+  const runId = String(diagnostics.creditNoteRecoveryCleanupRunId || "").trim();
+  const confirmation = String(
+    document.getElementById("creditNoteRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  if (!runId) {
+    showToast("Credit Note cleanup runId is required", "warning");
+    return;
+  }
+  if (confirmation !== "CLEANUP_TEST_DIAG_CREDIT_NOTE_FOUNDATION_RUN") {
+    showToast("Credit Note recovery cleanup confirmation is required", "warning");
+    return;
+  }
+
+  closeCreditNoteFoundationRecoveryCleanupConfirmation();
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingCreditNoteRecoveryCleanup = true;
+  diagnostics.creditNoteRecoveryError = "";
+  diagnostics.creditNoteRecoveryCleanupMessage = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "cleanupCreditNoteFoundationDiagnosticRecovery");
+    form.append("token", state.admin.token);
+    form.append("runId", runId);
+    form.append("confirmation", confirmation);
+
+    const json = await postFormAction(form);
+    const cleanup = json.data?.cleanup || {};
+    diagnostics.creditNoteRuntimeTrace = json.data?.progress || null;
+    diagnostics.creditNoteRecoveryAudit = json.data?.recovery || null;
+    if (diagnostics.creditNoteRuntimeTrace?.runId) {
+      diagnostics.creditNoteRunId = diagnostics.creditNoteRuntimeTrace.runId;
+    } else if (diagnostics.creditNoteRecoveryAudit?.runId) {
+      diagnostics.creditNoteRunId = diagnostics.creditNoteRecoveryAudit.runId;
+    }
+    diagnostics.creditNoteRecoveryCleanupTimeoutRunId = "";
+    diagnostics.creditNoteRecoveryCleanupMessage =
+      `Cleanup ${cleanup.status || "-"}: ${cleanup.summary || "-"}`;
+    updateCreditNoteFoundationCardAfterRecoveryCleanup(cleanup);
+    reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+      CREDIT_NOTE_FOUNDATION_SUITE_ID,
+      {
+        trace: diagnostics.creditNoteRuntimeTrace,
+        recovery: diagnostics.creditNoteRecoveryAudit,
+        cleanup
+      }
+    );
+    showToast(
+      cleanup.status === "PASS"
+        ? "Credit Note cleanup PASS"
+        : "Credit Note cleanup completed",
+      cleanup.status === "PASS" ? "success" : "warning"
+    );
+  } catch (err) {
+    const message =
+      err.message || "Credit Note recovery cleanup unavailable";
+    if (isDeveloperDiagnosticTimeoutMessage(message)) {
+      diagnostics.creditNoteRecoveryCleanupTimeoutRunId = runId;
+      diagnostics.creditNoteRecoveryCleanupMessage =
+        "Cleanup request timed out on the client. The backend may still be running; check Recovery Status before retrying.";
+      showToast(diagnostics.creditNoteRecoveryCleanupMessage, "warning");
+    } else {
+      diagnostics.creditNoteRecoveryCleanupMessage = message;
+      diagnostics.creditNoteRecoveryError = message;
+      showToast(message, "error");
+    }
+  } finally {
+    diagnostics.loadingCreditNoteRecoveryCleanup = false;
     renderDeveloperDiagnosticsSheet();
   }
 }
