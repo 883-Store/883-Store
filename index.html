@@ -22688,6 +22688,9 @@ function isWorkspaceDrillDownSupported(section, row) {
   if (sectionId === "tax_invoices_voided") {
     return !!String(row?.drillDown?.taxInvoiceId || "").trim();
   }
+  if (sectionId === "credit_notes_issued" || sectionId === "credit_notes_voided") {
+    return !!String(row?.drillDown?.creditNoteId || "").trim();
+  }
   const module = String(row?.drillDown?.module || "").trim();
   return [
     "orders",
@@ -22907,6 +22910,21 @@ async function openWorkspaceDrillDown(sectionId, rowId) {
     }
     openFinanceLegalTaxInvoiceDetail(taxInvoiceId, {
       title: row?.primaryLabel || taxInvoiceId || "ใบกำกับภาษี"
+    });
+    return;
+  }
+
+  if (
+    String(sectionId || "").trim() === "credit_notes_issued" ||
+    String(sectionId || "").trim() === "credit_notes_voided"
+  ) {
+    const creditNoteId = String(drillDown.creditNoteId || "").trim();
+    if (!creditNoteId) {
+      showToast("Workspace row missing creditNoteId for Credit Note detail", "warning");
+      return;
+    }
+    openFinanceLegalCreditNoteDetail(creditNoteId, {
+      title: row?.primaryLabel || creditNoteId || "Credit Note"
     });
     return;
   }
