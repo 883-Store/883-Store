@@ -22274,12 +22274,12 @@ function renderCreditNoteIssuerSnapshotCard(creditNote) {
 function renderCreditNoteAdjustmentVatSnapshotCard(creditNote) {
   return renderFinanceLegalDetailCard("ยอดปรับลดและภาษี ณ วันที่ออกเอกสาร", `
     <div class="finance-legal-detail-money-grid">
-      ${renderFinanceLegalDetailField("Subtotal adjustment", creditNote.subtotalAdjustment, { money: true })}
-      ${renderFinanceLegalDetailField("ส่วนลดที่ปรับลด", creditNote.discountAdjustment, { money: true })}
-      ${renderFinanceLegalDetailField("ฐาน VAT ที่ปรับลด", creditNote.vatBaseAdjustment, { money: true })}
+      ${renderFinanceLegalDetailField("Subtotal adjustment", formatFinanceLegalNumber(creditNote.subtotalAdjustment))}
+      ${renderFinanceLegalDetailField("ส่วนลดที่ปรับลด", formatFinanceLegalNumber(creditNote.discountAdjustment))}
+      ${renderFinanceLegalDetailField("ฐาน VAT ที่ปรับลด", formatFinanceLegalNumber(creditNote.vatBaseAdjustment))}
       ${renderFinanceLegalDetailField("อัตรา VAT", formatTaxInvoiceVatRate(creditNote.vatRateSnapshot))}
-      ${renderFinanceLegalDetailField("VAT ที่ปรับลด", creditNote.vatAdjustment, { money: true })}
-      ${renderFinanceLegalDetailField("ยอดรวมที่ปรับลด", creditNote.totalAdjustment, { money: true })}
+      ${renderFinanceLegalDetailField("VAT ที่ปรับลด", formatFinanceLegalNumber(creditNote.vatAdjustment))}
+      ${renderFinanceLegalDetailField("ยอดรวมที่ปรับลด", formatFinanceLegalNumber(creditNote.totalAdjustment))}
     </div>
     <div class="finance-legal-detail-related-note">
       แสดงค่าที่เก็บใน Credit Note เท่านั้น ไม่มีการคำนวณใหม่ ไม่มี currency field และไม่ใช้ THB default
