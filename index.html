@@ -1745,11 +1745,12 @@ body[data-theme="cute"] .shop-subtitle{
     }
 
     .finance-legal-print-page{
+      position:relative;
       width:190mm;
       min-height:277mm;
       margin:0 auto;
       padding:0;
-      background:#fff;
+      background:transparent;
       color:#111827;
       overflow-wrap:anywhere;
     }
@@ -1763,7 +1764,61 @@ body[data-theme="cute"] .shop-subtitle{
       letter-spacing:.02em;
     }
 
+    .finance-legal-print-void-watermark{
+      position:fixed;
+      top:38%;
+      left:0;
+      right:0;
+      z-index:0;
+      color:#111827;
+      font-size:72pt;
+      font-weight:900;
+      letter-spacing:.08em;
+      text-align:center;
+      text-transform:uppercase;
+      opacity:.12;
+      transform:rotate(-18deg);
+      pointer-events:none;
+    }
+
+    .finance-legal-print-void-banner{
+      position:relative;
+      z-index:1;
+      break-inside:avoid;
+      page-break-inside:avoid;
+      margin-bottom:7mm;
+      padding:5mm;
+      border:3px solid #111827;
+      text-align:center;
+      background:#fff;
+    }
+
+    .finance-legal-print-void-banner strong{
+      display:block;
+      color:#111827;
+      font-size:34pt;
+      line-height:1;
+      letter-spacing:.08em;
+    }
+
+    .finance-legal-print-void-banner span{
+      display:block;
+      margin-top:2mm;
+      color:#111827;
+      font-size:16pt;
+      font-weight:800;
+    }
+
+    .finance-legal-print-void-banner p{
+      margin:4mm 0 0;
+      color:#111827;
+      font-size:10.5pt;
+      line-height:1.55;
+    }
+
     .finance-legal-print-header{
+      position:relative;
+      z-index:1;
       display:flex;
       justify-content:space-between;
       gap:10mm;
@@ -1784,6 +1839,8 @@ body[data-theme="cute"] .shop-subtitle{
     }
 
     .finance-legal-print-section{
+      position:relative;
+      z-index:1;
       break-inside:avoid;
       page-break-inside:avoid;
       margin:0 0 6mm;
@@ -21094,9 +21151,17 @@ const FINANCE_LEGAL_PRINT_ROOT_ID = "financeLegalPrintRoot";
 let financeLegalPrintOriginalTitle = null;
 let financeLegalPrintFallbackTimer = 0;
 
+function getTaxInvoicePrintStatus(taxInvoice) {
+  return String(taxInvoice?.status || "").trim().toUpperCase();
+}
+
+function isTaxInvoicePrintStatusSupported(status) {
+  return status === "ISSUED" || status === "VOID";
+}
+
 function isTaxInvoiceIssuedPrintPilotAvailable(detail = getFinanceLegalDetailState()) {
   const taxInvoice = detail?.data || null;
-  const status = String(taxInvoice?.status || "").trim().toUpperCase();
+  const status = getTaxInvoicePrintStatus(taxInvoice);
   return Boolean(
     detail?.open &&
     detail.type === "tax_invoice" &&
@@ -21104,7 +21169,7 @@ function isTaxInvoiceIssuedPrintPilotAvailable(detail = getFinanceLegalDetailSta
     !detail.error &&
     taxInvoice?.taxInvoiceId &&
     detail.recordId === taxInvoice.taxInvoiceId &&
-    status === "ISSUED"
+    isTaxInvoicePrintStatusSupported(status)
   );
 }
 
@@ -21124,7 +21189,7 @@ function renderFinanceLegalTaxInvoicePrintAction(detail) {
 function getLoadedTaxInvoiceIssuedForPrint() {
   const detail = getFinanceLegalDetailState();
   if (!isTaxInvoiceIssuedPrintPilotAvailable(detail)) {
-    throw new Error("Tax Invoice ISSUED detail is not ready for print.");
+    throw new Error("Tax Invoice ISSUED or VOID detail is not ready for print.");
   }
   return detail.data;
 }
@@ -21159,12 +21224,56 @@ function renderFinanceLegalPrintAmountRow(label, value, options = {}) {
   `;
 }
 
+function renderTaxInvoiceVoidPrintWatermark(taxInvoice) {
+  if (getTaxInvoicePrintStatus(taxInvoice) !== "VOID") {
+    return "";
+  }
+  return `
+    <div class="finance-legal-print-void-watermark" aria-hidden="true">VOID</div>
+  `;
+}
+
+function renderTaxInvoiceVoidPrintTreatment(taxInvoice) {
+  if (getTaxInvoicePrintStatus(taxInvoice) !== "VOID") {
+    return "";
+  }
+  return `
+    <section class="finance-legal-print-void-banner">
+      <strong>VOID</strong>
+      <span>ยกเลิก</span>
+      <p>
+        ${esc("เอกสารนี้ถูกยกเลิกแล้ว เลขที่เอกสารเดิมยังคงอยู่ และข้อมูล Snapshot ของเอกสารเดิมยังคงแสดงเพื่อการอ้างอิง")}
+      </p>
+    </section>
+  `;
+}
+
+function renderTaxInvoiceVoidPrintMetadata(taxInvoice) {
+  if (getTaxInvoicePrintStatus(taxInvoice) !== "VOID") {
+    return "";
+  }
+  return `
+    <section class="finance-legal-print-section">
+      <h2>ข้อมูลการยกเลิก</h2>
+      <div class="finance-legal-print-grid">
+        ${renderFinanceLegalPrintField("สถานะ", taxInvoice.status || "-")}
+        ${renderFinanceLegalPrintField("วันที่ยกเลิก", taxInvoice.voidedAt, { date: true })}
+        ${renderFinanceLegalPrintField("ผู้ยกเลิก", taxInvoice.voidedBy || "-")}
+        ${renderFinanceLegalPrintField("เหตุผล", taxInvoice.voidReason || "-")}
+        ${renderFinanceLegalPrintField("เลขที่เอกสารเดิม", taxInvoice.taxInvoiceNumber || "-")}
+      </div>
+    </section>
+  `;
+}
+
 function renderTaxInvoiceIssuedPrintProjection(taxInvoice) {
   return `
+    ${renderTaxInvoiceVoidPrintWatermark(taxInvoice)}
     <div class="finance-legal-print-page" role="document">
       <div class="finance-legal-print-test-marker">
         เอกสารจากระบบ TEST — ไม่ใช่เอกสาร Production
       </div>
+      ${renderTaxInvoiceVoidPrintTreatment(taxInvoice)}
       <header class="finance-legal-print-header">
         <div>
           <h1 class="finance-legal-print-title">ใบกำกับภาษี</h1>
@@ -21219,6 +21328,7 @@ function renderTaxInvoiceIssuedPrintProjection(taxInvoice) {
           ${renderFinanceLegalPrintField("Issued by", taxInvoice.issuedBy || "-")}
         </div>
       </section>
+      ${renderTaxInvoiceVoidPrintMetadata(taxInvoice)}
     </div>
   `;
 }
@@ -21226,6 +21336,9 @@ function renderTaxInvoiceIssuedPrintProjection(taxInvoice) {
 function getTaxInvoiceIssuedPrintTitle(taxInvoice) {
   const rawId = taxInvoice?.taxInvoiceNumber || taxInvoice?.taxInvoiceId || "tax-invoice";
   const safeId = String(rawId).replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "tax-invoice";
+  if (getTaxInvoicePrintStatus(taxInvoice) === "VOID") {
+    return `TAX-INVOICE-${safeId}-VOID-TEST`;
+  }
   return `TEST-${safeId}`;
 }
 
