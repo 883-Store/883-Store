@@ -1873,6 +1873,14 @@ body[data-theme="cute"] .shop-subtitle{
       white-space:pre-wrap;
     }
 
+    .finance-legal-print-note{
+      margin:3mm 0 0;
+      color:#374151;
+      font-size:10pt;
+      line-height:1.55;
+      overflow-wrap:anywhere;
+    }
+
     .finance-legal-print-amounts{
       width:100%;
       border-collapse:collapse;
@@ -21186,10 +21194,53 @@ function renderFinanceLegalTaxInvoicePrintAction(detail) {
   `;
 }
 
+function getReceiptPrintStatus(receipt) {
+  return String(receipt?.status || "").trim().toUpperCase();
+}
+
+function isReceiptPrintStatusSupported(status) {
+  return status === "ISSUED" || status === "VOID";
+}
+
+function isReceiptPrintAvailable(detail = getFinanceLegalDetailState()) {
+  const receipt = detail?.data || null;
+  const status = getReceiptPrintStatus(receipt);
+  return Boolean(
+    detail?.open &&
+    detail.type === "receipt" &&
+    !detail.loading &&
+    !detail.error &&
+    receipt?.receiptId &&
+    detail.recordId === receipt.receiptId &&
+    isReceiptPrintStatusSupported(status)
+  );
+}
+
+function renderFinanceLegalReceiptPrintAction(detail) {
+  if (!isReceiptPrintAvailable(detail)) {
+    return "";
+  }
+  return `
+    <button class="btn btn-outline finance-legal-print-action" type="button"
+      onclick="printReceiptFromDetail()"
+      aria-label="พิมพ์เอกสารใบรับเงิน">
+      พิมพ์เอกสาร
+    </button>
+  `;
+}
+
 function getLoadedTaxInvoiceIssuedForPrint() {
   const detail = getFinanceLegalDetailState();
   if (!isTaxInvoiceIssuedPrintPilotAvailable(detail)) {
     throw new Error("Tax Invoice ISSUED or VOID detail is not ready for print.");
+  }
+  return detail.data;
+}
+
+function getLoadedReceiptForPrint() {
+  const detail = getFinanceLegalDetailState();
+  if (!isReceiptPrintAvailable(detail)) {
+    throw new Error("Receipt ISSUED or VOID detail is not ready for print.");
   }
   return detail.data;
 }
@@ -21263,6 +21314,94 @@ function renderTaxInvoiceVoidPrintMetadata(taxInvoice) {
         ${renderFinanceLegalPrintField("เลขที่เอกสารเดิม", taxInvoice.taxInvoiceNumber || "-")}
       </div>
     </section>
+  `;
+}
+
+function renderReceiptVoidPrintWatermark(receipt) {
+  if (getReceiptPrintStatus(receipt) !== "VOID") {
+    return "";
+  }
+  return `
+    <div class="finance-legal-print-void-watermark" aria-hidden="true">VOID</div>
+  `;
+}
+
+function renderReceiptVoidPrintTreatment(receipt) {
+  if (getReceiptPrintStatus(receipt) !== "VOID") {
+    return "";
+  }
+  return `
+    <section class="finance-legal-print-void-banner">
+      <strong>VOID</strong>
+      <span>ยกเลิก</span>
+      <p>
+        ${esc("ใบรับเงินนี้ถูกยกเลิกแล้ว เลขที่เอกสารเดิมยังคงอยู่ และข้อมูลเอกสารเดิมแสดงเพื่อการอ้างอิง")}
+      </p>
+    </section>
+  `;
+}
+
+function renderReceiptVoidPrintMetadata(receipt) {
+  if (getReceiptPrintStatus(receipt) !== "VOID") {
+    return "";
+  }
+  return `
+    <section class="finance-legal-print-section">
+      <h2>ข้อมูลการยกเลิก</h2>
+      <div class="finance-legal-print-grid">
+        ${renderFinanceLegalPrintField("สถานะ", receipt.status || "-")}
+        ${renderFinanceLegalPrintField("วันที่ยกเลิก", receipt.voidedAt, { date: true })}
+        ${renderFinanceLegalPrintField("ผู้ยกเลิก", receipt.voidedBy || "-")}
+        ${renderFinanceLegalPrintField("เหตุผล", receipt.voidReason || "-")}
+        ${renderFinanceLegalPrintField("เลขที่เอกสารเดิม", receipt.receiptNumber || "-")}
+      </div>
+      <p class="finance-legal-print-note">
+        ${esc("ใบรับเงินถูกยกเลิก แต่การชำระเงินไม่ได้ถูกยกเลิกโดยอัตโนมัติ")}
+      </p>
+    </section>
+  `;
+}
+
+function renderReceiptPrintProjection(receipt) {
+  return `
+    ${renderReceiptVoidPrintWatermark(receipt)}
+    <div class="finance-legal-print-page" role="document">
+      <div class="finance-legal-print-test-marker">
+        เอกสารจากระบบ TEST — ไม่ใช่เอกสาร Production
+      </div>
+      ${renderReceiptVoidPrintTreatment(receipt)}
+      <header class="finance-legal-print-header">
+        <div>
+          <h1 class="finance-legal-print-title">ใบรับเงิน</h1>
+          <div>Receipt</div>
+        </div>
+        <div class="finance-legal-print-meta">
+          ${renderFinanceLegalPrintField("เลขที่ใบรับเงิน", receipt.receiptNumber || "-")}
+          ${renderFinanceLegalPrintField("สถานะ", receipt.status || "-")}
+          ${renderFinanceLegalPrintField("วันที่ออก", receipt.issuedAt, { date: true })}
+        </div>
+      </header>
+      <section class="finance-legal-print-section">
+        <h2>ข้อมูลการออกใบรับเงิน</h2>
+        <div class="finance-legal-print-grid">
+          ${renderFinanceLegalPrintField("Receipt ID", receipt.receiptId || "-")}
+          ${renderFinanceLegalPrintField("Issued by", receipt.issuedBy || "-")}
+          ${renderFinanceLegalPrintField("Request ID", receipt.requestId || "-")}
+        </div>
+      </section>
+      <section class="finance-legal-print-section">
+        <h2>ข้อมูลอ้างอิง</h2>
+        <div class="finance-legal-print-grid">
+          ${renderFinanceLegalPrintField("Payment ID", receipt.paymentId || "-")}
+          ${renderFinanceLegalPrintField("Bill ID", receipt.billId || "-")}
+          ${renderFinanceLegalPrintField("Customer ID", receipt.customerId || "-")}
+        </div>
+        <p class="finance-legal-print-note">
+          ${esc("รหัสอ้างอิงแสดงเพื่อการติดตามเอกสารเท่านั้น")}
+        </p>
+      </section>
+      ${renderReceiptVoidPrintMetadata(receipt)}
+    </div>
   `;
 }
 
@@ -21342,6 +21481,15 @@ function getTaxInvoiceIssuedPrintTitle(taxInvoice) {
   return `TEST-${safeId}`;
 }
 
+function getReceiptPrintTitle(receipt) {
+  const rawId = receipt?.receiptNumber || receipt?.receiptId || "receipt";
+  const safeId = String(rawId).replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "receipt";
+  if (getReceiptPrintStatus(receipt) === "VOID") {
+    return `RECEIPT-${safeId}-VOID-TEST`;
+  }
+  return `RECEIPT-${safeId}-TEST`;
+}
+
 function removeFinanceLegalPrintProjection() {
   const root = document.getElementById(FINANCE_LEGAL_PRINT_ROOT_ID);
   if (root) {
@@ -21393,6 +21541,44 @@ function printTaxInvoiceIssuedFromDetail() {
   } catch (err) {
     cleanup();
     showToast(err.message || "Tax Invoice print is unavailable.", "warning");
+  }
+}
+
+function printReceiptFromDetail() {
+  let receipt;
+  try {
+    receipt = getLoadedReceiptForPrint();
+  } catch (err) {
+    showToast(err.message || "Receipt print is unavailable.", "warning");
+    return;
+  }
+
+  removeFinanceLegalPrintProjection();
+  const root = document.createElement("section");
+  root.id = FINANCE_LEGAL_PRINT_ROOT_ID;
+  root.className = "finance-legal-print-root";
+  root.setAttribute("aria-hidden", "true");
+  root.innerHTML = renderReceiptPrintProjection(receipt);
+  document.body.appendChild(root);
+  financeLegalPrintOriginalTitle = document.title;
+  document.title = getReceiptPrintTitle(receipt);
+  document.body.classList.add("finance-legal-printing");
+
+  const cleanup = () => {
+    window.removeEventListener("afterprint", cleanup);
+    removeFinanceLegalPrintProjection();
+  };
+  window.addEventListener("afterprint", cleanup, { once: true });
+  financeLegalPrintFallbackTimer = window.setTimeout(cleanup, 30000);
+
+  try {
+    if (typeof window.print !== "function") {
+      throw new Error("Browser print is unavailable.");
+    }
+    window.print();
+  } catch (err) {
+    cleanup();
+    showToast(err.message || "Receipt print is unavailable.", "warning");
   }
 }
 
@@ -21483,7 +21669,7 @@ function renderFinanceLegalDetailShell() {
   const title = detail.title || "รายละเอียด";
   const subtitle = getFinanceLegalDetailSubtitle(detail);
   const body = renderFinanceLegalDetailBody(detail);
-  const printAction = renderFinanceLegalTaxInvoicePrintAction(detail);
+  const printAction = renderFinanceLegalTaxInvoicePrintAction(detail) || renderFinanceLegalReceiptPrintAction(detail);
 
   adminDashboardSheet.innerHTML = `
     <div class="finance-legal-detail-panel">
