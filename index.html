@@ -1713,6 +1713,129 @@ body[data-theme="cute"] .shop-subtitle{
     line-height:1.6;
   }
 
+  #adminDashboardSheet .finance-legal-print-action{
+    margin-left:auto;
+  }
+
+  .finance-legal-print-root{
+    display:none;
+  }
+
+  @media print{
+    @page{
+      size:A4 portrait;
+      margin:10mm;
+    }
+
+    body.finance-legal-printing{
+      background:#fff !important;
+    }
+
+    body.finance-legal-printing > :not(.finance-legal-print-root){
+      display:none !important;
+    }
+
+    body.finance-legal-printing .finance-legal-print-root{
+      display:block !important;
+      color:#111827;
+      background:#fff;
+      font-family:"Inter","Noto Sans Thai",Arial,sans-serif;
+      font-size:11pt;
+      line-height:1.45;
+    }
+
+    .finance-legal-print-page{
+      width:190mm;
+      min-height:277mm;
+      margin:0 auto;
+      padding:0;
+      background:#fff;
+      color:#111827;
+      overflow-wrap:anywhere;
+    }
+
+    .finance-legal-print-test-marker{
+      border:1px solid #111827;
+      padding:6px 8px;
+      margin-bottom:10mm;
+      text-align:center;
+      font-weight:700;
+      letter-spacing:.02em;
+    }
+
+    .finance-legal-print-header{
+      display:flex;
+      justify-content:space-between;
+      gap:10mm;
+      border-bottom:2px solid #111827;
+      padding-bottom:5mm;
+      margin-bottom:7mm;
+    }
+
+    .finance-legal-print-title{
+      margin:0 0 3mm;
+      font-size:22pt;
+      line-height:1.1;
+    }
+
+    .finance-legal-print-meta{
+      text-align:right;
+      min-width:52mm;
+    }
+
+    .finance-legal-print-section{
+      break-inside:avoid;
+      page-break-inside:avoid;
+      margin:0 0 6mm;
+    }
+
+    .finance-legal-print-section h2{
+      margin:0 0 3mm;
+      font-size:12pt;
+      border-bottom:1px solid #D1D5DB;
+      padding-bottom:2mm;
+    }
+
+    .finance-legal-print-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:3mm 7mm;
+    }
+
+    .finance-legal-print-field span{
+      display:block;
+      color:#4B5563;
+      font-size:9pt;
+    }
+
+    .finance-legal-print-field strong{
+      display:block;
+      color:#111827;
+      font-size:10.5pt;
+      font-weight:700;
+      white-space:pre-wrap;
+    }
+
+    .finance-legal-print-amounts{
+      width:100%;
+      border-collapse:collapse;
+    }
+
+    .finance-legal-print-amounts th,
+    .finance-legal-print-amounts td{
+      border-bottom:1px solid #E5E7EB;
+      padding:2.5mm 0;
+      text-align:left;
+      vertical-align:top;
+    }
+
+    .finance-legal-print-amounts td:last-child{
+      text-align:right;
+      font-variant-numeric:tabular-nums;
+      white-space:nowrap;
+    }
+  }
+
   #adminDashboardSheet .business-dashboard-toolbar,
   #adminDashboardSheet .business-dashboard-range,
   #adminDashboardSheet .business-dashboard-panel-actions,
@@ -20967,6 +21090,199 @@ function renderFinanceLegalDetailEmpty(message) {
   return `<div class="empty-state">${esc(message || "ยังไม่มีข้อมูลในส่วนนี้")}</div>`;
 }
 
+const FINANCE_LEGAL_PRINT_ROOT_ID = "financeLegalPrintRoot";
+let financeLegalPrintOriginalTitle = null;
+let financeLegalPrintFallbackTimer = 0;
+
+function isTaxInvoiceIssuedPrintPilotAvailable(detail = getFinanceLegalDetailState()) {
+  const taxInvoice = detail?.data || null;
+  const status = String(taxInvoice?.status || "").trim().toUpperCase();
+  return Boolean(
+    detail?.open &&
+    detail.type === "tax_invoice" &&
+    !detail.loading &&
+    !detail.error &&
+    taxInvoice?.taxInvoiceId &&
+    detail.recordId === taxInvoice.taxInvoiceId &&
+    status === "ISSUED"
+  );
+}
+
+function renderFinanceLegalTaxInvoicePrintAction(detail) {
+  if (!isTaxInvoiceIssuedPrintPilotAvailable(detail)) {
+    return "";
+  }
+  return `
+    <button class="btn btn-outline finance-legal-print-action" type="button"
+      onclick="printTaxInvoiceIssuedFromDetail()"
+      aria-label="พิมพ์เอกสารใบกำกับภาษี">
+      พิมพ์เอกสาร
+    </button>
+  `;
+}
+
+function getLoadedTaxInvoiceIssuedForPrint() {
+  const detail = getFinanceLegalDetailState();
+  if (!isTaxInvoiceIssuedPrintPilotAvailable(detail)) {
+    throw new Error("Tax Invoice ISSUED detail is not ready for print.");
+  }
+  return detail.data;
+}
+
+function formatFinanceLegalPrintNumber(value) {
+  return formatFinanceLegalNumber(value);
+}
+
+function renderFinanceLegalPrintField(label, value, options = {}) {
+  const displayValue = options.date
+    ? formatThaiDate(value)
+    : options.number
+      ? formatFinanceLegalPrintNumber(value)
+      : financeLegalValue(value);
+  return `
+    <div class="finance-legal-print-field">
+      <span>${esc(label)}</span>
+      <strong>${esc(displayValue)}</strong>
+    </div>
+  `;
+}
+
+function renderFinanceLegalPrintAmountRow(label, value, options = {}) {
+  const displayValue = options.rate
+    ? formatTaxInvoiceVatRate(value)
+    : formatFinanceLegalPrintNumber(value);
+  return `
+    <tr>
+      <th scope="row">${esc(label)}</th>
+      <td>${esc(displayValue)}</td>
+    </tr>
+  `;
+}
+
+function renderTaxInvoiceIssuedPrintProjection(taxInvoice) {
+  return `
+    <div class="finance-legal-print-page" role="document">
+      <div class="finance-legal-print-test-marker">
+        เอกสารจากระบบ TEST — ไม่ใช่เอกสาร Production
+      </div>
+      <header class="finance-legal-print-header">
+        <div>
+          <h1 class="finance-legal-print-title">ใบกำกับภาษี</h1>
+          <div>Tax Invoice</div>
+        </div>
+        <div class="finance-legal-print-meta">
+          ${renderFinanceLegalPrintField("เลขที่ใบกำกับภาษี", taxInvoice.taxInvoiceNumber || "-")}
+          ${renderFinanceLegalPrintField("สถานะ", taxInvoice.status || "-")}
+          ${renderFinanceLegalPrintField("วันที่ออกเอกสาร", taxInvoice.taxInvoiceDate, { date: true })}
+        </div>
+      </header>
+      <section class="finance-legal-print-section">
+        <h2>ข้อมูลผู้ซื้อ ณ วันที่ออกเอกสาร</h2>
+        <div class="finance-legal-print-grid">
+          ${renderFinanceLegalPrintField("ชื่อนิติบุคคล", taxInvoice.buyerLegalName || "-")}
+          ${renderFinanceLegalPrintField("เลขประจำตัวผู้เสียภาษี", taxInvoice.buyerTaxId || "-")}
+          ${renderFinanceLegalPrintField("ประเภทสาขา", taxInvoice.buyerBranchType || "-")}
+          ${renderFinanceLegalPrintField("รหัสสาขา", taxInvoice.buyerBranchCode || "-")}
+          ${renderFinanceLegalPrintField("ที่อยู่ตามกฎหมาย", taxInvoice.buyerLegalAddress || "-")}
+        </div>
+      </section>
+      <section class="finance-legal-print-section">
+        <h2>ข้อมูลผู้ออก ณ วันที่ออกเอกสาร</h2>
+        <div class="finance-legal-print-grid">
+          ${renderFinanceLegalPrintField("ชื่อนิติบุคคล", taxInvoice.issuerLegalName || "-")}
+          ${renderFinanceLegalPrintField("เลขประจำตัวผู้เสียภาษี", taxInvoice.issuerTaxId || "-")}
+          ${renderFinanceLegalPrintField("ประเภทสาขา", taxInvoice.issuerBranchType || "-")}
+          ${renderFinanceLegalPrintField("รหัสสาขา", taxInvoice.issuerBranchCode || "-")}
+          ${renderFinanceLegalPrintField("ที่อยู่ตามกฎหมาย", taxInvoice.issuerLegalAddress || "-")}
+        </div>
+      </section>
+      <section class="finance-legal-print-section">
+        <h2>ยอดและภาษีที่จัดเก็บในเอกสาร</h2>
+        <table class="finance-legal-print-amounts">
+          <tbody>
+            ${renderFinanceLegalPrintAmountRow("Subtotal", taxInvoice.subtotal)}
+            ${renderFinanceLegalPrintAmountRow("ส่วนลดท้ายบิล", taxInvoice.billDiscountAmount)}
+            ${renderFinanceLegalPrintAmountRow("ยอดก่อน VAT", taxInvoice.netBeforeVat)}
+            ${renderFinanceLegalPrintAmountRow("อัตรา VAT", taxInvoice.vatRateSnapshot, { rate: true })}
+            ${renderFinanceLegalPrintAmountRow("VAT", taxInvoice.vatAmount)}
+            ${renderFinanceLegalPrintAmountRow("ยอดรวม", taxInvoice.grandTotal)}
+          </tbody>
+        </table>
+      </section>
+      <section class="finance-legal-print-section">
+        <h2>ข้อมูลอ้างอิง</h2>
+        <div class="finance-legal-print-grid">
+          ${renderFinanceLegalPrintField("Tax Invoice ID", taxInvoice.taxInvoiceId || "-")}
+          ${renderFinanceLegalPrintField("Bill ID", taxInvoice.billId || "-")}
+          ${renderFinanceLegalPrintField("Customer ID", taxInvoice.customerId || "-")}
+          ${renderFinanceLegalPrintField("Issued at", taxInvoice.issuedAt, { date: true })}
+          ${renderFinanceLegalPrintField("Issued by", taxInvoice.issuedBy || "-")}
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function getTaxInvoiceIssuedPrintTitle(taxInvoice) {
+  const rawId = taxInvoice?.taxInvoiceNumber || taxInvoice?.taxInvoiceId || "tax-invoice";
+  const safeId = String(rawId).replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "tax-invoice";
+  return `TEST-${safeId}`;
+}
+
+function removeFinanceLegalPrintProjection() {
+  const root = document.getElementById(FINANCE_LEGAL_PRINT_ROOT_ID);
+  if (root) {
+    root.remove();
+  }
+  document.body.classList.remove("finance-legal-printing");
+  if (financeLegalPrintOriginalTitle !== null) {
+    document.title = financeLegalPrintOriginalTitle;
+    financeLegalPrintOriginalTitle = null;
+  }
+  if (financeLegalPrintFallbackTimer) {
+    window.clearTimeout(financeLegalPrintFallbackTimer);
+    financeLegalPrintFallbackTimer = 0;
+  }
+}
+
+function printTaxInvoiceIssuedFromDetail() {
+  let taxInvoice;
+  try {
+    taxInvoice = getLoadedTaxInvoiceIssuedForPrint();
+  } catch (err) {
+    showToast(err.message || "Tax Invoice print is unavailable.", "warning");
+    return;
+  }
+
+  removeFinanceLegalPrintProjection();
+  const root = document.createElement("section");
+  root.id = FINANCE_LEGAL_PRINT_ROOT_ID;
+  root.className = "finance-legal-print-root";
+  root.setAttribute("aria-hidden", "true");
+  root.innerHTML = renderTaxInvoiceIssuedPrintProjection(taxInvoice);
+  document.body.appendChild(root);
+  financeLegalPrintOriginalTitle = document.title;
+  document.title = getTaxInvoiceIssuedPrintTitle(taxInvoice);
+  document.body.classList.add("finance-legal-printing");
+
+  const cleanup = () => {
+    window.removeEventListener("afterprint", cleanup);
+    removeFinanceLegalPrintProjection();
+  };
+  window.addEventListener("afterprint", cleanup, { once: true });
+  financeLegalPrintFallbackTimer = window.setTimeout(cleanup, 30000);
+
+  try {
+    if (typeof window.print !== "function") {
+      throw new Error("Browser print is unavailable.");
+    }
+    window.print();
+  } catch (err) {
+    cleanup();
+    showToast(err.message || "Tax Invoice print is unavailable.", "warning");
+  }
+}
+
 function getFinanceLegalDetailStatus(detail) {
   if (detail.type === "bill" && detail.data) {
     return detail.data.status || "";
@@ -21054,6 +21370,7 @@ function renderFinanceLegalDetailShell() {
   const title = detail.title || "รายละเอียด";
   const subtitle = getFinanceLegalDetailSubtitle(detail);
   const body = renderFinanceLegalDetailBody(detail);
+  const printAction = renderFinanceLegalTaxInvoicePrintAction(detail);
 
   adminDashboardSheet.innerHTML = `
     <div class="finance-legal-detail-panel">
@@ -21068,6 +21385,7 @@ function renderFinanceLegalDetailShell() {
           <h3 id="adminDashboardSheetTitle">${esc(title)}</h3>
           <div class="business-dashboard-subtitle">${esc(subtitle)}</div>
         </div>
+        ${printAction}
         <button class="btn btn-outline" type="button"
           onclick="closeFinanceLegalDetailSheet()"
           aria-label="ปิดรายละเอียด">
