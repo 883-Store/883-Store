@@ -6815,6 +6815,14 @@ Object.assign(window, {
   confirmBillFoundationRecoveryCleanupFromAdmin,
   closeBillFoundationRecoveryCleanupConfirmation,
   executeBillFoundationRecoveryCleanupFromAdmin,
+  loadLatestBillDetailWorkspaceAcceptanceRuntimeTraceFromAdmin,
+  loadBillDetailWorkspaceAcceptanceProgressFromAdmin,
+  auditBillDetailWorkspaceAcceptanceRecoveryFromAdmin,
+  confirmBillDetailWorkspaceAcceptanceRecoveryCleanupFromAdmin,
+  updateBillDetailWorkspaceAcceptanceCleanupButtonState,
+  closeBillDetailWorkspaceAcceptanceRecoveryCleanupConfirmation,
+  executeBillDetailWorkspaceAcceptanceRecoveryCleanupFromAdmin,
+  openBillDetailWorkspaceAcceptanceDetailFromAdmin,
   loadLatestPaymentFoundationRuntimeTraceFromAdmin,
   loadPaymentFoundationProgressFromAdmin,
   auditPaymentFoundationDiagnosticRecoveryFromAdmin,
@@ -9718,6 +9726,8 @@ const BILL_FOUNDATION_FIXTURE_SUITE_ID = "bill_foundation_fixture";
 const BILL_FOUNDATION_DRAFT_SUITE_ID = "bill_foundation_draft";
 const BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID = "bill_foundation_draft_validation";
 const BILL_FOUNDATION_ISSUE_VOID_SUITE_ID = "bill_foundation_issue_void";
+const BILL_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID = "bill_detail_issued";
+const BILL_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID = "bill_detail_void";
 const PAYMENT_FOUNDATION_SUITE_ID = "payment_foundation";
 const PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID = "payment_workspace_acceptance_fixture";
 const RECEIVABLE_FOUNDATION_SUITE_ID = "receivable_foundation";
@@ -9735,6 +9745,51 @@ const TAX_INVOICE_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID = "tax_invoice_det
 const TAX_INVOICE_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID = "tax_invoice_detail_void_workspace_acceptance";
 const WORKSPACE_READ_MODEL_FOUNDATION_SUITE_ID = "workspace_read_model_foundation";
 const DISPLAY_UI_INTEGRATION_TEST_PREFIX = "TEST-UI-DISPLAY-";
+const BILL_DETAIL_WORKSPACE_ACCEPTANCE_CONFIGS = Object.freeze({
+  [BILL_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID]: Object.freeze({
+    suiteId: BILL_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID,
+    label: "Bill Detail ISSUED",
+    traceAction: "getLatestBillDetailIssuedWorkspaceAcceptanceRuntimeTrace",
+    progressAction: "getBillDetailIssuedWorkspaceAcceptanceDiagnosticProgress",
+    recoveryAction: "auditBillDetailIssuedWorkspaceAcceptanceRecovery",
+    cleanupAction: "cleanupBillDetailIssuedWorkspaceAcceptanceRecovery",
+    confirmation: "CLEANUP_TEST_DIAG_BILL_DETAIL_ISSUED_RUN",
+    runIdPlaceholder: "BILLDTLISS-RUN-...",
+    traceKey: "billDetailIssuedWorkspaceRuntimeTrace",
+    traceErrorKey: "billDetailIssuedWorkspaceRuntimeTraceError",
+    loadingTraceKey: "loadingBillDetailIssuedWorkspaceRuntimeTrace",
+    recoveryKey: "billDetailIssuedWorkspaceRecoveryAudit",
+    recoveryErrorKey: "billDetailIssuedWorkspaceRecoveryError",
+    loadingRecoveryKey: "loadingBillDetailIssuedWorkspaceRecoveryAudit",
+    loadingCleanupKey: "loadingBillDetailIssuedWorkspaceRecoveryCleanup",
+    cleanupMessageKey: "billDetailIssuedWorkspaceRecoveryCleanupMessage",
+    cleanupRunIdKey: "billDetailIssuedWorkspaceRecoveryCleanupRunId",
+    cleanupTimeoutRunIdKey: "billDetailIssuedWorkspaceRecoveryCleanupTimeoutRunId",
+    runIdKey: "billDetailIssuedWorkspaceRunId"
+  }),
+  [BILL_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID]: Object.freeze({
+    suiteId: BILL_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID,
+    label: "Bill Detail VOID",
+    traceAction: "getLatestBillDetailVoidWorkspaceAcceptanceRuntimeTrace",
+    progressAction: "getBillDetailVoidWorkspaceAcceptanceDiagnosticProgress",
+    recoveryAction: "auditBillDetailVoidWorkspaceAcceptanceRecovery",
+    cleanupAction: "cleanupBillDetailVoidWorkspaceAcceptanceRecovery",
+    confirmation: "CLEANUP_TEST_DIAG_BILL_DETAIL_VOID_RUN",
+    runIdPlaceholder: "BILLDTLVOID-RUN-...",
+    traceKey: "billDetailVoidWorkspaceRuntimeTrace",
+    traceErrorKey: "billDetailVoidWorkspaceRuntimeTraceError",
+    loadingTraceKey: "loadingBillDetailVoidWorkspaceRuntimeTrace",
+    recoveryKey: "billDetailVoidWorkspaceRecoveryAudit",
+    recoveryErrorKey: "billDetailVoidWorkspaceRecoveryError",
+    loadingRecoveryKey: "loadingBillDetailVoidWorkspaceRecoveryAudit",
+    loadingCleanupKey: "loadingBillDetailVoidWorkspaceRecoveryCleanup",
+    cleanupMessageKey: "billDetailVoidWorkspaceRecoveryCleanupMessage",
+    cleanupRunIdKey: "billDetailVoidWorkspaceRecoveryCleanupRunId",
+    cleanupTimeoutRunIdKey: "billDetailVoidWorkspaceRecoveryCleanupTimeoutRunId",
+    runIdKey: "billDetailVoidWorkspaceRunId"
+  })
+});
+
 const RECEIPT_DETAIL_WORKSPACE_ACCEPTANCE_CONFIGS = Object.freeze({
   [RECEIPT_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID]: Object.freeze({
     suiteId: RECEIPT_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID,
@@ -9954,6 +10009,18 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     mutation: true,
     timeoutMs: 240000,
     mutationDescription: "Run only after Bill Draft Foundation shows READY_FOR_ISSUE_VOID. Uses the shared runId manifest, verifies Issue, numbering, VOID, final cleanup, and keeps Bill sequence rows retained."
+  },
+  {
+    id: BILL_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID,
+    label: "Bill Detail ISSUED Fixture",
+    mutation: true,
+    mutationDescription: "Run only for Bill Browser Print acceptance. Creates one isolated TEST-DIAG ISSUED Bill, persists the canonical billId/billNumber/runId, and defers exact cleanup."
+  },
+  {
+    id: BILL_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID,
+    label: "Bill Detail VOID Fixture",
+    mutation: true,
+    mutationDescription: "Run only for Bill Browser Print acceptance. Creates one isolated TEST-DIAG VOID Bill, persists the canonical billId/billNumber/runId, and defers exact cleanup."
   },
   {
     id: PAYMENT_FOUNDATION_SUITE_ID,
@@ -10447,6 +10514,9 @@ function renderDeveloperDiagnosticResultCard(suite) {
           : ""}
         ${suite.id === PAYMENT_FOUNDATION_SUITE_ID
           ? renderPaymentFoundationRuntimeRecoveryPanel()
+          : ""}
+        ${isBillDetailWorkspaceAcceptanceSuite(suite.id)
+          ? renderBillDetailWorkspaceAcceptanceRuntimeRecoveryPanel(suite.id)
           : ""}
         ${suite.id === PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID
           ? renderPaymentWorkspaceAcceptanceRuntimeRecoveryPanel()
@@ -11257,6 +11327,177 @@ function renderReceiptFoundationRuntimeRecoveryPanel() {
           ${recoverySummaryText ? `<br>${esc(recoverySummaryText)}` : ""}
           ${recoveryCleanupMessage ? `<br>${esc(recoveryCleanupMessage)}` : ""}
         ` : esc(recoveryError || "Receipt recovery audit not loaded")}
+      </div>
+    </div>
+  `;
+}
+
+function isBillDetailWorkspaceAcceptanceSuite(suiteId) {
+  return !!BILL_DETAIL_WORKSPACE_ACCEPTANCE_CONFIGS[
+    String(suiteId || "").trim()
+  ];
+}
+
+function getBillDetailWorkspaceAcceptanceConfig(suiteId) {
+  return BILL_DETAIL_WORKSPACE_ACCEPTANCE_CONFIGS[
+    String(suiteId || "").trim()
+  ] || null;
+}
+
+function getBillDetailWorkspaceAcceptanceRunIdInputValue(suiteId) {
+  const config = getBillDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return "";
+  return String(
+    document.getElementById(`${config.suiteId}RecoveryRunId`)?.value || ""
+  ).trim();
+}
+
+function getBillDetailWorkspaceAcceptanceCurrentRunId(suiteId) {
+  const config = getBillDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return "";
+  const diagnostics = state.admin.developerDiagnostics;
+  return String(
+    diagnostics[config.runIdKey] ||
+    diagnostics.results?.[config.suiteId]?.runId ||
+    diagnostics[config.recoveryKey]?.runId ||
+    diagnostics[config.traceKey]?.runId ||
+    ""
+  ).trim();
+}
+
+function getBillDetailWorkspaceAcceptanceRetainedFixture(suiteId) {
+  const config = getBillDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return {};
+  const diagnostics = state.admin.developerDiagnostics;
+  return diagnostics[config.traceKey]?.retainedFixture ||
+    diagnostics[config.recoveryKey]?.retainedFixture ||
+    diagnostics.results?.[config.suiteId]?.retainedFixture ||
+    {};
+}
+
+function getBillDetailWorkspaceAcceptanceBillId(suiteId) {
+  const retainedFixture =
+    getBillDetailWorkspaceAcceptanceRetainedFixture(suiteId);
+  return String(retainedFixture?.billId || "").trim();
+}
+
+function renderBillDetailWorkspaceAcceptanceRuntimeRecoveryPanel(suiteId) {
+  const config = getBillDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return "";
+  const diagnostics = state.admin.developerDiagnostics;
+  const trace = diagnostics[config.traceKey];
+  const isLoading = diagnostics[config.loadingTraceKey];
+  const traceError = diagnostics[config.traceErrorKey];
+  const recovery = diagnostics[config.recoveryKey];
+  const isRecoveryLoading = diagnostics[config.loadingRecoveryKey];
+  const isRecoveryCleanupLoading = diagnostics[config.loadingCleanupKey];
+  const recoveryError = diagnostics[config.recoveryErrorKey];
+  const recoveryCleanupMessage = diagnostics[config.cleanupMessageKey];
+  const runId = getBillDetailWorkspaceAcceptanceCurrentRunId(suiteId);
+  const retainedFixture =
+    getBillDetailWorkspaceAcceptanceRetainedFixture(suiteId);
+  const billId = getBillDetailWorkspaceAcceptanceBillId(suiteId);
+  const recoverySummary = recovery?.summary || {};
+  const recoverySummaryText = recovery
+    ? Object.keys(recoverySummary)
+        .map(key => {
+          const item = recoverySummary[key] || {};
+          return `${key}: ${Number(item.exists || 0)} exists / ${Number(item.missing || 0)} missing`;
+        })
+        .join(" | ")
+    : "";
+  const retainedFixtureText = retainedFixture && retainedFixture.billId
+    ? [
+        `Bill: ${retainedFixture.billId || "-"}`,
+        `Number: ${retainedFixture.billNumber || "-"}`,
+        `Customer: ${retainedFixture.customerId || "-"}`,
+        `Expected bill: ${retainedFixture.expectedBillStatus || "-"}`
+      ].join(" | ")
+    : "";
+
+  return `
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>${esc(config.label)} Runtime Trace</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadLatestBillDetailWorkspaceAcceptanceRuntimeTraceFromAdmin(${toInlineJsStringLiteral(config.suiteId)})">
+          ${isLoading ? "Loading..." : `Latest ${config.label} Runtime Trace`}
+        </button>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadBillDetailWorkspaceAcceptanceProgressFromAdmin(${toInlineJsStringLiteral(config.suiteId)})">
+          ${isLoading ? "Loading..." : `${config.label} Progress`}
+        </button>
+      </div>
+      <label class="display-inventory-help" for="${escAttr(config.suiteId)}RecoveryRunId">
+        Exact runId for recovery / cleanup
+      </label>
+      <input id="${escAttr(config.suiteId)}RecoveryRunId"
+        type="text"
+        autocomplete="off"
+        value="${escAttr(runId)}"
+        style="width:100%;max-width:560px"
+        placeholder="${escAttr(config.runIdPlaceholder)}">
+      <div class="diagnostic-check-summary">
+        ${trace ? `
+          Run: ${esc(trace.runId || "-")} |
+          Status: ${esc(trace.status || "-")} |
+          Last: ${esc(trace.lastCheckpoint || trace.lastCompletedCheckpoint || "-")} |
+          Current: ${esc(trace.currentCheckpoint || "-")} |
+          Failing: ${esc(trace.failingCheckpoint || "-")} |
+          Elapsed: ${Number(trace.elapsedMs || 0)} ms |
+          Cleanup: ${esc(trace.cleanupStatus || "-")}
+          ${trace.errorMessage ? `<br>Error: ${esc(trace.errorMessage)}` : ""}
+          ${trace.recordCountSummary ? `<br>Manifest: ${esc(JSON.stringify(trace.recordCountSummary))}` : ""}
+          ${retainedFixtureText ? `<br>Retained fixture: ${esc(retainedFixtureText)}` : ""}
+        ` : esc(traceError || `${config.label} runtime trace not loaded`)}
+      </div>
+    </div>
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>${esc(config.label)} Detail</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${billId ? "" : "disabled"}
+          onclick="openBillDetailWorkspaceAcceptanceDetailFromAdmin(${toInlineJsStringLiteral(config.suiteId)})">
+          Open Bill Detail
+        </button>
+      </div>
+      <div class="diagnostic-check-summary">
+        ${billId
+          ? `Uses retained billId ${esc(billId)} from persisted TEST fixture state.`
+          : "Load Latest Runtime Trace or Recovery Status before opening detail."}
+      </div>
+    </div>
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>${esc(config.label)} Recovery Status</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isRecoveryLoading ? "disabled" : ""}
+          onclick="auditBillDetailWorkspaceAcceptanceRecoveryFromAdmin(${toInlineJsStringLiteral(config.suiteId)})">
+          ${isRecoveryLoading ? "Checking..." : `Check ${config.label} Recovery Status`}
+        </button>
+        <button class="btn btn-danger diagnostic-suite-button" type="button"
+          ${isRecoveryCleanupLoading ? "disabled" : ""}
+          onclick="confirmBillDetailWorkspaceAcceptanceRecoveryCleanupFromAdmin(${toInlineJsStringLiteral(config.suiteId)})">
+          ${isRecoveryCleanupLoading ? "Cleaning..." : `Cleanup ${config.label} Run`}
+        </button>
+      </div>
+      <div class="display-inventory-help">
+        TEST-only exact cleanup. Requires a visible runId and typed confirmation. No broad cleanup, no sequence rollback, no automatic retry, and no Workspace refresh after cleanup.
+      </div>
+      <div class="diagnostic-check-summary">
+        ${recovery ? `
+          Run: ${esc(recovery.runId || "-")} |
+          Status: ${esc(recovery.status || "-")} |
+          Cleanup: ${esc(recovery.cleanupStatus || "-")} |
+          Cleanup safe: ${recovery.cleanupSafe === false ? "NO" : "YES"} |
+          Sequence retained: ${(recovery.sequenceRetained || recovery.sequenceProtected) ? "YES" : "NO"}
+          ${recovery.ownershipStatus ? `<br>Ownership: ${esc(recovery.ownershipStatus)}` : ""}
+          ${recoverySummaryText ? `<br>${esc(recoverySummaryText)}` : ""}
+          ${retainedFixtureText ? `<br>Retained fixture: ${esc(retainedFixtureText)}` : ""}
+          ${recoveryCleanupMessage ? `<br>${esc(recoveryCleanupMessage)}` : ""}
+        ` : esc(recoveryError || `${config.label} recovery audit not loaded`)}
       </div>
     </div>
   `;
@@ -12209,6 +12450,7 @@ function isRuntimeRecoveryDeveloperDiagnosticSuite(suiteId) {
     id === RECEIPT_FOUNDATION_SUITE_ID ||
     id === TAX_INVOICE_FOUNDATION_SUITE_ID ||
     id === CREDIT_NOTE_FOUNDATION_SUITE_ID ||
+    isBillDetailWorkspaceAcceptanceSuite(id) ||
     isCreditNoteDetailWorkspaceAcceptanceSuite(id) ||
     isTaxInvoiceDetailWorkspaceAcceptanceSuite(id) ||
     id === WORKSPACE_READ_MODEL_FOUNDATION_SUITE_ID;
@@ -12659,6 +12901,13 @@ async function loadDeveloperDiagnosticRuntimeTraceAfterTimeoutFromAdmin(suite) {
   if (suite === RECEIPT_FOUNDATION_SUITE_ID) {
     await loadLatestReceiptFoundationRuntimeTraceFromAdmin();
     return state.admin.developerDiagnostics.receiptRuntimeTrace;
+  }
+  if (isBillDetailWorkspaceAcceptanceSuite(suite)) {
+    await loadLatestBillDetailWorkspaceAcceptanceRuntimeTraceFromAdmin(suite);
+    const config = getBillDetailWorkspaceAcceptanceConfig(suite);
+    return config
+      ? state.admin.developerDiagnostics[config.traceKey]
+      : null;
   }
   if (isReceiptDetailWorkspaceAcceptanceSuite(suite)) {
     await loadLatestReceiptDetailWorkspaceAcceptanceRuntimeTraceFromAdmin(suite);
@@ -15125,6 +15374,450 @@ async function executeReceiptFoundationRecoveryCleanupFromAdmin() {
   } finally {
     diagnostics.loadingReceiptRecoveryCleanup = false;
     renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadLatestBillDetailWorkspaceAcceptanceRuntimeTraceFromAdmin(suiteId) {
+  const config = getBillDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return;
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics[config.loadingTraceKey]) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics[config.loadingTraceKey] = true;
+  diagnostics[config.traceErrorKey] = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", config.traceAction);
+    form.append("token", state.admin.token);
+
+    const json = await postFormAction(form);
+    diagnostics[config.traceKey] = json.data?.trace || null;
+    if (diagnostics[config.traceKey]?.runId) {
+      diagnostics[config.runIdKey] = diagnostics[config.traceKey].runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        config.suiteId,
+        { trace: diagnostics[config.traceKey] }
+      );
+    }
+    if (!diagnostics[config.traceKey]) {
+      diagnostics[config.traceErrorKey] =
+        `No persistent ${config.label} trace found`;
+    }
+  } catch (err) {
+    diagnostics[config.traceKey] = null;
+    diagnostics[config.traceErrorKey] =
+      err.message || `${config.label} trace unavailable`;
+    showToast(diagnostics[config.traceErrorKey], "error");
+  } finally {
+    diagnostics[config.loadingTraceKey] = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadBillDetailWorkspaceAcceptanceProgressFromAdmin(suiteId) {
+  const config = getBillDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return;
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics[config.loadingTraceKey]) return;
+  const previousTrace = diagnostics[config.traceKey];
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics[config.loadingTraceKey] = true;
+  diagnostics[config.traceErrorKey] = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const runId = getBillDetailWorkspaceAcceptanceRunIdInputValue(
+      config.suiteId
+    );
+    const form = new URLSearchParams();
+    form.append("action", config.progressAction);
+    form.append("token", state.admin.token);
+    if (runId) {
+      form.append("runId", runId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    const progress = json.data?.progress || null;
+    if (progress) {
+      diagnostics[config.traceKey] = progress;
+    }
+    if (progress?.runId) {
+      diagnostics[config.runIdKey] = progress.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        config.suiteId,
+        { trace: progress }
+      );
+    }
+    if (!progress) {
+      diagnostics[config.traceKey] = previousTrace;
+      diagnostics[config.traceErrorKey] =
+        `No persistent ${config.label} progress found`;
+    }
+  } catch (err) {
+    diagnostics[config.traceKey] = previousTrace;
+    diagnostics[config.traceErrorKey] =
+      err.message || `${config.label} progress unavailable`;
+    showToast(diagnostics[config.traceErrorKey], "error");
+  } finally {
+    diagnostics[config.loadingTraceKey] = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function auditBillDetailWorkspaceAcceptanceRecoveryFromAdmin(suiteId) {
+  const config = getBillDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return;
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics[config.loadingRecoveryKey]) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics[config.loadingRecoveryKey] = true;
+  diagnostics[config.recoveryErrorKey] = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const runId = getBillDetailWorkspaceAcceptanceRunIdInputValue(
+      config.suiteId
+    );
+    const form = new URLSearchParams();
+    form.append("action", config.recoveryAction);
+    form.append("token", state.admin.token);
+    if (runId) {
+      form.append("runId", runId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics[config.recoveryKey] = json.data?.recovery || null;
+    if (diagnostics[config.recoveryKey]?.runId) {
+      diagnostics[config.runIdKey] = diagnostics[config.recoveryKey].runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        config.suiteId,
+        { recovery: diagnostics[config.recoveryKey] }
+      );
+      const cleanupStatus = normalizeDeveloperDiagnosticStatus(
+        diagnostics[config.recoveryKey].cleanupStatus
+      );
+      if (cleanupStatus && cleanupStatus !== "RUNNING") {
+        diagnostics[config.cleanupTimeoutRunIdKey] = "";
+      }
+    }
+    if (!diagnostics[config.recoveryKey]) {
+      diagnostics[config.recoveryErrorKey] =
+        `No ${config.label} recovery manifest found`;
+    }
+  } catch (err) {
+    diagnostics[config.recoveryErrorKey] =
+      err.message || `${config.label} recovery audit unavailable`;
+    showToast(diagnostics[config.recoveryErrorKey], "error");
+  } finally {
+    diagnostics[config.loadingRecoveryKey] = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+function confirmBillDetailWorkspaceAcceptanceRecoveryCleanupFromAdmin(suiteId) {
+  const config = getBillDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return;
+  const diagnostics = state.admin.developerDiagnostics;
+  if (
+    diagnostics.runningSuite ||
+    diagnostics[config.loadingRecoveryKey] ||
+    diagnostics[config.loadingCleanupKey]
+  ) {
+    return;
+  }
+
+  const runId = getBillDetailWorkspaceAcceptanceRunIdInputValue(
+    config.suiteId
+  );
+  if (!runId) {
+    showToast(`Enter the exact ${config.label} runId before cleanup.`, "warning");
+    return;
+  }
+  if (
+    diagnostics[config.cleanupTimeoutRunIdKey] &&
+    diagnostics[config.cleanupTimeoutRunIdKey] === runId
+  ) {
+    showToast(
+      `Cleanup may still be running. Check ${config.label} Recovery Status before retrying.`,
+      "warning"
+    );
+    return;
+  }
+  diagnostics.billDetailWorkspaceRecoveryCleanupSuiteId = config.suiteId;
+  diagnostics[config.cleanupRunIdKey] = runId;
+
+  confirmSheet.setAttribute(
+    "aria-labelledby",
+    "billDetailWorkspaceRecoveryCleanupConfirmTitle"
+  );
+  confirmSheet.classList.add("developer-diagnostic-confirm-sheet");
+  confirmSheet.innerHTML = `
+    <h3 id="billDetailWorkspaceRecoveryCleanupConfirmTitle">Cleanup ${esc(config.label)} Run</h3>
+    <div class="display-inventory-help">
+      TEST-only exact cleanup for run ${esc(runId)}. It deletes only exact tracked TEST-DIAG Bill, Order, Customer, Contact, Product, and fixture records for this run. It does not roll back Bill number sequences and does not refresh Workspace automatically.
+    </div>
+    <label class="display-inventory-help" for="billDetailWorkspaceRecoveryCleanupConfirmation">
+      Type ${esc(config.confirmation)} to confirm.
+    </label>
+    <input id="billDetailWorkspaceRecoveryCleanupConfirmation"
+      type="text"
+      autocomplete="off"
+      style="width:100%;max-width:560px"
+      placeholder="${escAttr(config.confirmation)}"
+      oninput="updateBillDetailWorkspaceAcceptanceCleanupButtonState()">
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closeBillDetailWorkspaceAcceptanceRecoveryCleanupConfirmation()">
+        Cancel
+      </button>
+      <button id="billDetailWorkspaceRecoveryCleanupSubmit"
+        class="btn btn-danger"
+        type="button"
+        disabled
+        onclick="executeBillDetailWorkspaceAcceptanceRecoveryCleanupFromAdmin()">
+        Cleanup ${esc(config.label)} Run
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+  updateBillDetailWorkspaceAcceptanceCleanupButtonState();
+}
+
+function updateBillDetailWorkspaceAcceptanceCleanupButtonState() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const suiteId = diagnostics.billDetailWorkspaceRecoveryCleanupSuiteId;
+  const config = getBillDetailWorkspaceAcceptanceConfig(suiteId);
+  const button = document.getElementById(
+    "billDetailWorkspaceRecoveryCleanupSubmit"
+  );
+  if (!button || !config) return;
+  const confirmation = String(
+    document.getElementById("billDetailWorkspaceRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  const runId = String(diagnostics[config.cleanupRunIdKey] || "").trim();
+  button.disabled = !runId ||
+    confirmation !== config.confirmation ||
+    !!diagnostics[config.loadingCleanupKey];
+}
+
+function closeBillDetailWorkspaceAcceptanceRecoveryCleanupConfirmation() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const config = getBillDetailWorkspaceAcceptanceConfig(
+    diagnostics.billDetailWorkspaceRecoveryCleanupSuiteId
+  );
+  if (config) {
+    diagnostics[config.cleanupRunIdKey] = "";
+  }
+  diagnostics.billDetailWorkspaceRecoveryCleanupSuiteId = "";
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  confirmSheet.classList.remove("developer-diagnostic-confirm-sheet");
+  closeOverlay(confirmSheet);
+}
+
+function updateBillDetailWorkspaceAcceptanceCardAfterRecoveryCleanup(
+  config,
+  cleanup
+) {
+  const diagnostics = state.admin.developerDiagnostics;
+  const cleanupStatus = String(cleanup && cleanup.status || "FAIL")
+    .trim()
+    .toUpperCase();
+  const cleanupSummary = String(cleanup && cleanup.summary || "").trim();
+  const current = diagnostics.results[config.suiteId] || {
+    suite: config.suiteId,
+    status: cleanupStatus === "PASS" ? "PARTIAL" : "FAIL",
+    checks: []
+  };
+  const checks = Array.isArray(current.checks) ? current.checks.slice() : [];
+  const nextCheck = {
+    name: "bill_detail_workspace_recovery_cleanup",
+    status: cleanupStatus,
+    summary: cleanupSummary ||
+      `${config.label} recovery cleanup completed`
+  };
+  const index = checks.findIndex(check => check.name === nextCheck.name);
+  if (index === -1) {
+    checks.push(nextCheck);
+  } else {
+    checks[index] = nextCheck;
+  }
+  current.checks = checks;
+  current.cleanup = {
+    required: true,
+    status: cleanupStatus
+  };
+  if (cleanupStatus !== "PASS") {
+    current.status = "FAIL";
+  } else if (!current.status || current.status === "NOT_RUN") {
+    current.status = "PARTIAL";
+  }
+  diagnostics.results[config.suiteId] = current;
+}
+
+async function executeBillDetailWorkspaceAcceptanceRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const config = getBillDetailWorkspaceAcceptanceConfig(
+    diagnostics.billDetailWorkspaceRecoveryCleanupSuiteId
+  );
+  if (!config || diagnostics[config.loadingCleanupKey]) return;
+
+  const runId = String(diagnostics[config.cleanupRunIdKey] || "").trim();
+  const confirmation = String(
+    document.getElementById("billDetailWorkspaceRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  if (!runId) {
+    showToast(`${config.label} cleanup runId is required`, "warning");
+    return;
+  }
+  if (confirmation !== config.confirmation) {
+    showToast(`${config.label} cleanup confirmation is required`, "warning");
+    return;
+  }
+
+  closeBillDetailWorkspaceAcceptanceRecoveryCleanupConfirmation();
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics[config.loadingCleanupKey] = true;
+  diagnostics[config.recoveryErrorKey] = "";
+  diagnostics[config.cleanupMessageKey] = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", config.cleanupAction);
+    form.append("token", state.admin.token);
+    form.append("runId", runId);
+    form.append("confirmation", confirmation);
+
+    const json = await postFormAction(form);
+    const cleanup = json.data?.cleanup || {};
+    diagnostics[config.traceKey] = json.data?.progress || null;
+    diagnostics[config.recoveryKey] = json.data?.recovery || null;
+    if (diagnostics[config.traceKey]?.runId) {
+      diagnostics[config.runIdKey] = diagnostics[config.traceKey].runId;
+    } else if (diagnostics[config.recoveryKey]?.runId) {
+      diagnostics[config.runIdKey] = diagnostics[config.recoveryKey].runId;
+    }
+    diagnostics[config.cleanupTimeoutRunIdKey] = "";
+    diagnostics[config.cleanupMessageKey] =
+      `Cleanup ${cleanup.status || "-"}: ${cleanup.summary || "-"}`;
+    updateBillDetailWorkspaceAcceptanceCardAfterRecoveryCleanup(
+      config,
+      cleanup
+    );
+    reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+      config.suiteId,
+      {
+        trace: diagnostics[config.traceKey],
+        recovery: diagnostics[config.recoveryKey],
+        cleanup
+      }
+    );
+    showToast(
+      cleanup.status === "PASS"
+        ? `${config.label} cleanup PASS`
+        : `${config.label} cleanup completed`,
+      cleanup.status === "PASS" ? "success" : "warning"
+    );
+  } catch (err) {
+    const message =
+      err.message || `${config.label} recovery cleanup unavailable`;
+    if (isDeveloperDiagnosticTimeoutMessage(message)) {
+      diagnostics[config.cleanupTimeoutRunIdKey] = runId;
+      diagnostics[config.cleanupMessageKey] =
+        "Cleanup request timed out on the client. The backend may still be running; check Recovery Status before retrying.";
+      showToast(diagnostics[config.cleanupMessageKey], "warning");
+    } else {
+      diagnostics[config.cleanupMessageKey] = message;
+      diagnostics[config.recoveryErrorKey] = message;
+      showToast(message, "error");
+    }
+  } finally {
+    diagnostics[config.loadingCleanupKey] = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function openBillDetailWorkspaceAcceptanceDetailFromAdmin(suiteId) {
+  const config = getBillDetailWorkspaceAcceptanceConfig(suiteId);
+  if (!config) return;
+  const billId = getBillDetailWorkspaceAcceptanceBillId(config.suiteId);
+  if (!billId) {
+    showToast(
+      "Load Bill Detail fixture runtime or recovery before opening detail.",
+      "warning"
+    );
+    return;
+  }
+  if (typeof openFinanceLegalBillDetail !== "function") {
+    showToast("Bill Detail is unavailable", "error");
+    return;
+  }
+  const hadDiagnosticsOpen =
+    !!adminDeveloperDiagnosticsSheet?.classList.contains("show");
+  if (hadDiagnosticsOpen) {
+    closeDeveloperDiagnosticsSheet();
+  }
+  try {
+    await openFinanceLegalBillDetail(billId, {
+      title: billId
+    });
+    if (!adminDashboardSheet?.classList.contains("show")) {
+      throw new Error("Bill Detail did not open");
+    }
+  } catch (err) {
+    if (
+      hadDiagnosticsOpen &&
+      !adminDeveloperDiagnosticsSheet?.classList.contains("show")
+    ) {
+      await openDeveloperDiagnosticsSheet();
+    }
+    showToast(err.message || "Bill Detail is unavailable", "error");
   }
 }
 
