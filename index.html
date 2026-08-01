@@ -21229,6 +21229,41 @@ function renderFinanceLegalReceiptPrintAction(detail) {
   `;
 }
 
+function getCreditNotePrintStatus(creditNote) {
+  return String(creditNote?.status || "").trim().toUpperCase();
+}
+
+function isCreditNotePrintStatusSupported(status) {
+  return status === "ISSUED" || status === "VOID";
+}
+
+function isCreditNotePrintAvailable(detail = getFinanceLegalDetailState()) {
+  const creditNote = detail?.data || null;
+  const status = getCreditNotePrintStatus(creditNote);
+  return Boolean(
+    detail?.open &&
+    detail.type === "credit_note" &&
+    !detail.loading &&
+    !detail.error &&
+    creditNote?.creditNoteId &&
+    detail.recordId === creditNote.creditNoteId &&
+    isCreditNotePrintStatusSupported(status)
+  );
+}
+
+function renderFinanceLegalCreditNotePrintAction(detail) {
+  if (!isCreditNotePrintAvailable(detail)) {
+    return "";
+  }
+  return `
+    <button class="btn btn-outline finance-legal-print-action" type="button"
+      onclick="printCreditNoteFromDetail()"
+      aria-label="พิมพ์เอกสารใบลดหนี้">
+      พิมพ์เอกสาร
+    </button>
+  `;
+}
+
 function getLoadedTaxInvoiceIssuedForPrint() {
   const detail = getFinanceLegalDetailState();
   if (!isTaxInvoiceIssuedPrintPilotAvailable(detail)) {
@@ -21241,6 +21276,14 @@ function getLoadedReceiptForPrint() {
   const detail = getFinanceLegalDetailState();
   if (!isReceiptPrintAvailable(detail)) {
     throw new Error("Receipt ISSUED or VOID detail is not ready for print.");
+  }
+  return detail.data;
+}
+
+function getLoadedCreditNoteForPrint() {
+  const detail = getFinanceLegalDetailState();
+  if (!isCreditNotePrintAvailable(detail)) {
+    throw new Error("Credit Note ISSUED or VOID detail is not ready for print.");
   }
   return detail.data;
 }
@@ -21362,6 +21405,51 @@ function renderReceiptVoidPrintMetadata(receipt) {
   `;
 }
 
+function renderCreditNoteVoidPrintWatermark(creditNote) {
+  if (getCreditNotePrintStatus(creditNote) !== "VOID") {
+    return "";
+  }
+  return `
+    <div class="finance-legal-print-void-watermark" aria-hidden="true">VOID</div>
+  `;
+}
+
+function renderCreditNoteVoidPrintTreatment(creditNote) {
+  if (getCreditNotePrintStatus(creditNote) !== "VOID") {
+    return "";
+  }
+  return `
+    <section class="finance-legal-print-void-banner">
+      <strong>VOID</strong>
+      <span>ยกเลิก</span>
+      <p>
+        ${esc("ใบลดหนี้นี้ถูกยกเลิกแล้ว เลขที่เอกสารเดิมยังคงอยู่ และข้อมูล Snapshot ของเอกสารเดิมยังคงแสดงเพื่อการอ้างอิง")}
+      </p>
+    </section>
+  `;
+}
+
+function renderCreditNoteVoidPrintMetadata(creditNote) {
+  if (getCreditNotePrintStatus(creditNote) !== "VOID") {
+    return "";
+  }
+  return `
+    <section class="finance-legal-print-section">
+      <h2>ข้อมูลการยกเลิก</h2>
+      <div class="finance-legal-print-grid">
+        ${renderFinanceLegalPrintField("สถานะ", creditNote.status || "-")}
+        ${renderFinanceLegalPrintField("วันที่ยกเลิก", creditNote.voidedAt, { date: true })}
+        ${renderFinanceLegalPrintField("ผู้ยกเลิก", creditNote.voidedBy || "-")}
+        ${renderFinanceLegalPrintField("เหตุผล", creditNote.voidReason || "-")}
+        ${renderFinanceLegalPrintField("เลขที่เอกสารเดิม", creditNote.creditNoteNumber || "-")}
+      </div>
+      <p class="finance-legal-print-note">
+        ${esc("การยกเลิกใบลดหนี้นี้ไม่ออกเอกสารทดแทน ไม่สร้าง Refund ไม่ลด Receivable ไม่ย้อน Payment ไม่ยกเลิก Receipt ไม่ VOID Tax Invoice และไม่เขียน Bill ใหม่โดยอัตโนมัติ")}
+      </p>
+    </section>
+  `;
+}
+
 function renderReceiptPrintProjection(receipt) {
   return `
     ${renderReceiptVoidPrintWatermark(receipt)}
@@ -21401,6 +21489,90 @@ function renderReceiptPrintProjection(receipt) {
         </p>
       </section>
       ${renderReceiptVoidPrintMetadata(receipt)}
+    </div>
+  `;
+}
+
+function renderCreditNotePrintProjection(creditNote) {
+  return `
+    ${renderCreditNoteVoidPrintWatermark(creditNote)}
+    <div class="finance-legal-print-page" role="document">
+      <div class="finance-legal-print-test-marker">
+        เอกสารจากระบบ TEST — ไม่ใช่เอกสาร Production
+      </div>
+      ${renderCreditNoteVoidPrintTreatment(creditNote)}
+      <header class="finance-legal-print-header">
+        <div>
+          <h1 class="finance-legal-print-title">ใบลดหนี้</h1>
+          <div>Credit Note</div>
+        </div>
+        <div class="finance-legal-print-meta">
+          ${renderFinanceLegalPrintField("เลขที่ใบลดหนี้", creditNote.creditNoteNumber || "-")}
+          ${renderFinanceLegalPrintField("สถานะ", creditNote.status || "-")}
+          ${renderFinanceLegalPrintField("วันที่ออก", creditNote.issuedAt, { date: true })}
+        </div>
+      </header>
+      <section class="finance-legal-print-section">
+        <h2>ข้อมูลการออกใบลดหนี้</h2>
+        <div class="finance-legal-print-grid">
+          ${renderFinanceLegalPrintField("Credit Note ID", creditNote.creditNoteId || "-")}
+          ${renderFinanceLegalPrintField("Issued by", creditNote.issuedBy || "-")}
+          ${renderFinanceLegalPrintField("Request ID", creditNote.requestId || "-")}
+        </div>
+      </section>
+      <section class="finance-legal-print-section">
+        <h2>บริบทการปรับลด</h2>
+        <div class="finance-legal-print-grid">
+          ${renderFinanceLegalPrintField("เหตุผลการลดหนี้", creditNote.adjustmentReason || "-")}
+          ${renderFinanceLegalPrintField("เลขที่เอกสารภาษีต้นทาง", creditNote.taxInvoiceNumberSnapshot || "-")}
+          ${renderFinanceLegalPrintField("Tax Invoice ID", creditNote.taxInvoiceId || "-")}
+          ${renderFinanceLegalPrintField("Bill ID", creditNote.billId || "-")}
+          ${renderFinanceLegalPrintField("Customer ID", creditNote.customerId || "-")}
+        </div>
+      </section>
+      <section class="finance-legal-print-section">
+        <h2>ข้อมูลผู้ซื้อ ณ วันที่ออกใบลดหนี้</h2>
+        <div class="finance-legal-print-grid">
+          ${renderFinanceLegalPrintField("ชื่อนิติบุคคล", creditNote.buyerLegalName || "-")}
+          ${renderFinanceLegalPrintField("เลขประจำตัวผู้เสียภาษี", creditNote.buyerTaxId || "-")}
+          ${renderFinanceLegalPrintField("ประเภทสาขา", creditNote.buyerBranchType || "-")}
+          ${renderFinanceLegalPrintField("รหัสสาขา", creditNote.buyerBranchCode || "-")}
+          ${renderFinanceLegalPrintField("ที่อยู่ตามกฎหมาย", creditNote.buyerLegalAddress || "-")}
+        </div>
+      </section>
+      <section class="finance-legal-print-section">
+        <h2>ข้อมูลผู้ออก ณ วันที่ออกใบลดหนี้</h2>
+        <div class="finance-legal-print-grid">
+          ${renderFinanceLegalPrintField("ชื่อนิติบุคคล", creditNote.issuerLegalName || "-")}
+          ${renderFinanceLegalPrintField("เลขประจำตัวผู้เสียภาษี", creditNote.issuerTaxId || "-")}
+          ${renderFinanceLegalPrintField("ประเภทสาขา", creditNote.issuerBranchType || "-")}
+          ${renderFinanceLegalPrintField("รหัสสาขา", creditNote.issuerBranchCode || "-")}
+          ${renderFinanceLegalPrintField("ที่อยู่ตามกฎหมาย", creditNote.issuerLegalAddress || "-")}
+        </div>
+      </section>
+      <section class="finance-legal-print-section">
+        <h2>ยอดปรับลดและภาษีที่เก็บในเอกสาร</h2>
+        <table class="finance-legal-print-amounts">
+          <tbody>
+            ${renderFinanceLegalPrintAmountRow("Subtotal adjustment", creditNote.subtotalAdjustment)}
+            ${renderFinanceLegalPrintAmountRow("ส่วนลดที่ปรับลด", creditNote.discountAdjustment)}
+            ${renderFinanceLegalPrintAmountRow("ฐาน VAT ที่ปรับลด", creditNote.vatBaseAdjustment)}
+            ${renderFinanceLegalPrintAmountRow("อัตรา VAT", creditNote.vatRateSnapshot, { rate: true })}
+            ${renderFinanceLegalPrintAmountRow("VAT ที่ปรับลด", creditNote.vatAdjustment)}
+            ${renderFinanceLegalPrintAmountRow("ยอดรวมที่ปรับลด", creditNote.totalAdjustment)}
+          </tbody>
+        </table>
+        <p class="finance-legal-print-note">
+          ${esc("แสดงค่าที่เก็บใน Credit Note เท่านั้น ไม่มีการคำนวณใหม่ ไม่มี currency field และไม่ใช้ค่าเงินเริ่มต้น")}
+        </p>
+      </section>
+      <section class="finance-legal-print-section">
+        <h2>ขอบเขตทางบัญชี</h2>
+        <p class="finance-legal-print-note">
+          ${esc("ใบลดหนี้นี้เป็นเอกสารภาษีสำหรับการปรับลด และไม่เปลี่ยนยอดค้างรับ การชำระเงิน ใบรับเงิน หรือ Refund โดยอัตโนมัติ")}
+        </p>
+      </section>
+      ${renderCreditNoteVoidPrintMetadata(creditNote)}
     </div>
   `;
 }
@@ -21488,6 +21660,15 @@ function getReceiptPrintTitle(receipt) {
     return `RECEIPT-${safeId}-VOID-TEST`;
   }
   return `RECEIPT-${safeId}-TEST`;
+}
+
+function getCreditNotePrintTitle(creditNote) {
+  const rawId = creditNote?.creditNoteNumber || creditNote?.creditNoteId || "credit-note";
+  const safeId = String(rawId).replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "credit-note";
+  if (getCreditNotePrintStatus(creditNote) === "VOID") {
+    return `CREDIT-NOTE-${safeId}-VOID-TEST`;
+  }
+  return `CREDIT-NOTE-${safeId}-TEST`;
 }
 
 function removeFinanceLegalPrintProjection() {
@@ -21582,6 +21763,44 @@ function printReceiptFromDetail() {
   }
 }
 
+function printCreditNoteFromDetail() {
+  let creditNote;
+  try {
+    creditNote = getLoadedCreditNoteForPrint();
+  } catch (err) {
+    showToast(err.message || "Credit Note print is unavailable.", "warning");
+    return;
+  }
+
+  removeFinanceLegalPrintProjection();
+  const root = document.createElement("section");
+  root.id = FINANCE_LEGAL_PRINT_ROOT_ID;
+  root.className = "finance-legal-print-root";
+  root.setAttribute("aria-hidden", "true");
+  root.innerHTML = renderCreditNotePrintProjection(creditNote);
+  document.body.appendChild(root);
+  financeLegalPrintOriginalTitle = document.title;
+  document.title = getCreditNotePrintTitle(creditNote);
+  document.body.classList.add("finance-legal-printing");
+
+  const cleanup = () => {
+    window.removeEventListener("afterprint", cleanup);
+    removeFinanceLegalPrintProjection();
+  };
+  window.addEventListener("afterprint", cleanup, { once: true });
+  financeLegalPrintFallbackTimer = window.setTimeout(cleanup, 30000);
+
+  try {
+    if (typeof window.print !== "function") {
+      throw new Error("Browser print is unavailable.");
+    }
+    window.print();
+  } catch (err) {
+    cleanup();
+    showToast(err.message || "Credit Note print is unavailable.", "warning");
+  }
+}
+
 function getFinanceLegalDetailStatus(detail) {
   if (detail.type === "bill" && detail.data) {
     return detail.data.status || "";
@@ -21669,7 +21888,7 @@ function renderFinanceLegalDetailShell() {
   const title = detail.title || "รายละเอียด";
   const subtitle = getFinanceLegalDetailSubtitle(detail);
   const body = renderFinanceLegalDetailBody(detail);
-  const printAction = renderFinanceLegalTaxInvoicePrintAction(detail) || renderFinanceLegalReceiptPrintAction(detail);
+  const printAction = renderFinanceLegalTaxInvoicePrintAction(detail) || renderFinanceLegalReceiptPrintAction(detail) || renderFinanceLegalCreditNotePrintAction(detail);
 
   adminDashboardSheet.innerHTML = `
     <div class="finance-legal-detail-panel">
