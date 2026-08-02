@@ -9730,6 +9730,7 @@ const BILL_FOUNDATION_DRAFT_SUITE_ID = "bill_foundation_draft";
 const BILL_FOUNDATION_DRAFT_VALIDATION_SUITE_ID = "bill_foundation_draft_validation";
 const BILL_FOUNDATION_ISSUE_VOID_SUITE_ID = "bill_foundation_issue_void";
 const BILL_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID = "bill_detail_issued";
+const BILL_DETAIL_DRAFT_WORKSPACE_ACCEPTANCE_SUITE_ID = "bill_detail_draft";
 const BILL_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID = "bill_detail_void";
 const PAYMENT_FOUNDATION_SUITE_ID = "payment_foundation";
 const PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID = "payment_workspace_acceptance_fixture";
@@ -9769,6 +9770,27 @@ const BILL_DETAIL_WORKSPACE_ACCEPTANCE_CONFIGS = Object.freeze({
     cleanupRunIdKey: "billDetailIssuedWorkspaceRecoveryCleanupRunId",
     cleanupTimeoutRunIdKey: "billDetailIssuedWorkspaceRecoveryCleanupTimeoutRunId",
     runIdKey: "billDetailIssuedWorkspaceRunId"
+  }),
+  [BILL_DETAIL_DRAFT_WORKSPACE_ACCEPTANCE_SUITE_ID]: Object.freeze({
+    suiteId: BILL_DETAIL_DRAFT_WORKSPACE_ACCEPTANCE_SUITE_ID,
+    label: "Bill Detail DRAFT",
+    traceAction: "getLatestBillDetailDraftWorkspaceAcceptanceRuntimeTrace",
+    progressAction: "getBillDetailDraftWorkspaceAcceptanceDiagnosticProgress",
+    recoveryAction: "auditBillDetailDraftWorkspaceAcceptanceRecovery",
+    cleanupAction: "cleanupBillDetailDraftWorkspaceAcceptanceRecovery",
+    confirmation: "CLEANUP_TEST_DIAG_BILL_DETAIL_DRAFT_RUN",
+    runIdPlaceholder: "BILLDTLDRAFT-RUN-...",
+    traceKey: "billDetailDraftWorkspaceRuntimeTrace",
+    traceErrorKey: "billDetailDraftWorkspaceRuntimeTraceError",
+    loadingTraceKey: "loadingBillDetailDraftWorkspaceRuntimeTrace",
+    recoveryKey: "billDetailDraftWorkspaceRecoveryAudit",
+    recoveryErrorKey: "billDetailDraftWorkspaceRecoveryError",
+    loadingRecoveryKey: "loadingBillDetailDraftWorkspaceRecoveryAudit",
+    loadingCleanupKey: "loadingBillDetailDraftWorkspaceRecoveryCleanup",
+    cleanupMessageKey: "billDetailDraftWorkspaceRecoveryCleanupMessage",
+    cleanupRunIdKey: "billDetailDraftWorkspaceRecoveryCleanupRunId",
+    cleanupTimeoutRunIdKey: "billDetailDraftWorkspaceRecoveryCleanupTimeoutRunId",
+    runIdKey: "billDetailDraftWorkspaceRunId"
   }),
   [BILL_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID]: Object.freeze({
     suiteId: BILL_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID,
@@ -10018,6 +10040,12 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     label: "Bill Detail ISSUED Fixture",
     mutation: true,
     mutationDescription: "Run only for Bill Browser Print acceptance. Creates one isolated TEST-DIAG ISSUED Bill, persists the canonical billId/billNumber/runId, and defers exact cleanup."
+  },
+  {
+    id: BILL_DETAIL_DRAFT_WORKSPACE_ACCEPTANCE_SUITE_ID,
+    label: "Bill Detail DRAFT Fixture",
+    mutation: true,
+    mutationDescription: "Run only for Bill Issue Operator Workflow acceptance. Creates one isolated TEST-DIAG DRAFT Bill without billNumber, persists the canonical billId/runId, and defers exact cleanup."
   },
   {
     id: BILL_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID,
