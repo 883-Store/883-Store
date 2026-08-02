@@ -1855,8 +1855,16 @@ body[data-theme="cute"] .shop-subtitle{
 
     .finance-legal-print-grid{
       display:grid;
-      grid-template-columns:1fr 1fr;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
       gap:3mm 7mm;
+    }
+
+    .finance-legal-print-field,
+    .finance-legal-print-amounts th,
+    .finance-legal-print-amounts td{
+      min-width:0;
+      overflow-wrap:anywhere;
+      word-break:break-word;
     }
 
     .finance-legal-print-field span{
@@ -1897,6 +1905,65 @@ body[data-theme="cute"] .shop-subtitle{
     .finance-legal-print-amounts td:last-child{
       text-align:right;
       font-variant-numeric:tabular-nums;
+      white-space:nowrap;
+    }
+  }
+
+  @media screen and (max-width: 640px), print and (max-width: 640px){
+    body.finance-legal-printing .finance-legal-print-root{
+      width:100%;
+    }
+
+    .finance-legal-print-page{
+      width:100%;
+      max-width:none;
+      min-width:0;
+    }
+
+    .finance-legal-print-test-marker,
+    .finance-legal-print-void-banner,
+    .finance-legal-print-header,
+    .finance-legal-print-section,
+    .finance-legal-print-note,
+    .finance-legal-print-field strong{
+      overflow-wrap:anywhere;
+      word-break:break-word;
+    }
+
+    .finance-legal-print-header{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:4mm;
+    }
+
+    .finance-legal-print-meta{
+      min-width:0;
+      text-align:left;
+    }
+
+    .finance-legal-print-grid{
+      grid-template-columns:1fr;
+      gap:3mm;
+    }
+
+    .finance-legal-print-title{
+      font-size:20pt;
+    }
+
+    .finance-legal-print-void-watermark{
+      font-size:56pt;
+    }
+
+    .finance-legal-print-amounts{
+      table-layout:auto;
+    }
+
+    .finance-legal-print-amounts th,
+    .finance-legal-print-amounts td{
+      white-space:normal;
+    }
+
+    .finance-legal-print-amounts td:last-child{
       white-space:nowrap;
     }
   }
