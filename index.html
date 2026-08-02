@@ -6966,6 +6966,9 @@ Object.assign(window, {
   confirmFinanceLegalBillIssue,
   closeFinanceLegalBillIssueConfirm,
   executeFinanceLegalBillIssueFromConfirm,
+  confirmFinanceLegalReceiptIssue,
+  closeFinanceLegalReceiptIssueConfirm,
+  executeFinanceLegalReceiptIssueFromConfirm,
   setBusinessDashboardRange,
   refreshBusinessDashboard,
   openBusinessDashboardPendingDeliveries,
@@ -7063,7 +7066,10 @@ const state = {
       requestId: 0,
       workspaceScrollTop: 0,
       cache: {},
-      pendingKey: ""
+      pendingKey: "",
+      context: {},
+      receiptIssueRequest: null,
+      receiptIssueUnknownCompletion: null
     },
     deliveryNote: {
       poInput: "",
@@ -21793,7 +21799,10 @@ function getFinanceLegalDetailState() {
       requestId: 0,
       workspaceScrollTop: 0,
       cache: {},
-      pendingKey: ""
+      pendingKey: "",
+      context: {},
+      receiptIssueRequest: null,
+      receiptIssueUnknownCompletion: null
     };
   }
   if (!Array.isArray(state.admin.financeLegalDetail.history)) {
@@ -21804,6 +21813,21 @@ function getFinanceLegalDetailState() {
   }
   if (typeof state.admin.financeLegalDetail.pendingKey !== "string") {
     state.admin.financeLegalDetail.pendingKey = "";
+  }
+  if (!state.admin.financeLegalDetail.context || typeof state.admin.financeLegalDetail.context !== "object") {
+    state.admin.financeLegalDetail.context = {};
+  }
+  if (
+    state.admin.financeLegalDetail.receiptIssueRequest &&
+    typeof state.admin.financeLegalDetail.receiptIssueRequest !== "object"
+  ) {
+    state.admin.financeLegalDetail.receiptIssueRequest = null;
+  }
+  if (
+    state.admin.financeLegalDetail.receiptIssueUnknownCompletion &&
+    typeof state.admin.financeLegalDetail.receiptIssueUnknownCompletion !== "object"
+  ) {
+    state.admin.financeLegalDetail.receiptIssueUnknownCompletion = null;
   }
   return state.admin.financeLegalDetail;
 }
@@ -21863,6 +21887,27 @@ function getFinanceLegalDetailReadableError(error) {
   }
   if (/Receipt not found/i.test(message)) {
     return "ไม่พบใบรับเงินที่เลือก";
+  }
+  if (/Receipt requestId payload conflict/i.test(message)) {
+    return "คำขอออกใบรับเงินซ้ำแต่ข้อมูลไม่ตรงกัน กรุณาตรวจสถานะก่อนส่งคำขอใหม่";
+  }
+  if (/Only CONFIRMED Payments can receive Receipt/i.test(message)) {
+    return "ออกใบรับเงินได้เฉพาะ Payment ที่ยืนยันแล้ว";
+  }
+  if (/Corrected Payment cannot receive Receipt/i.test(message)) {
+    return "Payment ที่ถูกแก้ไขแล้วไม่สามารถออกใบรับเงินได้";
+  }
+  if (/Payment is not the effective settlement for the Bill/i.test(message)) {
+    return "Payment นี้ไม่ใช่รายการชำระเงินที่มีผลต่อ Bill แล้ว";
+  }
+  if (/Only ISSUED Bills can receive Receipt/i.test(message)) {
+    return "ออกใบรับเงินได้เฉพาะ Bill ที่ออกเอกสารแล้ว";
+  }
+  if (/Payment already has a Receipt/i.test(message)) {
+    return "Payment นี้มีใบรับเงินแล้ว กรุณาตรวจเอกสารเดิมก่อนทำรายการใหม่";
+  }
+  if (/Malformed Receipt issue response/i.test(message)) {
+    return "ผลลัพธ์การออกใบรับเงินไม่สมบูรณ์ กรุณาตรวจสถานะก่อนส่งคำขอใหม่";
   }
   if (/receiptId is required/i.test(message)) {
     return "Workspace row ไม่มีรหัสใบรับเงินสำหรับเปิดรายละเอียด";
@@ -22002,6 +22047,108 @@ function renderFinanceLegalBillIssueAction(detail) {
       onclick="confirmFinanceLegalBillIssue()"
       aria-label="ออกเอกสารใบแจ้งหนี้">
       ${pending ? "กำลังออกเอกสาร..." : "ออกเอกสาร"}
+    </button>
+  `;
+}
+
+function getReceiptIssueOperatorPendingKey(paymentId) {
+  return `issueReceipt:${String(paymentId || "").trim()}`;
+}
+
+function getPaymentDetailPayload(detail = getFinanceLegalDetailState()) {
+  const payload = detail?.data || {};
+  return {
+    payment: payload.payment || {},
+    receivable: payload.receivable || {}
+  };
+}
+
+function getPaymentExistingReceiptReference(payment, receivable) {
+  return {
+    receiptId: String(payment?.receiptId || receivable?.receiptId || "").trim(),
+    receiptNumber: String(payment?.receiptNumber || receivable?.receiptNumber || "").trim(),
+    receiptStatus: String(payment?.receiptStatus || receivable?.receiptStatus || "").trim()
+  };
+}
+
+function isReceiptIssueOperatorPending(detail = getFinanceLegalDetailState()) {
+  const { payment } = getPaymentDetailPayload(detail);
+  const paymentId = String(payment?.paymentId || "").trim();
+  return Boolean(
+    paymentId &&
+    detail?.pendingKey === getReceiptIssueOperatorPendingKey(paymentId)
+  );
+}
+
+function isReceiptIssueUnknownCompletionForPayment(detail, paymentId) {
+  return String(detail?.receiptIssueUnknownCompletion?.paymentId || "").trim() ===
+    String(paymentId || "").trim();
+}
+
+function isTrustedReceiptReadyWorkspaceContext(detail, payment) {
+  const context = detail?.context || {};
+  const paymentId = String(payment?.paymentId || "").trim();
+  if (
+    context.source !== "workspace" ||
+    context.sectionId !== "receipts_ready_to_issue" ||
+    !paymentId ||
+    context.paymentId !== paymentId
+  ) {
+    return false;
+  }
+  if (context.rowId && context.rowId !== paymentId) return false;
+  if (context.billId && context.billId !== String(payment?.billId || "").trim()) {
+    return false;
+  }
+  if (
+    context.customerId &&
+    context.customerId !== String(payment?.customerId || "").trim()
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function isPaymentReadyForOperatorReceiptIssue(detail = getFinanceLegalDetailState()) {
+  const { payment, receivable } = getPaymentDetailPayload(detail);
+  const paymentId = String(payment?.paymentId || "").trim();
+  const receiptRef = getPaymentExistingReceiptReference(payment, receivable);
+  return Boolean(
+    paymentId &&
+    detail?.recordId === paymentId &&
+    String(payment.status || "").trim().toUpperCase() === "CONFIRMED" &&
+    isPaymentEffectiveForReceivable(payment, receivable) &&
+    String(receivable?.receivableStage || "").trim().toUpperCase() === "PAID" &&
+    !receiptRef.receiptId &&
+    !receiptRef.receiptNumber &&
+    !receiptRef.receiptStatus &&
+    isTrustedReceiptReadyWorkspaceContext(detail, payment) &&
+    !isReceiptIssueUnknownCompletionForPayment(detail, paymentId)
+  );
+}
+
+function isReceiptIssueOperatorAvailable(detail = getFinanceLegalDetailState()) {
+  return Boolean(
+    detail?.open &&
+    detail.type === "payment" &&
+    !detail.loading &&
+    !detail.error &&
+    isPaymentReadyForOperatorReceiptIssue(detail) &&
+    hasAdminPermission("receipt.issue")
+  );
+}
+
+function renderFinanceLegalReceiptIssueAction(detail) {
+  if (!isReceiptIssueOperatorAvailable(detail)) {
+    return "";
+  }
+  const pending = isReceiptIssueOperatorPending(detail);
+  return `
+    <button class="btn btn-primary" type="button"
+      ${pending ? "disabled aria-disabled=\"true\"" : ""}
+      onclick="confirmFinanceLegalReceiptIssue()"
+      aria-label="ออกใบรับเงิน">
+      ${pending ? "กำลังออกใบรับเงิน..." : "ออกใบรับเงิน"}
     </button>
   `;
 }
@@ -23015,7 +23162,10 @@ function renderFinanceLegalDetailShell() {
   const title = detail.title || "รายละเอียด";
   const subtitle = getFinanceLegalDetailSubtitle(detail);
   const body = renderFinanceLegalDetailBody(detail);
-  const operatorAction = renderFinanceLegalBillIssueAction(detail);
+  const operatorAction = [
+    renderFinanceLegalBillIssueAction(detail),
+    renderFinanceLegalReceiptIssueAction(detail)
+  ].filter(Boolean).join("");
   const printAction = renderFinanceLegalBillPrintAction(detail) || renderFinanceLegalTaxInvoicePrintAction(detail) || renderFinanceLegalReceiptPrintAction(detail) || renderFinanceLegalCreditNotePrintAction(detail);
 
   adminDashboardSheet.innerHTML = `
@@ -23062,6 +23212,9 @@ function closeFinanceLegalDetailSheet() {
   detail.history = [];
   detail.cache = {};
   detail.pendingKey = "";
+  detail.context = {};
+  detail.receiptIssueRequest = null;
+  detail.receiptIssueUnknownCompletion = null;
   detail.requestId += 1;
   detail.workspaceScrollTop = 0;
   renderAdminWorkspaceSheet();
@@ -23072,6 +23225,48 @@ function closeFinanceLegalDetailSheet() {
 
 function getFinanceLegalDetailCacheKey(type, recordId) {
   return `${String(type || "").trim()}:${String(recordId || "").trim()}`;
+}
+
+function normalizeFinanceLegalDetailContext(context = {}, type = "", recordId = "") {
+  const source = String(context?.source || "").trim();
+  const sectionId = String(context?.sectionId || "").trim();
+  const normalizedType = String(type || "").trim();
+  if (
+    source === "workspace" &&
+    sectionId === "receipts_ready_to_issue" &&
+    normalizedType === "payment"
+  ) {
+    const paymentId = String(context?.paymentId || recordId || "").trim();
+    return {
+      source,
+      sectionId,
+      rowId: String(context?.rowId || paymentId || "").trim(),
+      paymentId,
+      billId: String(context?.billId || "").trim(),
+      customerId: String(context?.customerId || "").trim()
+    };
+  }
+  return {};
+}
+
+function hasExplicitFinanceLegalDetailContext(context = {}) {
+  return Boolean(
+    context &&
+    (
+      context.source ||
+      context.sectionId ||
+      context.rowId ||
+      context.paymentId ||
+      context.billId ||
+      context.customerId
+    )
+  );
+}
+
+function cloneFinanceLegalDetailContext(context) {
+  return context && typeof context === "object"
+    ? Object.assign({}, context)
+    : {};
 }
 
 function getFinanceLegalDetailCachedData(detail, type, recordId) {
@@ -23116,6 +23311,7 @@ function pushFinanceLegalDetailHistory(detail) {
     recordId,
     title: detail.title || "",
     data: detail.data || null,
+    context: cloneFinanceLegalDetailContext(detail.context),
     scrollTop: Number(adminDashboardSheet?.scrollTop || 0)
   };
   const last = detail.history[detail.history.length - 1];
@@ -23136,6 +23332,9 @@ function restoreFinanceLegalDetailEntry(detail, entry) {
   detail.error = "";
   detail.data = entry?.data || getFinanceLegalDetailCachedData(detail, detail.type, detail.recordId);
   detail.pendingKey = "";
+  detail.context = cloneFinanceLegalDetailContext(entry?.context);
+  detail.receiptIssueRequest = null;
+  detail.receiptIssueUnknownCompletion = null;
 }
 
 function backFinanceLegalDetail() {
@@ -23277,6 +23476,174 @@ async function executeFinanceLegalBillIssueFromConfirm() {
   }
 }
 
+function makeReceiptIssueOperatorRequestId(paymentId) {
+  const paymentPart = String(paymentId || "")
+    .trim()
+    .replace(/[^a-zA-Z0-9-]/g, "")
+    .slice(0, 36)
+    .toUpperCase() || "PAYMENT";
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const randomPart = Math.random().toString(36).slice(2, 10).toUpperCase();
+  return `RECEIPT-OP-${paymentPart}-${timestamp}-${randomPart}`.slice(0, 120);
+}
+
+function closeFinanceLegalReceiptIssueConfirm() {
+  const detail = getFinanceLegalDetailState();
+  if (!isReceiptIssueOperatorPending(detail)) {
+    detail.receiptIssueRequest = null;
+  }
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  closeOverlay(confirmSheet);
+}
+
+function confirmFinanceLegalReceiptIssue() {
+  if (!ensureAdminSessionForWorkspace()) return;
+  const detail = getFinanceLegalDetailState();
+  if (!isReceiptIssueOperatorAvailable(detail)) {
+    showToast("Payment is not ready for Receipt issue", "warning");
+    return;
+  }
+  if (isReceiptIssueOperatorPending(detail)) return;
+
+  const { payment } = getPaymentDetailPayload(detail);
+  const paymentId = String(payment.paymentId || "").trim();
+  const requestId = makeReceiptIssueOperatorRequestId(paymentId);
+  detail.receiptIssueRequest = {
+    paymentId,
+    requestId
+  };
+
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  confirmSheet.classList.remove("developer-diagnostic-confirm-sheet");
+  confirmSheet.innerHTML = `
+    <h3 id="confirmSheetTitle">ยืนยันออกใบรับเงิน</h3>
+    <p>
+      ระบบจะเรียก backend <code>issueReceipt</code> ด้วย Payment ID ที่มาจาก Workspace
+      <code>receipts_ready_to_issue</code> เท่านั้น
+    </p>
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("Payment ID", payment.paymentId || "-")}
+      ${renderFinanceLegalDetailField("Bill ID", payment.billId || "-")}
+      ${renderFinanceLegalDetailField("Customer ID", payment.customerId || "-")}
+      ${renderFinanceLegalDetailField("จำนวนเงิน", payment.amount, { money: true })}
+      ${renderFinanceLegalDetailField("วิธีชำระเงิน", payment.paymentMethod || "-")}
+      ${renderFinanceLegalDetailField("Request ID", requestId)}
+    </div>
+    <div class="finance-legal-detail-related-note">
+      เลข Receipt จะถูกออกโดย backend และไม่ถูกนำกลับมาใช้ซ้ำ อย่ากดซ้ำหรือ retry แบบไม่ตรวจสอบหาก browser timeout
+      การออกใบรับเงินไม่แก้ Payment, Bill, Receivable, Tax Invoice, Credit Note, Order, Inventory, Display หรือ Sourceable
+    </div>
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closeFinanceLegalReceiptIssueConfirm()">
+        ยกเลิก
+      </button>
+      <button class="btn btn-primary" type="button" data-receipt-issue-submit
+        onclick="executeFinanceLegalReceiptIssueFromConfirm()">
+        ออกใบรับเงิน
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+}
+
+async function executeFinanceLegalReceiptIssueFromConfirm() {
+  if (!ensureAdminSessionForWorkspace()) return;
+  const detail = getFinanceLegalDetailState();
+  if (!isReceiptIssueOperatorAvailable(detail)) {
+    closeFinanceLegalReceiptIssueConfirm();
+    showToast("Payment is not ready for Receipt issue", "warning");
+    return;
+  }
+
+  const { payment } = getPaymentDetailPayload(detail);
+  const paymentId = String(payment.paymentId || "").trim();
+  const pendingKey = getReceiptIssueOperatorPendingKey(paymentId);
+  if (detail.pendingKey === pendingKey) return;
+
+  const request = detail.receiptIssueRequest || {};
+  const requestId = String(request.requestId || "").trim();
+  if (
+    String(request.paymentId || "").trim() !== paymentId ||
+    !requestId
+  ) {
+    closeFinanceLegalReceiptIssueConfirm();
+    showToast("Receipt issue confirmation expired. Open confirmation again.", "warning");
+    return;
+  }
+
+  detail.pendingKey = pendingKey;
+  renderFinanceLegalDetailShell();
+  confirmSheet.querySelectorAll("button").forEach(button => {
+    button.disabled = true;
+    button.setAttribute("aria-disabled", "true");
+  });
+  const submitButton = confirmSheet.querySelector("[data-receipt-issue-submit]");
+  if (submitButton) {
+    submitButton.textContent = "กำลังออกใบรับเงิน...";
+  }
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "issueReceipt");
+    form.append("token", state.admin.token);
+    form.append("requestId", requestId);
+    form.append("paymentId", paymentId);
+    const json = await postFormAction(form);
+    const receipt = json?.data?.receipt;
+    const receiptId = String(receipt?.receiptId || "").trim();
+    if (!receipt || !receiptId) {
+      const malformed = new Error("Malformed Receipt issue response");
+      malformed.receiptIssueUnknown = true;
+      throw malformed;
+    }
+
+    detail.receiptIssueRequest = null;
+    detail.receiptIssueUnknownCompletion = null;
+    setFinanceLegalDetailCachedData(detail, "receipt", receiptId, receipt);
+    closeFinanceLegalReceiptIssueConfirm();
+    await openFinanceLegalReceiptDetail(receiptId, {
+      title: receipt.receiptNumber || receiptId
+    });
+    showToast(`ออกใบรับเงิน ${receipt.receiptNumber || receiptId} แล้ว`, "success");
+
+    const workspaceRefreshed = await refreshAdminWorkspaceAfterFinanceLegalMutation();
+    if (!workspaceRefreshed) {
+      showToast("ออกใบรับเงินแล้ว แต่ Workspace ยังไม่ได้ refresh", "warning");
+    }
+  } catch (err) {
+    const rawMessage = String(err?.message || err || "").trim();
+    const shouldBlockRetry =
+      err?.receiptIssueUnknown ||
+      isDeveloperDiagnosticTimeoutMessage(rawMessage) ||
+      /Payment already has a Receipt/i.test(rawMessage);
+    if (shouldBlockRetry) {
+      detail.receiptIssueUnknownCompletion = {
+        paymentId,
+        requestId,
+        recordedAt: new Date().toISOString(),
+        message: rawMessage
+      };
+    } else {
+      detail.receiptIssueRequest = null;
+    }
+    closeFinanceLegalReceiptIssueConfirm();
+    const readable = getFinanceLegalDetailReadableError(err);
+    showToast(
+      shouldBlockRetry
+        ? `${readable} กรุณา refresh Workspace หรือตรวจเอกสารเดิมก่อนส่งคำขอใหม่`
+        : readable,
+      "error",
+      shouldBlockRetry ? 5200 : 2500
+    );
+  } finally {
+    if (detail.pendingKey === pendingKey) {
+      detail.pendingKey = "";
+      renderFinanceLegalDetailShell();
+    }
+  }
+}
+
 async function fetchReceivableDetailByBillId(billId) {
   const form = new URLSearchParams();
   form.append("action", "getReceivable");
@@ -23395,11 +23762,20 @@ async function openFinanceLegalDetail(type, recordId, context = {}) {
   const normalizedType = String(type || "").trim();
   const normalizedRecordId = String(recordId || "").trim();
   const targetKey = getFinanceLegalDetailCacheKey(normalizedType, normalizedRecordId);
+  const nextContext = normalizeFinanceLegalDetailContext(
+    context,
+    normalizedType,
+    normalizedRecordId
+  );
   if (
     detail.open &&
     detail.type === normalizedType &&
     detail.recordId === normalizedRecordId
   ) {
+    if (hasExplicitFinanceLegalDetailContext(context)) {
+      detail.context = nextContext;
+      renderFinanceLegalDetailShell();
+    }
     return;
   }
   if (detail.pendingKey && detail.pendingKey === targetKey) {
@@ -23418,6 +23794,7 @@ async function openFinanceLegalDetail(type, recordId, context = {}) {
   detail.open = true;
   detail.type = normalizedType;
   detail.recordId = normalizedRecordId;
+  detail.context = nextContext;
   detail.title = context.title || getFinanceLegalDetailTitle(normalizedType, null, "");
   detail.loading = !!normalizedRecordId;
   detail.error = normalizedRecordId
@@ -23437,6 +23814,14 @@ async function openFinanceLegalDetail(type, recordId, context = {}) {
             : "Workspace row ไม่มีรหัสใบแจ้งหนี้สำหรับเปิดรายละเอียด");
   detail.data = null;
   detail.pendingKey = detail.loading ? targetKey : "";
+  detail.receiptIssueRequest = null;
+  if (
+    normalizedType !== "payment" ||
+    String(detail.receiptIssueUnknownCompletion?.paymentId || "").trim() !==
+      normalizedRecordId
+  ) {
+    detail.receiptIssueUnknownCompletion = null;
+  }
   detail.requestId += 1;
   const requestId = detail.requestId;
 
@@ -23690,6 +24075,12 @@ function getPaymentEffectiveStateLabel(payment, receivable) {
     : "ไม่มีผลต่อยอดค้างรับ";
 }
 
+function getPaymentDetailActionBoundaryText() {
+  return isReceiptIssueOperatorAvailable()
+    ? "อ่านอย่างเดียว ยกเว้นปุ่มออกใบรับเงินสำหรับ Payment ที่พร้อมออก Receipt"
+    : "ไม่มีปุ่มแก้ไข / ยืนยัน / แก้ไขรายการ / ออกเอกสาร / ลบ";
+}
+
 function renderPaymentReadOnlyDetail(detail) {
   const payment = detail?.payment || {};
   const receivable = detail?.receivable || {};
@@ -23717,7 +24108,7 @@ function renderPaymentHeaderCard(payment, receivable) {
           <span class="status-badge compact ${isEffective ? "status-approved" : "status-neutral"}">${esc(effectiveLabel)}</span>
         </strong>
       </div>
-      ${renderFinanceLegalDetailField("ดูอย่างเดียว", "ไม่มีปุ่มแก้ไข / ยืนยัน / แก้ไขรายการ / ออกเอกสาร / ลบ")}
+      ${renderFinanceLegalDetailField("ดูอย่างเดียว", getPaymentDetailActionBoundaryText())}
     </div>
   `);
 }
@@ -24980,7 +25371,13 @@ async function openWorkspaceDrillDown(sectionId, rowId) {
       return;
     }
     openFinanceLegalPaymentDetail(paymentId, {
-      title: row?.primaryLabel || paymentId || "การชำระเงิน"
+      title: row?.primaryLabel || paymentId || "การชำระเงิน",
+      source: "workspace",
+      sectionId: "receipts_ready_to_issue",
+      rowId: row?.id || paymentId,
+      paymentId,
+      billId: drillDown.billId || "",
+      customerId: drillDown.customerId || ""
     });
     return;
   }
