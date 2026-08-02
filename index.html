@@ -6896,6 +6896,9 @@ Object.assign(window, {
   loadLatestWorkspaceReadModelFoundationRuntimeTraceFromAdmin,
   loadWorkspaceReadModelFoundationProgressFromAdmin,
   auditWorkspaceReadModelFoundationDiagnosticRecoveryFromAdmin,
+  confirmFinanceLegalBillIssue,
+  closeFinanceLegalBillIssueConfirm,
+  executeFinanceLegalBillIssueFromConfirm,
   setBusinessDashboardRange,
   refreshBusinessDashboard,
   openBusinessDashboardPendingDeliveries,
@@ -21860,6 +21863,54 @@ function isBillPrintStatusSupported(status) {
   return status === "ISSUED" || status === "VOID";
 }
 
+function getBillIssueOperatorPendingKey(billId) {
+  return `issueBill:${String(billId || "").trim()}`;
+}
+
+function isBillReadyForOperatorIssue(bill) {
+  return Boolean(
+    bill?.billId &&
+    String(bill.status || "").trim().toUpperCase() === "DRAFT" &&
+    !String(bill.billNumber || "").trim()
+  );
+}
+
+function isBillIssueOperatorPending(detail = getFinanceLegalDetailState()) {
+  const billId = String(detail?.data?.billId || "").trim();
+  return Boolean(
+    billId &&
+    detail?.pendingKey === getBillIssueOperatorPendingKey(billId)
+  );
+}
+
+function isBillIssueOperatorAvailable(detail = getFinanceLegalDetailState()) {
+  const bill = detail?.data || null;
+  return Boolean(
+    detail?.open &&
+    detail.type === "bill" &&
+    !detail.loading &&
+    !detail.error &&
+    detail.recordId === bill?.billId &&
+    isBillReadyForOperatorIssue(bill) &&
+    hasAdminPermission("bill.issue")
+  );
+}
+
+function renderFinanceLegalBillIssueAction(detail) {
+  if (!isBillIssueOperatorAvailable(detail)) {
+    return "";
+  }
+  const pending = isBillIssueOperatorPending(detail);
+  return `
+    <button class="btn btn-primary" type="button"
+      ${pending ? "disabled aria-disabled=\"true\"" : ""}
+      onclick="confirmFinanceLegalBillIssue()"
+      aria-label="ออกเอกสารใบแจ้งหนี้">
+      ${pending ? "กำลังออกเอกสาร..." : "ออกเอกสาร"}
+    </button>
+  `;
+}
+
 function isBillPrintAvailable(detail = getFinanceLegalDetailState()) {
   const bill = detail?.data || null;
   const status = getBillPrintStatus(bill);
@@ -22869,6 +22920,7 @@ function renderFinanceLegalDetailShell() {
   const title = detail.title || "รายละเอียด";
   const subtitle = getFinanceLegalDetailSubtitle(detail);
   const body = renderFinanceLegalDetailBody(detail);
+  const operatorAction = renderFinanceLegalBillIssueAction(detail);
   const printAction = renderFinanceLegalBillPrintAction(detail) || renderFinanceLegalTaxInvoicePrintAction(detail) || renderFinanceLegalReceiptPrintAction(detail) || renderFinanceLegalCreditNotePrintAction(detail);
 
   adminDashboardSheet.innerHTML = `
@@ -22884,6 +22936,7 @@ function renderFinanceLegalDetailShell() {
           <h3 id="adminDashboardSheetTitle">${esc(title)}</h3>
           <div class="business-dashboard-subtitle">${esc(subtitle)}</div>
         </div>
+        ${operatorAction}
         ${printAction}
         <button class="btn btn-outline" type="button"
           onclick="closeFinanceLegalDetailSheet()"
@@ -23016,6 +23069,117 @@ async function fetchBillDetailById(billId) {
     throw new Error("Malformed Bill detail response");
   }
   return bill;
+}
+
+function getBillDetailActionBoundaryText(bill) {
+  if (isBillReadyForOperatorIssue(bill) && hasAdminPermission("bill.issue")) {
+    return "ออกเอกสารได้สำหรับ DRAFT เท่านั้น / ไม่มีปุ่มแก้ไขหรือยกเลิก";
+  }
+  return "ไม่มีปุ่มแก้ไข / ยกเลิก";
+}
+
+function closeFinanceLegalBillIssueConfirm() {
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  closeOverlay(confirmSheet);
+}
+
+function confirmFinanceLegalBillIssue() {
+  if (!ensureAdminSessionForWorkspace()) return;
+  const detail = getFinanceLegalDetailState();
+  if (!isBillIssueOperatorAvailable(detail)) {
+    showToast("Bill is not ready to issue", "warning");
+    return;
+  }
+  if (isBillIssueOperatorPending(detail)) return;
+
+  const bill = detail.data || {};
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  confirmSheet.classList.remove("developer-diagnostic-confirm-sheet");
+  confirmSheet.innerHTML = `
+    <h3 id="confirmSheetTitle">ยืนยันออกเอกสาร</h3>
+    <p>
+      ออกเลขใบแจ้งหนี้สำหรับ Bill นี้ ระบบจะเรียก backend <code>issueBill</code>
+      ด้วย Bill ID ที่แสดงอยู่เท่านั้น
+    </p>
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("Bill ID", bill.billId || "-")}
+      ${renderFinanceLegalDetailField("ลูกค้า", bill.customerName || bill.customerId || "-")}
+      ${renderFinanceLegalDetailField("ยอดรวม", bill.grandTotal, { money: true })}
+    </div>
+    <div class="finance-legal-detail-related-note">
+      เลข INV จะถูกออกโดย backend เท่านั้น ไม่มีการแก้ Bill calculation, payment,
+      receivable, receipt, tax invoice, credit note หรือ sequence logic จากหน้าจอนี้
+    </div>
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closeFinanceLegalBillIssueConfirm()">
+        ยกเลิก
+      </button>
+      <button class="btn btn-primary" type="button" data-bill-issue-submit
+        onclick="executeFinanceLegalBillIssueFromConfirm()">
+        ออกเอกสาร
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+}
+
+async function executeFinanceLegalBillIssueFromConfirm() {
+  if (!ensureAdminSessionForWorkspace()) return;
+  const detail = getFinanceLegalDetailState();
+  if (!isBillIssueOperatorAvailable(detail)) {
+    closeFinanceLegalBillIssueConfirm();
+    showToast("Bill is not ready to issue", "warning");
+    return;
+  }
+
+  const billId = String(detail.data?.billId || "").trim();
+  const pendingKey = getBillIssueOperatorPendingKey(billId);
+  if (detail.pendingKey === pendingKey) return;
+
+  detail.pendingKey = pendingKey;
+  renderFinanceLegalDetailShell();
+  confirmSheet.querySelectorAll("button").forEach(button => {
+    button.disabled = true;
+    button.setAttribute("aria-disabled", "true");
+  });
+  const submitButton = confirmSheet.querySelector("[data-bill-issue-submit]");
+  if (submitButton) {
+    submitButton.textContent = "กำลังออกเอกสาร...";
+  }
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "issueBill");
+    form.append("token", state.admin.token);
+    form.append("billId", billId);
+    const json = await postFormAction(form);
+    const issuedBill = json?.data?.bill;
+    if (!issuedBill || String(issuedBill.billId || "").trim() !== billId) {
+      throw new Error("Malformed Bill issue response");
+    }
+
+    setFinanceLegalDetailCachedData(detail, "bill", billId, issuedBill);
+    detail.data = issuedBill;
+    detail.title = getFinanceLegalDetailTitle("bill", issuedBill, detail.title);
+    detail.error = "";
+    closeFinanceLegalBillIssueConfirm();
+    renderFinanceLegalDetailShell();
+    showToast(`ออกเอกสาร ${issuedBill.billNumber || billId} แล้ว`, "success");
+
+    const workspaceRefreshed = await refreshAdminWorkspaceAfterFinanceLegalMutation();
+    if (!workspaceRefreshed) {
+      showToast("ออกเอกสารแล้ว แต่ Workspace ยังไม่ได้ refresh", "warning");
+    }
+  } catch (err) {
+    closeFinanceLegalBillIssueConfirm();
+    showToast(getFinanceLegalDetailReadableError(err), "error");
+  } finally {
+    if (detail.pendingKey === pendingKey) {
+      detail.pendingKey = "";
+      renderFinanceLegalDetailShell();
+    }
+  }
 }
 
 async function fetchReceivableDetailByBillId(billId) {
@@ -23281,7 +23445,7 @@ function renderBillDetailHeaderCard(bill) {
       ${renderFinanceLegalDetailField("เลขที่ใบแจ้งหนี้", bill.billNumber || bill.billId)}
       ${renderFinanceLegalDetailField("รหัสเอกสาร", bill.billId)}
       ${renderFinanceLegalDetailField("สถานะ", bill.status)}
-      ${renderFinanceLegalDetailField("ดูอย่างเดียว", "ไม่มีปุ่มแก้ไข / ออกเอกสาร / ยกเลิก")}
+      ${renderFinanceLegalDetailField("ขอบเขตการทำงาน", getBillDetailActionBoundaryText(bill))}
     </div>
   `);
 }
@@ -24419,6 +24583,37 @@ async function refreshAdminWorkspace(options = {}) {
     if (requestId === workspace.requestId) {
       workspace.loading = false;
       renderAdminWorkspaceSheet();
+    }
+  }
+}
+
+async function refreshAdminWorkspaceAfterFinanceLegalMutation() {
+  const workspace = getAdminWorkspaceState();
+  if (workspace.loading) return false;
+
+  const requestId = workspace.requestId + 1;
+  workspace.requestId = requestId;
+  workspace.loading = true;
+  workspace.error = "";
+
+  try {
+    const summary = await fetchWorkspaceSummary();
+    if (requestId !== workspace.requestId) return false;
+    workspace.summary = summary;
+    workspace.lastLoadedAt = new Date().toISOString();
+    return true;
+  } catch (err) {
+    if (requestId === workspace.requestId) {
+      workspace.error = getWorkspaceReadableError(err);
+      console.warn("Workspace refresh after Finance/Legal mutation failed:", err);
+    }
+    return false;
+  } finally {
+    if (requestId === workspace.requestId) {
+      workspace.loading = false;
+      if (!getFinanceLegalDetailState().open) {
+        renderAdminWorkspaceSheet();
+      }
     }
   }
 }
