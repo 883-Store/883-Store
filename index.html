@@ -21852,6 +21852,41 @@ const FINANCE_LEGAL_PRINT_ROOT_ID = "financeLegalPrintRoot";
 let financeLegalPrintOriginalTitle = null;
 let financeLegalPrintFallbackTimer = 0;
 
+function getBillPrintStatus(bill) {
+  return String(bill?.status || "").trim().toUpperCase();
+}
+
+function isBillPrintStatusSupported(status) {
+  return status === "ISSUED" || status === "VOID";
+}
+
+function isBillPrintAvailable(detail = getFinanceLegalDetailState()) {
+  const bill = detail?.data || null;
+  const status = getBillPrintStatus(bill);
+  return Boolean(
+    detail?.open &&
+    detail.type === "bill" &&
+    !detail.loading &&
+    !detail.error &&
+    bill?.billId &&
+    detail.recordId === bill.billId &&
+    isBillPrintStatusSupported(status)
+  );
+}
+
+function renderFinanceLegalBillPrintAction(detail) {
+  if (!isBillPrintAvailable(detail)) {
+    return "";
+  }
+  return `
+    <button class="btn btn-outline finance-legal-print-action" type="button"
+      onclick="printBillFromDetail()"
+      aria-label="พิมพ์เอกสารใบแจ้งหนี้">
+      พิมพ์เอกสาร
+    </button>
+  `;
+}
+
 function getTaxInvoicePrintStatus(taxInvoice) {
   return String(taxInvoice?.status || "").trim().toUpperCase();
 }
@@ -21981,6 +22016,14 @@ function getLoadedCreditNoteForPrint() {
   return detail.data;
 }
 
+function getLoadedBillForPrint() {
+  const detail = getFinanceLegalDetailState();
+  if (!isBillPrintAvailable(detail)) {
+    throw new Error("Bill ISSUED or VOID detail is not ready for print.");
+  }
+  return detail.data;
+}
+
 function formatFinanceLegalPrintNumber(value) {
   return formatFinanceLegalNumber(value);
 }
@@ -22008,6 +22051,51 @@ function renderFinanceLegalPrintAmountRow(label, value, options = {}) {
       <th scope="row">${esc(label)}</th>
       <td>${esc(displayValue)}</td>
     </tr>
+  `;
+}
+
+function renderBillVoidPrintWatermark(bill) {
+  if (getBillPrintStatus(bill) !== "VOID") {
+    return "";
+  }
+  return `
+    <div class="finance-legal-print-void-watermark" aria-hidden="true">VOID</div>
+  `;
+}
+
+function renderBillVoidPrintTreatment(bill) {
+  if (getBillPrintStatus(bill) !== "VOID") {
+    return "";
+  }
+  return `
+    <section class="finance-legal-print-void-banner">
+      <strong>VOID</strong>
+      <span>ยกเลิก</span>
+      <p>
+        ${esc("ใบแจ้งหนี้นี้ถูกยกเลิกแล้ว เลขที่เอกสารเดิมยังคงแสดงเพื่อการอ้างอิง และไม่ถือเป็นหลักฐานการชำระเงินหรือใบเสร็จรับเงิน")}
+      </p>
+    </section>
+  `;
+}
+
+function renderBillVoidPrintMetadata(bill) {
+  if (getBillPrintStatus(bill) !== "VOID") {
+    return "";
+  }
+  return `
+    <section class="finance-legal-print-section">
+      <h2>ข้อมูลการยกเลิก</h2>
+      <div class="finance-legal-print-grid">
+        ${renderFinanceLegalPrintField("สถานะ", bill.status || "-")}
+        ${renderFinanceLegalPrintField("วันที่ยกเลิก", bill.voidedAt, { date: true })}
+        ${renderFinanceLegalPrintField("ผู้ยกเลิก", bill.voidedBy || "-")}
+        ${renderFinanceLegalPrintField("เหตุผล", bill.voidReason || "-")}
+        ${renderFinanceLegalPrintField("เลขที่เอกสารเดิม", bill.billNumber || "-")}
+      </div>
+      <p class="finance-legal-print-note">
+        ${esc("การยกเลิกใบแจ้งหนี้นี้ไม่แสดงถึงการย้อน Payment, Receipt, Tax Invoice, Credit Note, Fulfillment, Inventory หรือ sequence ใด ๆ โดยอัตโนมัติ")}
+      </p>
+    </section>
   `;
 }
 
@@ -22143,6 +22231,91 @@ function renderCreditNoteVoidPrintMetadata(creditNote) {
   `;
 }
 
+function renderBillPrintItemsSection(bill) {
+  const items = Array.isArray(bill?.items) ? bill.items : [];
+  if (!items.length) {
+    return `
+      <section class="finance-legal-print-section">
+        <h2>รายการสินค้า</h2>
+        <p class="finance-legal-print-note">${esc("ไม่มีรายการสินค้าใน payload ที่โหลดอยู่")}</p>
+      </section>
+    `;
+  }
+  return `
+    <section class="finance-legal-print-section">
+      <h2>รายการสินค้า</h2>
+      <table class="finance-legal-print-amounts">
+        <thead>
+          <tr>
+            <th scope="col">รายการ</th>
+            <th scope="col">จำนวน</th>
+            <th scope="col">ราคาต่อหน่วย</th>
+            <th scope="col">ยอดตามบรรทัด</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map(item => `
+            <tr>
+              <th scope="row">
+                ${esc(item.productNameSnapshot || item.productId || item.billItemId || "-")}
+                <div class="finance-legal-print-note">Product ID: ${esc(item.productId || "-")}</div>
+              </th>
+              <td>${esc(formatFinanceLegalPrintNumber(item.quantity))}</td>
+              <td>${esc(formatFinanceLegalPrintNumber(item.unitPriceSnapshot))}</td>
+              <td>${esc(formatFinanceLegalPrintNumber(item.lineNet))}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </section>
+  `;
+}
+
+function renderBillPrintFulfillmentSection(bill) {
+  const links = getBillFulfillmentLinksForDetail(bill);
+  if (!links.length) {
+    return "";
+  }
+  return `
+    <section class="finance-legal-print-section">
+      <h2>Fulfillment References</h2>
+      <div class="finance-legal-print-grid">
+        ${links.map(link => `
+          ${renderFinanceLegalPrintField("Reference", link.fulfillmentReferenceId || "-")}
+          ${renderFinanceLegalPrintField("Type", link.fulfillmentType || "-")}
+          ${renderFinanceLegalPrintField("Order ID", link.orderId || "-")}
+          ${renderFinanceLegalPrintField("Billed qty", link.billedQuantity, { number: true })}
+        `).join("")}
+      </div>
+      <p class="finance-legal-print-note">
+        ${esc("แสดง reference จาก Bill Detail payload เท่านั้น ไม่มีการอ่านหรือแก้ไข Fulfillment เพิ่มเติม")}
+      </p>
+    </section>
+  `;
+}
+
+function renderBillPrintReceivableSection(bill) {
+  const hasReceivable = bill.receivableStage || bill.remainingReceivable !== undefined || bill.confirmedPaymentId;
+  if (!hasReceivable) {
+    return "";
+  }
+  return `
+    <section class="finance-legal-print-section">
+      <h2>บริบทยอดค้างรับ</h2>
+      <div class="finance-legal-print-grid">
+        ${renderFinanceLegalPrintField("สถานะยอดค้างรับ", bill.receivableStage || "-")}
+        ${renderFinanceLegalPrintField("ยอดคงเหลือ", bill.remainingReceivable, { number: bill.remainingReceivable !== null })}
+        ${renderFinanceLegalPrintField("เกินกำหนด", bill.isOverdue ? "ใช่" : "ไม่ใช่")}
+        ${renderFinanceLegalPrintField("Payment ที่มีผล", bill.confirmedPaymentId || "-")}
+        ${renderFinanceLegalPrintField("วันที่ Payment", bill.confirmedPaymentDate, { date: true })}
+      </div>
+      <p class="finance-legal-print-note">
+        ${esc("ข้อมูลยอดค้างรับเป็นบริบทแบบอ่านอย่างเดียวจาก getBill ที่โหลดอยู่ ไม่ใช่หลักฐานการชำระเงินหรือใบเสร็จรับเงิน")}
+      </p>
+    </section>
+  `;
+}
+
 function renderReceiptPrintProjection(receipt) {
   return `
     ${renderReceiptVoidPrintWatermark(receipt)}
@@ -22182,6 +22355,74 @@ function renderReceiptPrintProjection(receipt) {
         </p>
       </section>
       ${renderReceiptVoidPrintMetadata(receipt)}
+    </div>
+  `;
+}
+
+function renderBillPrintProjection(bill) {
+  return `
+    ${renderBillVoidPrintWatermark(bill)}
+    <div class="finance-legal-print-page" role="document">
+      <div class="finance-legal-print-test-marker">
+        เอกสารจากระบบ TEST — ไม่ใช่เอกสาร Production
+      </div>
+      ${renderBillVoidPrintTreatment(bill)}
+      <header class="finance-legal-print-header">
+        <div>
+          <h1 class="finance-legal-print-title">ใบแจ้งหนี้</h1>
+          <div>Bill</div>
+        </div>
+        <div class="finance-legal-print-meta">
+          ${renderFinanceLegalPrintField("เลขที่ใบแจ้งหนี้", bill.billNumber || "-")}
+          ${renderFinanceLegalPrintField("สถานะ", bill.status || "-")}
+          ${renderFinanceLegalPrintField("วันที่เอกสาร", bill.billDate, { date: true })}
+        </div>
+      </header>
+      <section class="finance-legal-print-section">
+        <h2>ข้อมูลเอกสาร</h2>
+        <div class="finance-legal-print-grid">
+          ${renderFinanceLegalPrintField("Bill ID", bill.billId || "-")}
+          ${renderFinanceLegalPrintField("วันที่ออกเลข", bill.issuedAt, { date: true })}
+          ${renderFinanceLegalPrintField("ผู้ออกเลข", bill.issuedBy || "-")}
+          ${renderFinanceLegalPrintField("วันครบกำหนด", bill.dueDate, { date: true })}
+          ${renderFinanceLegalPrintField("อัปเดตล่าสุด", bill.updatedAt || bill.createdAt, { date: true })}
+        </div>
+      </section>
+      <section class="finance-legal-print-section">
+        <h2>ลูกค้า</h2>
+        <div class="finance-legal-print-grid">
+          ${renderFinanceLegalPrintField("ชื่อลูกค้า", bill.customerName || bill.customerId || "-")}
+          ${renderFinanceLegalPrintField("Customer ID", bill.customerId || "-")}
+          ${renderFinanceLegalPrintField("ผู้ติดต่อวางบิล", bill.billingContactName || bill.billingContactId || "-")}
+          ${renderFinanceLegalPrintField("Contact ID", bill.billingContactId || "-")}
+        </div>
+      </section>
+      <section class="finance-legal-print-section">
+        <h2>ยอดและ VAT ที่เก็บใน Bill</h2>
+        <table class="finance-legal-print-amounts">
+          <tbody>
+            ${renderFinanceLegalPrintAmountRow("Subtotal", bill.subtotal)}
+            ${renderFinanceLegalPrintAmountRow("ส่วนลดท้ายบิล", bill.billDiscountAmount)}
+            ${renderFinanceLegalPrintAmountRow("ยอดก่อน VAT", bill.netBeforeVat)}
+            ${renderFinanceLegalPrintAmountRow("อัตรา VAT", bill.vatRateSnapshot, { rate: true })}
+            ${renderFinanceLegalPrintAmountRow("VAT", bill.vatAmount)}
+            ${renderFinanceLegalPrintAmountRow("ยอดรวม", bill.grandTotal)}
+          </tbody>
+        </table>
+        <p class="finance-legal-print-note">
+          ${esc("แสดงค่าที่เก็บใน Bill Detail payload เท่านั้น ไม่มีการคำนวณยอด ส่วนลด VAT หรือวันครบกำหนดใหม่")}
+        </p>
+      </section>
+      ${renderBillPrintItemsSection(bill)}
+      ${renderBillPrintFulfillmentSection(bill)}
+      ${renderBillPrintReceivableSection(bill)}
+      <section class="finance-legal-print-section">
+        <h2>ขอบเขตเอกสาร</h2>
+        <p class="finance-legal-print-note">
+          ${esc("ใบแจ้งหนี้นี้เป็นเอกสารเรียกเก็บเงิน ไม่ใช่ใบกำกับภาษี ใบเสร็จรับเงิน หรือหลักฐานการชำระเงิน")}
+        </p>
+      </section>
+      ${renderBillVoidPrintMetadata(bill)}
     </div>
   `;
 }
@@ -22364,6 +22605,15 @@ function getCreditNotePrintTitle(creditNote) {
   return `CREDIT-NOTE-${safeId}-TEST`;
 }
 
+function getBillPrintTitle(bill) {
+  const rawId = bill?.billNumber || bill?.billId || "bill";
+  const safeId = String(rawId).replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "bill";
+  if (getBillPrintStatus(bill) === "VOID") {
+    return `BILL-${safeId}-VOID-TEST`;
+  }
+  return `BILL-${safeId}-TEST`;
+}
+
 function removeFinanceLegalPrintProjection() {
   const root = document.getElementById(FINANCE_LEGAL_PRINT_ROOT_ID);
   if (root) {
@@ -22377,6 +22627,44 @@ function removeFinanceLegalPrintProjection() {
   if (financeLegalPrintFallbackTimer) {
     window.clearTimeout(financeLegalPrintFallbackTimer);
     financeLegalPrintFallbackTimer = 0;
+  }
+}
+
+function printBillFromDetail() {
+  let bill;
+  try {
+    bill = getLoadedBillForPrint();
+  } catch (err) {
+    showToast(err.message || "Bill print is unavailable.", "warning");
+    return;
+  }
+
+  removeFinanceLegalPrintProjection();
+  const root = document.createElement("section");
+  root.id = FINANCE_LEGAL_PRINT_ROOT_ID;
+  root.className = "finance-legal-print-root";
+  root.setAttribute("aria-hidden", "true");
+  root.innerHTML = renderBillPrintProjection(bill);
+  document.body.appendChild(root);
+  financeLegalPrintOriginalTitle = document.title;
+  document.title = getBillPrintTitle(bill);
+  document.body.classList.add("finance-legal-printing");
+
+  const cleanup = () => {
+    window.removeEventListener("afterprint", cleanup);
+    removeFinanceLegalPrintProjection();
+  };
+  window.addEventListener("afterprint", cleanup, { once: true });
+  financeLegalPrintFallbackTimer = window.setTimeout(cleanup, 30000);
+
+  try {
+    if (typeof window.print !== "function") {
+      throw new Error("Browser print is unavailable.");
+    }
+    window.print();
+  } catch (err) {
+    cleanup();
+    showToast(err.message || "Bill print is unavailable.", "warning");
   }
 }
 
@@ -22581,7 +22869,7 @@ function renderFinanceLegalDetailShell() {
   const title = detail.title || "รายละเอียด";
   const subtitle = getFinanceLegalDetailSubtitle(detail);
   const body = renderFinanceLegalDetailBody(detail);
-  const printAction = renderFinanceLegalTaxInvoicePrintAction(detail) || renderFinanceLegalReceiptPrintAction(detail) || renderFinanceLegalCreditNotePrintAction(detail);
+  const printAction = renderFinanceLegalBillPrintAction(detail) || renderFinanceLegalTaxInvoicePrintAction(detail) || renderFinanceLegalReceiptPrintAction(detail) || renderFinanceLegalCreditNotePrintAction(detail);
 
   adminDashboardSheet.innerHTML = `
     <div class="finance-legal-detail-panel">
