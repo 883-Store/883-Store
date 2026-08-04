@@ -6945,6 +6945,14 @@ Object.assign(window, {
   closeTaxInvoiceIssueOperatorAcceptanceRecoveryCleanupConfirmation,
   executeTaxInvoiceIssueOperatorAcceptanceRecoveryCleanupFromAdmin,
   openTaxInvoiceIssueOperatorAcceptanceBillDetailFromAdmin,
+  loadLatestCreditNoteIssueOperatorAcceptanceRuntimeTraceFromAdmin,
+  loadCreditNoteIssueOperatorAcceptanceProgressFromAdmin,
+  auditCreditNoteIssueOperatorAcceptanceRecoveryFromAdmin,
+  confirmCreditNoteIssueOperatorAcceptanceRecoveryCleanupFromAdmin,
+  updateCreditNoteIssueOperatorAcceptanceCleanupButtonState,
+  closeCreditNoteIssueOperatorAcceptanceRecoveryCleanupConfirmation,
+  executeCreditNoteIssueOperatorAcceptanceRecoveryCleanupFromAdmin,
+  openCreditNoteIssueOperatorAcceptanceTaxInvoiceDetailFromAdmin,
   loadLatestCreditNoteFoundationRuntimeTraceFromAdmin,
   loadCreditNoteFoundationProgressFromAdmin,
   auditCreditNoteFoundationDiagnosticRecoveryFromAdmin,
@@ -6980,6 +6988,9 @@ Object.assign(window, {
   confirmFinanceLegalTaxInvoiceIssue,
   closeFinanceLegalTaxInvoiceIssueConfirm,
   executeFinanceLegalTaxInvoiceIssueFromConfirm,
+  confirmFinanceLegalCreditNoteIssue,
+  closeFinanceLegalCreditNoteIssueConfirm,
+  executeFinanceLegalCreditNoteIssueFromConfirm,
   setBusinessDashboardRange,
   refreshBusinessDashboard,
   openBusinessDashboardPendingDeliveries,
@@ -7517,6 +7528,17 @@ const state = {
       creditNoteRecoveryCleanupRunId: "",
       creditNoteRecoveryCleanupTimeoutRunId: "",
       creditNoteRunId: "",
+      loadingCreditNoteIssueOperatorRuntimeTrace: false,
+      creditNoteIssueOperatorRuntimeTrace: null,
+      creditNoteIssueOperatorRuntimeTraceError: "",
+      loadingCreditNoteIssueOperatorRecoveryAudit: false,
+      loadingCreditNoteIssueOperatorRecoveryCleanup: false,
+      creditNoteIssueOperatorRecoveryAudit: null,
+      creditNoteIssueOperatorRecoveryError: "",
+      creditNoteIssueOperatorRecoveryCleanupMessage: "",
+      creditNoteIssueOperatorRecoveryCleanupRunId: "",
+      creditNoteIssueOperatorRecoveryCleanupTimeoutRunId: "",
+      creditNoteIssueOperatorRunId: "",
       loadingCreditNoteDetailIssuedWorkspaceRuntimeTrace: false,
       creditNoteDetailIssuedWorkspaceRuntimeTrace: null,
       creditNoteDetailIssuedWorkspaceRuntimeTraceError: "",
@@ -9891,6 +9913,7 @@ const RECEIPT_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID = "receipt_issue_operator_accep
 const TAX_INVOICE_FOUNDATION_SUITE_ID = "tax_invoice_foundation";
 const TAX_INVOICE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID = "tax_invoice_issue_operator_acceptance";
 const CREDIT_NOTE_FOUNDATION_SUITE_ID = "credit_note_foundation";
+const CREDIT_NOTE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID = "credit_note_issue_operator_acceptance";
 const CREDIT_NOTE_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID = "credit_note_detail_issued";
 const CREDIT_NOTE_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID = "credit_note_detail_void";
 const TAX_INVOICE_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID = "tax_invoice_detail_issued_workspace_acceptance";
@@ -10286,6 +10309,12 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     mutationDescription: "Run after Tax Invoice Foundation PASS. Creates isolated TEST-DIAG Credit Note, Tax Invoice, Legal Identity, Bill, Customer, Contact, Order, and Product fixtures, verifies issue/VOID, CN numbering, idempotency, no-settlement mutation, persisted recovery, and defers exact cleanup."
   },
   {
+    id: CREDIT_NOTE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID,
+    label: "Credit Note Issue Operator Acceptance Fixture",
+    mutation: true,
+    mutationDescription: "Run only for Credit Note Issue Operator Workflow acceptance. Creates one isolated TEST-DIAG ISSUED Tax Invoice eligible for Credit Note issue, persists the canonical taxInvoiceId/runId, defers exact cleanup, and creates no Credit Note before the operator presses à¸­à¸­à¸à¹ƒà¸šà¸¥à¸”à¸«à¸™à¸µà¹‰."
+  },
+  {
     id: CREDIT_NOTE_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID,
     label: "Credit Note Detail ISSUED Fixture",
     mutation: true,
@@ -10486,6 +10515,17 @@ function resetDeveloperDiagnosticsState() {
   state.admin.developerDiagnostics.creditNoteRecoveryCleanupRunId = "";
   state.admin.developerDiagnostics.creditNoteRecoveryCleanupTimeoutRunId = "";
   state.admin.developerDiagnostics.creditNoteRunId = "";
+  state.admin.developerDiagnostics.loadingCreditNoteIssueOperatorRuntimeTrace = false;
+  state.admin.developerDiagnostics.creditNoteIssueOperatorRuntimeTrace = null;
+  state.admin.developerDiagnostics.creditNoteIssueOperatorRuntimeTraceError = "";
+  state.admin.developerDiagnostics.loadingCreditNoteIssueOperatorRecoveryAudit = false;
+  state.admin.developerDiagnostics.loadingCreditNoteIssueOperatorRecoveryCleanup = false;
+  state.admin.developerDiagnostics.creditNoteIssueOperatorRecoveryAudit = null;
+  state.admin.developerDiagnostics.creditNoteIssueOperatorRecoveryError = "";
+  state.admin.developerDiagnostics.creditNoteIssueOperatorRecoveryCleanupMessage = "";
+  state.admin.developerDiagnostics.creditNoteIssueOperatorRecoveryCleanupRunId = "";
+  state.admin.developerDiagnostics.creditNoteIssueOperatorRecoveryCleanupTimeoutRunId = "";
+  state.admin.developerDiagnostics.creditNoteIssueOperatorRunId = "";
   state.admin.developerDiagnostics.loadingTaxInvoiceDetailIssuedWorkspaceRuntimeTrace = false;
   state.admin.developerDiagnostics.taxInvoiceDetailIssuedWorkspaceRuntimeTrace = null;
   state.admin.developerDiagnostics.taxInvoiceDetailIssuedWorkspaceRuntimeTraceError = "";
@@ -10760,6 +10800,9 @@ function renderDeveloperDiagnosticResultCard(suite) {
           : ""}
         ${suite.id === CREDIT_NOTE_FOUNDATION_SUITE_ID
           ? renderCreditNoteFoundationRuntimeRecoveryPanel()
+          : ""}
+        ${suite.id === CREDIT_NOTE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID
+          ? renderCreditNoteIssueOperatorAcceptanceRuntimeRecoveryPanel()
           : ""}
         ${isCreditNoteDetailWorkspaceAcceptanceSuite(suite.id)
           ? renderCreditNoteDetailWorkspaceAcceptanceRuntimeRecoveryPanel(suite.id)
@@ -11092,6 +11135,18 @@ function shouldKeepDeveloperDiagnosticDetailsOpen(suiteId) {
       diagnostics.taxInvoiceIssueOperatorRuntimeTraceError ||
       diagnostics.taxInvoiceIssueOperatorRecoveryError ||
       diagnostics.taxInvoiceIssueOperatorRecoveryCleanupMessage
+    );
+  }
+  if (id === CREDIT_NOTE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID) {
+    return !!(
+      diagnostics.loadingCreditNoteIssueOperatorRuntimeTrace ||
+      diagnostics.loadingCreditNoteIssueOperatorRecoveryAudit ||
+      diagnostics.loadingCreditNoteIssueOperatorRecoveryCleanup ||
+      diagnostics.creditNoteIssueOperatorRuntimeTrace ||
+      diagnostics.creditNoteIssueOperatorRecoveryAudit ||
+      diagnostics.creditNoteIssueOperatorRuntimeTraceError ||
+      diagnostics.creditNoteIssueOperatorRecoveryError ||
+      diagnostics.creditNoteIssueOperatorRecoveryCleanupMessage
     );
   }
   if (id === RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID) {
@@ -12689,6 +12744,7 @@ function isRuntimeRecoveryDeveloperDiagnosticSuite(suiteId) {
     id === PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID ||
     id === RECEIPT_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID ||
     id === TAX_INVOICE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID ||
+    id === CREDIT_NOTE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID ||
     id === RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID ||
     id === PAYMENT_CORRECTION_FOUNDATION_SUITE_ID ||
     id === PAYMENT_CORRECTION_WORKSPACE_ACCEPTANCE_SUITE_ID ||
@@ -13138,6 +13194,10 @@ async function loadDeveloperDiagnosticRuntimeTraceAfterTimeoutFromAdmin(suite) {
   if (suite === TAX_INVOICE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID) {
     await loadLatestTaxInvoiceIssueOperatorAcceptanceRuntimeTraceFromAdmin();
     return state.admin.developerDiagnostics.taxInvoiceIssueOperatorRuntimeTrace;
+  }
+  if (suite === CREDIT_NOTE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID) {
+    await loadLatestCreditNoteIssueOperatorAcceptanceRuntimeTraceFromAdmin();
+    return state.admin.developerDiagnostics.creditNoteIssueOperatorRuntimeTrace;
   }
   if (suite === RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID) {
     await loadLatestReceivableWorkspaceAcceptanceRuntimeTraceFromAdmin();
@@ -15416,6 +15476,634 @@ async function openTaxInvoiceIssueOperatorAcceptanceBillDetailFromAdmin() {
       await openDeveloperDiagnosticsSheet();
     }
     showToast(err.message || "Bill Detail is unavailable", "error");
+  }
+}
+
+function getCreditNoteIssueOperatorAcceptanceRunIdInputValue() {
+  return String(
+    document.getElementById("creditNoteIssueOperatorAcceptanceRecoveryRunId")?.value || ""
+  ).trim();
+}
+
+function getCreditNoteIssueOperatorAcceptanceCurrentRunId() {
+  const diagnostics = state.admin.developerDiagnostics;
+  return String(
+    diagnostics.creditNoteIssueOperatorRunId ||
+    diagnostics.creditNoteIssueOperatorRecoveryAudit?.runId ||
+    diagnostics.creditNoteIssueOperatorRuntimeTrace?.runId ||
+    ""
+  ).trim();
+}
+
+function getCreditNoteIssueOperatorAcceptanceRetainedFixture() {
+  const diagnostics = state.admin.developerDiagnostics;
+  return diagnostics.creditNoteIssueOperatorRuntimeTrace?.retainedFixture ||
+    diagnostics.creditNoteIssueOperatorRecoveryAudit?.retainedFixture ||
+    {};
+}
+
+function getCreditNoteIssueOperatorAcceptanceTaxInvoiceId() {
+  return String(
+    getCreditNoteIssueOperatorAcceptanceRetainedFixture().taxInvoiceId || ""
+  ).trim();
+}
+
+function getCreditNoteIssueOperatorAcceptanceRequestPrefixForTaxInvoice(
+  taxInvoiceId,
+  detail = getFinanceLegalDetailState()
+) {
+  const id = String(taxInvoiceId || "").trim();
+  if (!id) return "";
+  const contextPrefix = String(
+    detail?.context?.creditNoteIssueRequestPrefix || ""
+  ).trim();
+  if (
+    contextPrefix.indexOf("TEST-DIAG-CREDIT-NOTE-OP-") === 0 &&
+    String(detail?.context?.taxInvoiceId || "").trim() === id
+  ) {
+    return contextPrefix;
+  }
+  const fixture = getCreditNoteIssueOperatorAcceptanceRetainedFixture();
+  const fixtureTaxInvoiceId = String(fixture.taxInvoiceId || "").trim();
+  const fixturePrefix = String(fixture.operatorCreditNoteRequestPrefix || "")
+    .trim();
+  if (
+    fixtureTaxInvoiceId === id &&
+    fixturePrefix.indexOf("TEST-DIAG-CREDIT-NOTE-OP-") === 0
+  ) {
+    return fixturePrefix;
+  }
+  return "";
+}
+
+function hasCreditNoteIssueOperatorAcceptanceCreditNoteForTaxInvoice(taxInvoiceId) {
+  const id = String(taxInvoiceId || "").trim();
+  if (!id) return false;
+  const fixture = getCreditNoteIssueOperatorAcceptanceRetainedFixture();
+  return String(fixture.taxInvoiceId || "").trim() === id &&
+    (
+      !!String(fixture.operatorCreditNoteId || "").trim() ||
+      fixture.operatorCreditNoteDiscovered === true
+    );
+}
+
+function renderCreditNoteIssueOperatorAcceptanceRuntimeRecoveryPanel() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const trace = diagnostics.creditNoteIssueOperatorRuntimeTrace;
+  const isLoading = diagnostics.loadingCreditNoteIssueOperatorRuntimeTrace;
+  const traceError = diagnostics.creditNoteIssueOperatorRuntimeTraceError;
+  const recovery = diagnostics.creditNoteIssueOperatorRecoveryAudit;
+  const isRecoveryLoading = diagnostics.loadingCreditNoteIssueOperatorRecoveryAudit;
+  const isRecoveryCleanupLoading =
+    diagnostics.loadingCreditNoteIssueOperatorRecoveryCleanup;
+  const recoveryError = diagnostics.creditNoteIssueOperatorRecoveryError;
+  const recoveryCleanupMessage =
+    diagnostics.creditNoteIssueOperatorRecoveryCleanupMessage;
+  const runId = getCreditNoteIssueOperatorAcceptanceCurrentRunId();
+  const retainedFixture = getCreditNoteIssueOperatorAcceptanceRetainedFixture();
+  const taxInvoiceId = getCreditNoteIssueOperatorAcceptanceTaxInvoiceId();
+  const recoverySummary = recovery?.summary || {};
+  const recoverySummaryText = recovery
+    ? Object.keys(recoverySummary)
+        .map(key => {
+          const item = recoverySummary[key] || {};
+          return `${key}: ${Number(item.exists || 0)} exists / ${Number(item.missing || 0)} missing`;
+        })
+        .join(" | ")
+    : "";
+  const retainedFixtureText = retainedFixture && retainedFixture.taxInvoiceId
+    ? [
+        `Tax Invoice: ${retainedFixture.taxInvoiceId || "-"}`,
+        `Tax Invoice number: ${retainedFixture.taxInvoiceNumber || "-"}`,
+        `Bill: ${retainedFixture.billId || "-"}`,
+        `Customer: ${retainedFixture.customerId || "-"}`,
+        `Expected tax invoice: ${retainedFixture.expectedTaxInvoiceStatus || "-"}`,
+        `Expected credit note: ${retainedFixture.expectedCreditNoteStatus || "-"}`,
+        `Operator credit note: ${retainedFixture.operatorCreditNoteId || "ABSENT"}`,
+        `Request prefix: ${retainedFixture.operatorCreditNoteRequestPrefix || "-"}`
+      ].join(" | ")
+    : "";
+
+  return `
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Credit Note Issue Operator Runtime Trace</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadLatestCreditNoteIssueOperatorAcceptanceRuntimeTraceFromAdmin()">
+          ${isLoading ? "Loading..." : "Latest Credit Note Issue Operator Runtime Trace"}
+        </button>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadCreditNoteIssueOperatorAcceptanceProgressFromAdmin()">
+          ${isLoading ? "Loading..." : "Credit Note Issue Operator Progress"}
+        </button>
+      </div>
+      <label class="display-inventory-help" for="creditNoteIssueOperatorAcceptanceRecoveryRunId">
+        Exact runId for recovery / cleanup
+      </label>
+      <input id="creditNoteIssueOperatorAcceptanceRecoveryRunId"
+        type="text"
+        autocomplete="off"
+        value="${escAttr(runId)}"
+        style="width:100%;max-width:560px"
+        placeholder="CNISSOP-RUN-...">
+      <div class="diagnostic-check-summary">
+        ${trace ? `
+          Run: ${esc(trace.runId || "-")} |
+          Status: ${esc(trace.status || "-")} |
+          Last: ${esc(trace.lastCheckpoint || trace.lastCompletedCheckpoint || "-")} |
+          Current: ${esc(trace.currentCheckpoint || "-")} |
+          Failing: ${esc(trace.failingCheckpoint || "-")} |
+          Elapsed: ${Number(trace.elapsedMs || 0)} ms |
+          Cleanup: ${esc(trace.cleanupStatus || "-")}
+          ${trace.errorMessage ? `<br>Error: ${esc(trace.errorMessage)}` : ""}
+          ${trace.recordCountSummary ? `<br>Manifest: ${esc(JSON.stringify(trace.recordCountSummary))}` : ""}
+          ${retainedFixtureText ? `<br>Retained fixture: ${esc(retainedFixtureText)}` : ""}
+        ` : esc(traceError || "Credit Note Issue Operator runtime trace not loaded")}
+      </div>
+    </div>
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Credit Note Issue Operator Detail Entry</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${taxInvoiceId ? "" : "disabled"}
+          onclick="openCreditNoteIssueOperatorAcceptanceTaxInvoiceDetailFromAdmin()">
+          Open Tax Invoice Detail
+        </button>
+      </div>
+      <div class="diagnostic-check-summary">
+        ${taxInvoiceId
+          ? `Uses retained taxInvoiceId ${esc(taxInvoiceId)} and TEST-DIAG Credit Note operator request prefix.`
+          : "Load Latest Runtime Trace or Recovery Status before opening Tax Invoice Detail."}
+      </div>
+    </div>
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Credit Note Issue Operator Recovery Status</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isRecoveryLoading ? "disabled" : ""}
+          onclick="auditCreditNoteIssueOperatorAcceptanceRecoveryFromAdmin()">
+          ${isRecoveryLoading ? "Checking..." : "Check Credit Note Issue Operator Recovery Status"}
+        </button>
+        <button class="btn btn-danger diagnostic-suite-button" type="button"
+          ${isRecoveryCleanupLoading ? "disabled" : ""}
+          onclick="confirmCreditNoteIssueOperatorAcceptanceRecoveryCleanupFromAdmin()">
+          ${isRecoveryCleanupLoading ? "Cleaning..." : "Cleanup Credit Note Issue Operator Run"}
+        </button>
+      </div>
+      <div class="display-inventory-help">
+        TEST-only exact cleanup. Requires a visible runId and typed confirmation. It reconciles only a Credit Note owned by the retained taxInvoiceId and TEST-DIAG operator request prefix. No broad cleanup, no sequence rollback, no automatic retry, and no Workspace refresh after cleanup.
+      </div>
+      <div class="diagnostic-check-summary">
+        ${recovery ? `
+          Run: ${esc(recovery.runId || "-")} |
+          Status: ${esc(recovery.status || "-")} |
+          Cleanup: ${esc(recovery.cleanupStatus || "-")} |
+          Cleanup safe: ${recovery.cleanupSafe === false ? "NO" : "YES"} |
+          Sequence retained: ${(recovery.sequenceRetained || recovery.sequenceProtected) ? "YES" : "NO"}
+          ${recovery.ownershipStatus ? `<br>Ownership: ${esc(recovery.ownershipStatus)}` : ""}
+          ${recoverySummaryText ? `<br>${esc(recoverySummaryText)}` : ""}
+          ${retainedFixtureText ? `<br>Retained fixture: ${esc(retainedFixtureText)}` : ""}
+          ${recoveryCleanupMessage ? `<br>${esc(recoveryCleanupMessage)}` : ""}
+        ` : esc(recoveryError || "Credit Note Issue Operator recovery audit not loaded")}
+      </div>
+    </div>
+  `;
+}
+
+async function loadLatestCreditNoteIssueOperatorAcceptanceRuntimeTraceFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingCreditNoteIssueOperatorRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingCreditNoteIssueOperatorRuntimeTrace = true;
+  diagnostics.creditNoteIssueOperatorRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "getLatestCreditNoteIssueOperatorAcceptanceRuntimeTrace");
+    form.append("token", state.admin.token);
+
+    const json = await postFormAction(form);
+    diagnostics.creditNoteIssueOperatorRuntimeTrace = json.data?.trace || null;
+    if (diagnostics.creditNoteIssueOperatorRuntimeTrace?.runId) {
+      diagnostics.creditNoteIssueOperatorRunId =
+        diagnostics.creditNoteIssueOperatorRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        CREDIT_NOTE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID,
+        { trace: diagnostics.creditNoteIssueOperatorRuntimeTrace }
+      );
+    }
+    if (!diagnostics.creditNoteIssueOperatorRuntimeTrace) {
+      diagnostics.creditNoteIssueOperatorRuntimeTraceError =
+        "No persistent Credit Note Issue Operator trace found";
+    }
+  } catch (err) {
+    diagnostics.creditNoteIssueOperatorRuntimeTrace = null;
+    diagnostics.creditNoteIssueOperatorRuntimeTraceError =
+      err.message || "Credit Note Issue Operator trace unavailable";
+    showToast(diagnostics.creditNoteIssueOperatorRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingCreditNoteIssueOperatorRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadCreditNoteIssueOperatorAcceptanceProgressFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingCreditNoteIssueOperatorRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingCreditNoteIssueOperatorRuntimeTrace = true;
+  diagnostics.creditNoteIssueOperatorRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const runId = getCreditNoteIssueOperatorAcceptanceRunIdInputValue();
+    const form = new URLSearchParams();
+    form.append("action", "getCreditNoteIssueOperatorAcceptanceDiagnosticProgress");
+    form.append("token", state.admin.token);
+    if (runId) {
+      form.append("runId", runId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.creditNoteIssueOperatorRuntimeTrace =
+      json.data?.progress || null;
+    if (diagnostics.creditNoteIssueOperatorRuntimeTrace?.runId) {
+      diagnostics.creditNoteIssueOperatorRunId =
+        diagnostics.creditNoteIssueOperatorRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        CREDIT_NOTE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID,
+        { trace: diagnostics.creditNoteIssueOperatorRuntimeTrace }
+      );
+    }
+    if (!diagnostics.creditNoteIssueOperatorRuntimeTrace) {
+      diagnostics.creditNoteIssueOperatorRuntimeTraceError =
+        "No persistent Credit Note Issue Operator progress found";
+    }
+  } catch (err) {
+    diagnostics.creditNoteIssueOperatorRuntimeTrace = null;
+    diagnostics.creditNoteIssueOperatorRuntimeTraceError =
+      err.message || "Credit Note Issue Operator progress unavailable";
+    showToast(diagnostics.creditNoteIssueOperatorRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingCreditNoteIssueOperatorRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function auditCreditNoteIssueOperatorAcceptanceRecoveryFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingCreditNoteIssueOperatorRecoveryAudit) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingCreditNoteIssueOperatorRecoveryAudit = true;
+  diagnostics.creditNoteIssueOperatorRecoveryError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const runId = getCreditNoteIssueOperatorAcceptanceRunIdInputValue();
+    const form = new URLSearchParams();
+    form.append("action", "auditCreditNoteIssueOperatorAcceptanceRecovery");
+    form.append("token", state.admin.token);
+    if (runId) {
+      form.append("runId", runId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.creditNoteIssueOperatorRecoveryAudit =
+      json.data?.recovery || null;
+    if (diagnostics.creditNoteIssueOperatorRecoveryAudit?.runId) {
+      diagnostics.creditNoteIssueOperatorRunId =
+        diagnostics.creditNoteIssueOperatorRecoveryAudit.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        CREDIT_NOTE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID,
+        { recovery: diagnostics.creditNoteIssueOperatorRecoveryAudit }
+      );
+      const cleanupStatus = normalizeDeveloperDiagnosticStatus(
+        diagnostics.creditNoteIssueOperatorRecoveryAudit.cleanupStatus
+      );
+      if (cleanupStatus && cleanupStatus !== "RUNNING") {
+        diagnostics.creditNoteIssueOperatorRecoveryCleanupTimeoutRunId = "";
+      }
+    }
+    if (!diagnostics.creditNoteIssueOperatorRecoveryAudit) {
+      diagnostics.creditNoteIssueOperatorRecoveryError =
+        "No Credit Note Issue Operator recovery manifest found";
+    }
+  } catch (err) {
+    diagnostics.creditNoteIssueOperatorRecoveryError =
+      err.message || "Credit Note Issue Operator recovery audit unavailable";
+    showToast(diagnostics.creditNoteIssueOperatorRecoveryError, "error");
+  } finally {
+    diagnostics.loadingCreditNoteIssueOperatorRecoveryAudit = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+function confirmCreditNoteIssueOperatorAcceptanceRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (
+    diagnostics.runningSuite ||
+    diagnostics.loadingCreditNoteIssueOperatorRecoveryAudit ||
+    diagnostics.loadingCreditNoteIssueOperatorRecoveryCleanup
+  ) {
+    return;
+  }
+
+  const runId = getCreditNoteIssueOperatorAcceptanceRunIdInputValue();
+  if (!runId) {
+    showToast("Enter the exact Credit Note Issue Operator runId before cleanup.", "warning");
+    return;
+  }
+  if (
+    diagnostics.creditNoteIssueOperatorRecoveryCleanupTimeoutRunId &&
+    diagnostics.creditNoteIssueOperatorRecoveryCleanupTimeoutRunId === runId
+  ) {
+    showToast(
+      "Cleanup may still be running. Check Credit Note Issue Operator Recovery Status before retrying.",
+      "warning"
+    );
+    return;
+  }
+  diagnostics.creditNoteIssueOperatorRecoveryCleanupRunId = runId;
+
+  confirmSheet.setAttribute(
+    "aria-labelledby",
+    "creditNoteIssueOperatorRecoveryCleanupConfirmTitle"
+  );
+  confirmSheet.classList.add("developer-diagnostic-confirm-sheet");
+  confirmSheet.innerHTML = `
+    <h3 id="creditNoteIssueOperatorRecoveryCleanupConfirmTitle">Cleanup Credit Note Issue Operator Run</h3>
+    <div class="display-inventory-help">
+      TEST-only exact cleanup for run ${esc(runId)}. It deletes only exact tracked TEST-DIAG Credit Note, Tax Invoice, Bill, Customer, Contact, Company Legal Profile, and fixture records for this run. It does not roll back Credit Note, Tax Invoice, or Bill number sequences and does not refresh Workspace automatically.
+    </div>
+    <label class="display-inventory-help" for="creditNoteIssueOperatorRecoveryCleanupConfirmation">
+      Type CLEANUP_TEST_DIAG_CREDIT_NOTE_ISSUE_OPERATOR_RUN to confirm.
+    </label>
+    <input id="creditNoteIssueOperatorRecoveryCleanupConfirmation"
+      type="text"
+      autocomplete="off"
+      style="width:100%;max-width:560px"
+      placeholder="CLEANUP_TEST_DIAG_CREDIT_NOTE_ISSUE_OPERATOR_RUN"
+      oninput="updateCreditNoteIssueOperatorAcceptanceCleanupButtonState()">
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closeCreditNoteIssueOperatorAcceptanceRecoveryCleanupConfirmation()">
+        Cancel
+      </button>
+      <button id="creditNoteIssueOperatorRecoveryCleanupSubmit"
+        class="btn btn-danger"
+        type="button"
+        disabled
+        onclick="executeCreditNoteIssueOperatorAcceptanceRecoveryCleanupFromAdmin()">
+        Cleanup Credit Note Issue Operator Run
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+  updateCreditNoteIssueOperatorAcceptanceCleanupButtonState();
+}
+
+function updateCreditNoteIssueOperatorAcceptanceCleanupButtonState() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const button = document.getElementById(
+    "creditNoteIssueOperatorRecoveryCleanupSubmit"
+  );
+  if (!button) return;
+  const confirmation = String(
+    document.getElementById("creditNoteIssueOperatorRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  const runId = String(
+    diagnostics.creditNoteIssueOperatorRecoveryCleanupRunId || ""
+  ).trim();
+  button.disabled = !runId ||
+    confirmation !== "CLEANUP_TEST_DIAG_CREDIT_NOTE_ISSUE_OPERATOR_RUN" ||
+    !!diagnostics.loadingCreditNoteIssueOperatorRecoveryCleanup;
+}
+
+function closeCreditNoteIssueOperatorAcceptanceRecoveryCleanupConfirmation() {
+  const diagnostics = state.admin.developerDiagnostics;
+  diagnostics.creditNoteIssueOperatorRecoveryCleanupRunId = "";
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  confirmSheet.classList.remove("developer-diagnostic-confirm-sheet");
+  closeOverlay(confirmSheet);
+}
+
+function updateCreditNoteIssueOperatorAcceptanceCardAfterRecoveryCleanup(cleanup) {
+  const diagnostics = state.admin.developerDiagnostics;
+  const cleanupStatus = String(cleanup && cleanup.status || "FAIL")
+    .trim()
+    .toUpperCase();
+  const cleanupSummary = String(cleanup && cleanup.summary || "").trim();
+  const current =
+    diagnostics.results[CREDIT_NOTE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID] || {
+      suite: CREDIT_NOTE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID,
+      status: cleanupStatus === "PASS" ? "PARTIAL" : "FAIL",
+      checks: []
+    };
+  const checks = Array.isArray(current.checks) ? current.checks.slice() : [];
+  const nextCheck = {
+    name: "credit_note_issue_operator_recovery_cleanup",
+    status: cleanupStatus,
+    summary: cleanupSummary ||
+      "Credit Note Issue Operator recovery cleanup completed"
+  };
+  const index = checks.findIndex(check => check.name === nextCheck.name);
+  if (index === -1) {
+    checks.push(nextCheck);
+  } else {
+    checks[index] = nextCheck;
+  }
+  current.checks = checks;
+  current.cleanup = {
+    required: true,
+    status: cleanupStatus
+  };
+  if (cleanupStatus !== "PASS") {
+    current.status = "FAIL";
+  } else if (!current.status || current.status === "NOT_RUN") {
+    current.status = "PARTIAL";
+  }
+  diagnostics.results[CREDIT_NOTE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID] = current;
+}
+
+async function executeCreditNoteIssueOperatorAcceptanceRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingCreditNoteIssueOperatorRecoveryCleanup) return;
+
+  const runId = String(
+    diagnostics.creditNoteIssueOperatorRecoveryCleanupRunId || ""
+  ).trim();
+  const confirmation = String(
+    document.getElementById("creditNoteIssueOperatorRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  if (!runId) {
+    showToast("Credit Note Issue Operator cleanup runId is required", "warning");
+    return;
+  }
+  if (confirmation !== "CLEANUP_TEST_DIAG_CREDIT_NOTE_ISSUE_OPERATOR_RUN") {
+    showToast(
+      "Credit Note Issue Operator cleanup confirmation is required",
+      "warning"
+    );
+    return;
+  }
+
+  closeCreditNoteIssueOperatorAcceptanceRecoveryCleanupConfirmation();
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingCreditNoteIssueOperatorRecoveryCleanup = true;
+  diagnostics.creditNoteIssueOperatorRecoveryError = "";
+  diagnostics.creditNoteIssueOperatorRecoveryCleanupMessage = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "cleanupCreditNoteIssueOperatorAcceptanceRecovery");
+    form.append("token", state.admin.token);
+    form.append("runId", runId);
+    form.append("confirmation", confirmation);
+
+    const json = await postFormAction(form);
+    const cleanup = json.data?.cleanup || {};
+    diagnostics.creditNoteIssueOperatorRuntimeTrace =
+      json.data?.progress || null;
+    diagnostics.creditNoteIssueOperatorRecoveryAudit =
+      json.data?.recovery || null;
+    if (diagnostics.creditNoteIssueOperatorRuntimeTrace?.runId) {
+      diagnostics.creditNoteIssueOperatorRunId =
+        diagnostics.creditNoteIssueOperatorRuntimeTrace.runId;
+    } else if (diagnostics.creditNoteIssueOperatorRecoveryAudit?.runId) {
+      diagnostics.creditNoteIssueOperatorRunId =
+        diagnostics.creditNoteIssueOperatorRecoveryAudit.runId;
+    }
+    diagnostics.creditNoteIssueOperatorRecoveryCleanupTimeoutRunId = "";
+    diagnostics.creditNoteIssueOperatorRecoveryCleanupMessage =
+      `Cleanup ${cleanup.status || "-"}: ${cleanup.summary || "-"}`;
+    updateCreditNoteIssueOperatorAcceptanceCardAfterRecoveryCleanup(cleanup);
+    reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+      CREDIT_NOTE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID,
+      {
+        trace: diagnostics.creditNoteIssueOperatorRuntimeTrace,
+        recovery: diagnostics.creditNoteIssueOperatorRecoveryAudit,
+        cleanup
+      }
+    );
+    showToast(
+      cleanup.status === "PASS"
+        ? "Credit Note Issue Operator cleanup PASS"
+        : "Credit Note Issue Operator cleanup completed",
+      cleanup.status === "PASS" ? "success" : "warning"
+    );
+  } catch (err) {
+    const message =
+      err.message || "Credit Note Issue Operator recovery cleanup unavailable";
+    if (isDeveloperDiagnosticTimeoutMessage(message)) {
+      diagnostics.creditNoteIssueOperatorRecoveryCleanupTimeoutRunId = runId;
+      diagnostics.creditNoteIssueOperatorRecoveryCleanupMessage =
+        "Cleanup request timed out on the client. The backend may still be running; check Credit Note Issue Operator Recovery Status before retrying.";
+      showToast(diagnostics.creditNoteIssueOperatorRecoveryCleanupMessage, "warning");
+    } else {
+      diagnostics.creditNoteIssueOperatorRecoveryCleanupMessage = message;
+      diagnostics.creditNoteIssueOperatorRecoveryError = message;
+      showToast(message, "error");
+    }
+  } finally {
+    diagnostics.loadingCreditNoteIssueOperatorRecoveryCleanup = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function openCreditNoteIssueOperatorAcceptanceTaxInvoiceDetailFromAdmin() {
+  const fixture = getCreditNoteIssueOperatorAcceptanceRetainedFixture();
+  const taxInvoiceId = String(fixture.taxInvoiceId || "").trim();
+  const billId = String(fixture.billId || "").trim();
+  const customerId = String(fixture.customerId || "").trim();
+  const creditNoteIssueRequestPrefix = String(
+    fixture.operatorCreditNoteRequestPrefix || ""
+  ).trim();
+  if (!taxInvoiceId || !billId || !customerId || !creditNoteIssueRequestPrefix) {
+    showToast(
+      "Load Credit Note Issue Operator runtime or recovery before opening Tax Invoice Detail.",
+      "warning"
+    );
+    return;
+  }
+  if (typeof openFinanceLegalTaxInvoiceDetail !== "function") {
+    showToast("Tax Invoice Detail is unavailable", "error");
+    return;
+  }
+  const hadDiagnosticsOpen =
+    !!adminDeveloperDiagnosticsSheet?.classList.contains("show");
+  if (hadDiagnosticsOpen) {
+    closeDeveloperDiagnosticsSheet();
+  }
+  try {
+    await openFinanceLegalTaxInvoiceDetail(taxInvoiceId, {
+      title: fixture.taxInvoiceNumber || taxInvoiceId,
+      source: "credit_note_issue_operator_acceptance",
+      sectionId: CREDIT_NOTE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID,
+      rowId: taxInvoiceId,
+      taxInvoiceId,
+      billId,
+      customerId,
+      creditNoteIssueRequestPrefix
+    });
+    if (!adminDashboardSheet?.classList.contains("show")) {
+      throw new Error("Tax Invoice Detail did not open");
+    }
+  } catch (err) {
+    if (
+      hadDiagnosticsOpen &&
+      !adminDeveloperDiagnosticsSheet?.classList.contains("show")
+    ) {
+      await openDeveloperDiagnosticsSheet();
+    }
+    showToast(err.message || "Tax Invoice Detail is unavailable", "error");
   }
 }
 
@@ -23297,7 +23985,11 @@ function getFinanceLegalDetailState() {
       pendingKey: "",
       context: {},
       receiptIssueRequest: null,
-      receiptIssueUnknownCompletion: null
+      receiptIssueUnknownCompletion: null,
+      taxInvoiceIssueRequest: null,
+      taxInvoiceIssueUnknownCompletion: null,
+      creditNoteIssueRequest: null,
+      creditNoteIssueUnknownCompletion: null
     };
   }
   if (!Array.isArray(state.admin.financeLegalDetail.history)) {
@@ -23335,6 +24027,18 @@ function getFinanceLegalDetailState() {
     typeof state.admin.financeLegalDetail.taxInvoiceIssueUnknownCompletion !== "object"
   ) {
     state.admin.financeLegalDetail.taxInvoiceIssueUnknownCompletion = null;
+  }
+  if (
+    state.admin.financeLegalDetail.creditNoteIssueRequest &&
+    typeof state.admin.financeLegalDetail.creditNoteIssueRequest !== "object"
+  ) {
+    state.admin.financeLegalDetail.creditNoteIssueRequest = null;
+  }
+  if (
+    state.admin.financeLegalDetail.creditNoteIssueUnknownCompletion &&
+    typeof state.admin.financeLegalDetail.creditNoteIssueUnknownCompletion !== "object"
+  ) {
+    state.admin.financeLegalDetail.creditNoteIssueUnknownCompletion = null;
   }
   return state.admin.financeLegalDetail;
 }
@@ -23445,6 +24149,24 @@ function getFinanceLegalDetailReadableError(error) {
   }
   if (/Tax Invoice identity mismatch/i.test(message)) {
     return "ข้อมูลใบกำกับภาษีไม่ตรงกับรายการที่เลือก";
+  }
+  if (/Credit Note requestId payload conflict/i.test(message)) {
+    return "Credit Note request was already used with different payload. Check the existing document state before submitting again.";
+  }
+  if (/Only ISSUED Tax Invoices can receive Credit Note/i.test(message)) {
+    return "Credit Note can be issued only from an ISSUED Tax Invoice.";
+  }
+  if (/Credit Note totalAdjustment must be positive/i.test(message)) {
+    return "This Tax Invoice has no positive amount available for Credit Note issue.";
+  }
+  if (/Tax Invoice already has a Credit Note lifecycle/i.test(message)) {
+    return "This Tax Invoice already has a Credit Note lifecycle. Refresh Workspace or inspect the existing document before submitting again.";
+  }
+  if (/Credit Note .* input is not supported/i.test(message)) {
+    return "Credit Note issue payload is outside the frontend contract. Check the published frontend version.";
+  }
+  if (/Malformed Credit Note issue response/i.test(message)) {
+    return "Credit Note issue response was incomplete. Check existing document state before submitting again.";
   }
   if (/Credit Note not found/i.test(message)) {
     return "ไม่พบใบลดหนี้ที่เลือก";
@@ -23743,6 +24465,63 @@ function renderFinanceLegalTaxInvoiceIssueAction(detail) {
       onclick="confirmFinanceLegalTaxInvoiceIssue()"
       aria-label="ออกใบกำกับภาษี">
       ${pending ? "กำลังออกใบกำกับภาษี..." : "ออกใบกำกับภาษี"}
+    </button>
+  `;
+}
+
+function getCreditNoteIssueOperatorPendingKey(taxInvoiceId) {
+  return `issueCreditNote:${String(taxInvoiceId || "").trim()}`;
+}
+
+function isCreditNoteIssueOperatorPending(detail = getFinanceLegalDetailState()) {
+  const taxInvoiceId = String(detail?.data?.taxInvoiceId || "").trim();
+  return Boolean(
+    taxInvoiceId &&
+    detail?.pendingKey === getCreditNoteIssueOperatorPendingKey(taxInvoiceId)
+  );
+}
+
+function isCreditNoteIssueUnknownCompletionForTaxInvoice(detail, taxInvoiceId) {
+  return String(detail?.creditNoteIssueUnknownCompletion?.taxInvoiceId || "").trim() ===
+    String(taxInvoiceId || "").trim();
+}
+
+function isTaxInvoiceReadyForOperatorCreditNoteIssue(
+  detail = getFinanceLegalDetailState()
+) {
+  const taxInvoice = detail?.data || {};
+  const taxInvoiceId = String(taxInvoice?.taxInvoiceId || "").trim();
+  return Boolean(
+    taxInvoiceId &&
+    detail?.recordId === taxInvoiceId &&
+    String(taxInvoice.status || "").trim().toUpperCase() === "ISSUED" &&
+    !hasCreditNoteIssueOperatorAcceptanceCreditNoteForTaxInvoice(taxInvoiceId) &&
+    !isCreditNoteIssueUnknownCompletionForTaxInvoice(detail, taxInvoiceId)
+  );
+}
+
+function isCreditNoteIssueOperatorAvailable(detail = getFinanceLegalDetailState()) {
+  return Boolean(
+    detail?.open &&
+    detail.type === "tax_invoice" &&
+    !detail.loading &&
+    !detail.error &&
+    isTaxInvoiceReadyForOperatorCreditNoteIssue(detail) &&
+    hasAdminPermission("credit_note.issue")
+  );
+}
+
+function renderFinanceLegalCreditNoteIssueAction(detail) {
+  if (!isCreditNoteIssueOperatorAvailable(detail)) {
+    return "";
+  }
+  const pending = isCreditNoteIssueOperatorPending(detail);
+  return `
+    <button class="btn btn-primary" type="button"
+      ${pending ? "disabled aria-disabled=\"true\"" : ""}
+      onclick="confirmFinanceLegalCreditNoteIssue()"
+      aria-label="à¸­à¸­à¸à¹ƒà¸šà¸¥à¸”à¸«à¸™à¸µà¹‰">
+      ${pending ? "à¸à¸³à¸¥à¸±à¸‡à¸­à¸­à¸à¹ƒà¸šà¸¥à¸”à¸«à¸™à¸µà¹‰..." : "à¸­à¸­à¸à¹ƒà¸šà¸¥à¸”à¸«à¸™à¸µà¹‰"}
     </button>
   `;
 }
@@ -24759,7 +25538,8 @@ function renderFinanceLegalDetailShell() {
   const operatorAction = [
     renderFinanceLegalBillIssueAction(detail),
     renderFinanceLegalReceiptIssueAction(detail),
-    renderFinanceLegalTaxInvoiceIssueAction(detail)
+    renderFinanceLegalTaxInvoiceIssueAction(detail),
+    renderFinanceLegalCreditNoteIssueAction(detail)
   ].filter(Boolean).join("");
   const printAction = renderFinanceLegalBillPrintAction(detail) || renderFinanceLegalTaxInvoicePrintAction(detail) || renderFinanceLegalReceiptPrintAction(detail) || renderFinanceLegalCreditNotePrintAction(detail);
 
@@ -24812,6 +25592,8 @@ function closeFinanceLegalDetailSheet() {
   detail.receiptIssueUnknownCompletion = null;
   detail.taxInvoiceIssueRequest = null;
   detail.taxInvoiceIssueUnknownCompletion = null;
+  detail.creditNoteIssueRequest = null;
+  detail.creditNoteIssueUnknownCompletion = null;
   detail.requestId += 1;
   detail.workspaceScrollTop = 0;
   renderAdminWorkspaceSheet();
@@ -24864,6 +25646,25 @@ function normalizeFinanceLegalDetailContext(context = {}, type = "", recordId = 
       ).trim()
     };
   }
+  if (
+    source === "credit_note_issue_operator_acceptance" &&
+    normalizedType === "tax_invoice"
+  ) {
+    const taxInvoiceId = String(context?.taxInvoiceId || recordId || "").trim();
+    return {
+      source,
+      sectionId: String(
+        context?.sectionId || CREDIT_NOTE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID
+      ).trim(),
+      rowId: String(context?.rowId || taxInvoiceId || "").trim(),
+      taxInvoiceId,
+      billId: String(context?.billId || "").trim(),
+      customerId: String(context?.customerId || "").trim(),
+      creditNoteIssueRequestPrefix: String(
+        context?.creditNoteIssueRequestPrefix || ""
+      ).trim()
+    };
+  }
   return {};
 }
 
@@ -24876,10 +25677,12 @@ function hasExplicitFinanceLegalDetailContext(context = {}) {
       context.rowId ||
       context.paymentId ||
       context.billId ||
+      context.taxInvoiceId ||
       context.customerId ||
       context.receiptIssueRequestPrefix ||
       context.targetType ||
-      context.taxInvoiceIssueRequestPrefix
+      context.taxInvoiceIssueRequestPrefix ||
+      context.creditNoteIssueRequestPrefix
     )
   );
 }
@@ -25444,6 +26247,196 @@ async function executeFinanceLegalTaxInvoiceIssueFromConfirm() {
   }
 }
 
+function makeCreditNoteIssueOperatorRequestId(taxInvoiceId) {
+  const ownedPrefix =
+    getCreditNoteIssueOperatorAcceptanceRequestPrefixForTaxInvoice(taxInvoiceId);
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const randomPart = Math.random().toString(36).slice(2, 10).toUpperCase();
+  if (ownedPrefix) {
+    return `${ownedPrefix}${timestamp}-${randomPart}`.slice(0, 120);
+  }
+  const taxInvoicePart = String(taxInvoiceId || "")
+    .trim()
+    .replace(/[^a-zA-Z0-9-]/g, "")
+    .slice(0, 36)
+    .toUpperCase() || "TAXINVOICE";
+  return `CREDIT-NOTE-OP-${taxInvoicePart}-${timestamp}-${randomPart}`.slice(0, 120);
+}
+
+function closeFinanceLegalCreditNoteIssueConfirm() {
+  const detail = getFinanceLegalDetailState();
+  if (!isCreditNoteIssueOperatorPending(detail)) {
+    detail.creditNoteIssueRequest = null;
+  }
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  closeOverlay(confirmSheet);
+}
+
+function confirmFinanceLegalCreditNoteIssue() {
+  if (!ensureAdminSessionForWorkspace()) return;
+  const detail = getFinanceLegalDetailState();
+  if (!isCreditNoteIssueOperatorAvailable(detail)) {
+    showToast("Tax Invoice is not ready for Credit Note issue", "warning");
+    return;
+  }
+  if (isCreditNoteIssueOperatorPending(detail)) return;
+
+  const taxInvoice = detail.data || {};
+  const taxInvoiceId = String(taxInvoice.taxInvoiceId || "").trim();
+  const requestId = makeCreditNoteIssueOperatorRequestId(taxInvoiceId);
+  detail.creditNoteIssueRequest = {
+    taxInvoiceId,
+    requestId
+  };
+
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  confirmSheet.classList.remove("developer-diagnostic-confirm-sheet");
+  confirmSheet.innerHTML = `
+    <h3 id="confirmSheetTitle">à¸¢à¸·à¸™à¸¢à¸±à¸™à¸­à¸­à¸à¹ƒà¸šà¸¥à¸”à¸«à¸™à¸µà¹‰</h3>
+    <p>
+      à¸£à¸°à¸šà¸šà¸ˆà¸°à¹€à¸£à¸µà¸¢à¸ backend <code>issueCreditNote</code> à¸”à¹‰à¸§à¸¢ Tax Invoice ID à¸—à¸µà¹ˆà¹à¸ªà¸”à¸‡à¸­à¸¢à¸¹à¹ˆ
+      à¹à¸¥à¸°à¹€à¸«à¸•à¸¸à¸œà¸¥à¸à¸²à¸£à¸›à¸£à¸±à¸šà¸¥à¸”à¸—à¸µà¹ˆà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸à¸£à¸­à¸à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™
+    </p>
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("Tax Invoice ID", taxInvoice.taxInvoiceId || "-")}
+      ${renderFinanceLegalDetailField("Tax Invoice number", taxInvoice.taxInvoiceNumber || "-")}
+      ${renderFinanceLegalDetailField("Bill ID", taxInvoice.billId || "-")}
+      ${renderFinanceLegalDetailField("Customer ID", taxInvoice.customerId || "-")}
+      ${renderFinanceLegalDetailField("Total adjustment", taxInvoice.grandTotal, { money: true })}
+      ${renderFinanceLegalDetailField("Request ID", requestId)}
+    </div>
+    <label class="display-inventory-help" for="creditNoteIssueAdjustmentReason">
+      Credit Note adjustment reason
+    </label>
+    <textarea id="creditNoteIssueAdjustmentReason"
+      rows="3"
+      maxlength="500"
+      style="width:100%;max-width:560px"
+      placeholder="Required reason for Credit Note issue"></textarea>
+    <div class="finance-legal-detail-related-note">
+      à¹€à¸¥à¸‚ Credit Note à¸ˆà¸°à¸–à¸¹à¸à¸­à¸­à¸à¹‚à¸”à¸¢ backend à¹à¸¥à¸°à¹„à¸¡à¹ˆà¸–à¸¹à¸à¸™à¸³à¸à¸¥à¸±à¸šà¸¡à¸²à¹ƒà¸Šà¹‰à¸‹à¹‰à¸³ à¸£à¸°à¸šà¸šà¸ˆà¸° copy stored Tax Invoice snapshots à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™ à¹„à¸¡à¹ˆà¸„à¸³à¸™à¸§à¸“à¹ƒà¸«à¸¡à¹ˆ
+      à¹à¸¥à¸°à¹„à¸¡à¹ˆà¸ªà¹ˆà¸‡ amount/currency à¸ˆà¸²à¸ frontend à¸­à¸¢à¹ˆà¸²à¸à¸”à¸‹à¹‰à¸³à¸«à¸£à¸·à¸­ retry à¹à¸šà¸šà¹„à¸¡à¹ˆà¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¸«à¸²à¸ browser timeout
+    </div>
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closeFinanceLegalCreditNoteIssueConfirm()">
+        à¸¢à¸à¹€à¸¥à¸´à¸
+      </button>
+      <button class="btn btn-primary" type="button" data-credit-note-issue-submit
+        onclick="executeFinanceLegalCreditNoteIssueFromConfirm()">
+        à¸­à¸­à¸à¹ƒà¸šà¸¥à¸”à¸«à¸™à¸µà¹‰
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+}
+
+async function executeFinanceLegalCreditNoteIssueFromConfirm() {
+  if (!ensureAdminSessionForWorkspace()) return;
+  const detail = getFinanceLegalDetailState();
+  if (!isCreditNoteIssueOperatorAvailable(detail)) {
+    closeFinanceLegalCreditNoteIssueConfirm();
+    showToast("Tax Invoice is not ready for Credit Note issue", "warning");
+    return;
+  }
+
+  const taxInvoice = detail.data || {};
+  const taxInvoiceId = String(taxInvoice.taxInvoiceId || "").trim();
+  const pendingKey = getCreditNoteIssueOperatorPendingKey(taxInvoiceId);
+  if (detail.pendingKey === pendingKey) return;
+
+  const request = detail.creditNoteIssueRequest || {};
+  const requestId = String(request.requestId || "").trim();
+  const adjustmentReason = String(
+    document.getElementById("creditNoteIssueAdjustmentReason")?.value || ""
+  ).trim();
+  if (
+    String(request.taxInvoiceId || "").trim() !== taxInvoiceId ||
+    !requestId
+  ) {
+    closeFinanceLegalCreditNoteIssueConfirm();
+    showToast("Credit Note issue confirmation expired. Open confirmation again.", "warning");
+    return;
+  }
+  if (!adjustmentReason) {
+    showToast("Credit Note adjustment reason is required", "warning");
+    document.getElementById("creditNoteIssueAdjustmentReason")?.focus();
+    return;
+  }
+
+  detail.pendingKey = pendingKey;
+  renderFinanceLegalDetailShell();
+  confirmSheet.querySelectorAll("button, textarea").forEach(element => {
+    element.disabled = true;
+    element.setAttribute("aria-disabled", "true");
+  });
+  const submitButton = confirmSheet.querySelector("[data-credit-note-issue-submit]");
+  if (submitButton) {
+    submitButton.textContent = "à¸à¸³à¸¥à¸±à¸‡à¸­à¸­à¸à¹ƒà¸šà¸¥à¸”à¸«à¸™à¸µà¹‰...";
+  }
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "issueCreditNote");
+    form.append("token", state.admin.token);
+    form.append("requestId", requestId);
+    form.append("taxInvoiceId", taxInvoiceId);
+    form.append("adjustmentReason", adjustmentReason);
+    const json = await postFormAction(form);
+    const creditNote = json?.data?.creditNote;
+    const creditNoteId = String(creditNote?.creditNoteId || "").trim();
+    if (!creditNote || !creditNoteId) {
+      const malformed = new Error("Malformed Credit Note issue response");
+      malformed.creditNoteIssueUnknown = true;
+      throw malformed;
+    }
+
+    detail.creditNoteIssueRequest = null;
+    detail.creditNoteIssueUnknownCompletion = null;
+    setFinanceLegalDetailCachedData(detail, "credit_note", creditNoteId, creditNote);
+    closeFinanceLegalCreditNoteIssueConfirm();
+    await openFinanceLegalCreditNoteDetail(creditNoteId, {
+      title: creditNote.creditNoteNumber || creditNoteId
+    });
+    showToast(`à¸­à¸­à¸à¹ƒà¸šà¸¥à¸”à¸«à¸™à¸µà¹‰ ${creditNote.creditNoteNumber || creditNoteId} à¹à¸¥à¹‰à¸§`, "success");
+
+    const workspaceRefreshed = await refreshAdminWorkspaceAfterFinanceLegalMutation();
+    if (!workspaceRefreshed) {
+      showToast("à¸­à¸­à¸à¹ƒà¸šà¸¥à¸”à¸«à¸™à¸µà¹‰à¹à¸¥à¹‰à¸§ à¹à¸•à¹ˆ Workspace à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹„à¸”à¹‰ refresh", "warning");
+    }
+  } catch (err) {
+    const rawMessage = String(err?.message || err || "").trim();
+    const shouldBlockRetry =
+      err?.creditNoteIssueUnknown ||
+      isDeveloperDiagnosticTimeoutMessage(rawMessage) ||
+      /Tax Invoice already has a Credit Note lifecycle/i.test(rawMessage);
+    if (shouldBlockRetry) {
+      detail.creditNoteIssueUnknownCompletion = {
+        taxInvoiceId,
+        requestId,
+        recordedAt: new Date().toISOString(),
+        message: rawMessage
+      };
+    } else {
+      detail.creditNoteIssueRequest = null;
+    }
+    closeFinanceLegalCreditNoteIssueConfirm();
+    const readable = getFinanceLegalDetailReadableError(err);
+    showToast(
+      shouldBlockRetry
+        ? `${readable} à¸à¸£à¸¸à¸“à¸² refresh Workspace à¸«à¸£à¸·à¸­à¸•à¸£à¸§à¸ˆà¹€à¸­à¸à¸ªà¸²à¸£à¹€à¸”à¸´à¸¡à¸à¹ˆà¸­à¸™à¸ªà¹ˆà¸‡à¸„à¸³à¸‚à¸­à¹ƒà¸«à¸¡à¹ˆ`
+        : readable,
+      "error",
+      shouldBlockRetry ? 5200 : 2500
+    );
+  } finally {
+    if (detail.pendingKey === pendingKey) {
+      detail.pendingKey = "";
+      renderFinanceLegalDetailShell();
+    }
+  }
+}
+
 async function fetchReceivableDetailByBillId(billId) {
   const form = new URLSearchParams();
   form.append("action", "getReceivable");
@@ -25616,6 +26609,7 @@ async function openFinanceLegalDetail(type, recordId, context = {}) {
   detail.pendingKey = detail.loading ? targetKey : "";
   detail.receiptIssueRequest = null;
   detail.taxInvoiceIssueRequest = null;
+  detail.creditNoteIssueRequest = null;
   if (
     normalizedType !== "payment" ||
     String(detail.receiptIssueUnknownCompletion?.paymentId || "").trim() !==
@@ -25629,6 +26623,13 @@ async function openFinanceLegalDetail(type, recordId, context = {}) {
       normalizedRecordId
   ) {
     detail.taxInvoiceIssueUnknownCompletion = null;
+  }
+  if (
+    normalizedType !== "tax_invoice" ||
+    String(detail.creditNoteIssueUnknownCompletion?.taxInvoiceId || "").trim() !==
+      normalizedRecordId
+  ) {
+    detail.creditNoteIssueUnknownCompletion = null;
   }
   detail.requestId += 1;
   const requestId = detail.requestId;
