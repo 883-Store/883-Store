@@ -7069,7 +7069,9 @@ const state = {
       pendingKey: "",
       context: {},
       receiptIssueRequest: null,
-      receiptIssueUnknownCompletion: null
+      receiptIssueUnknownCompletion: null,
+      taxInvoiceIssueRequest: null,
+      taxInvoiceIssueUnknownCompletion: null
     },
     deliveryNote: {
       poInput: "",
@@ -7470,6 +7472,17 @@ const state = {
       receiptIssueOperatorRecoveryCleanupRunId: "",
       receiptIssueOperatorRecoveryCleanupTimeoutRunId: "",
       receiptIssueOperatorRunId: "",
+      loadingTaxInvoiceIssueOperatorRuntimeTrace: false,
+      taxInvoiceIssueOperatorRuntimeTrace: null,
+      taxInvoiceIssueOperatorRuntimeTraceError: "",
+      loadingTaxInvoiceIssueOperatorRecoveryAudit: false,
+      loadingTaxInvoiceIssueOperatorRecoveryCleanup: false,
+      taxInvoiceIssueOperatorRecoveryAudit: null,
+      taxInvoiceIssueOperatorRecoveryError: "",
+      taxInvoiceIssueOperatorRecoveryCleanupMessage: "",
+      taxInvoiceIssueOperatorRecoveryCleanupRunId: "",
+      taxInvoiceIssueOperatorRecoveryCleanupTimeoutRunId: "",
+      taxInvoiceIssueOperatorRunId: "",
       loadingTaxInvoiceRuntimeTrace: false,
       taxInvoiceRuntimeTrace: null,
       taxInvoiceRuntimeTraceError: "",
@@ -9827,6 +9840,7 @@ const RECEIPT_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID = "receipt_detail_issu
 const RECEIPT_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID = "receipt_detail_void_workspace_acceptance";
 const RECEIPT_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID = "receipt_issue_operator_acceptance";
 const TAX_INVOICE_FOUNDATION_SUITE_ID = "tax_invoice_foundation";
+const TAX_INVOICE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID = "tax_invoice_issue_operator_acceptance";
 const CREDIT_NOTE_FOUNDATION_SUITE_ID = "credit_note_foundation";
 const CREDIT_NOTE_DETAIL_ISSUED_WORKSPACE_ACCEPTANCE_SUITE_ID = "credit_note_detail_issued";
 const CREDIT_NOTE_DETAIL_VOID_WORKSPACE_ACCEPTANCE_SUITE_ID = "credit_note_detail_void";
@@ -10211,6 +10225,12 @@ const DEVELOPER_DIAGNOSTIC_UI_SUITES = Object.freeze([
     mutationDescription: "Run after Legal Identity Foundation PASS. Creates isolated TEST-DIAG Tax Invoice, Legal Identity, Bill, Receipt, and Payment fixtures, verifies issue/VOID, TINV numbering, immutable VAT/legal snapshots, exact cleanup, and retained Tax Invoice/Bill/Receipt sequence rows."
   },
   {
+    id: TAX_INVOICE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID,
+    label: "Tax Invoice Issue Operator Acceptance Fixture",
+    mutation: true,
+    mutationDescription: "Run only for Tax Invoice Issue Operator Workflow acceptance. Creates one isolated TEST-DIAG ISSUED Bill eligible for tax_invoices_ready_to_issue, persists the canonical billId/runId, defers exact cleanup, and creates no Tax Invoice before the operator presses à¸­à¸­à¸à¹ƒà¸šà¸à¸³à¸à¸±à¸šà¸ à¸²à¸©à¸µ."
+  },
+  {
     id: CREDIT_NOTE_FOUNDATION_SUITE_ID,
     label: "Credit Note Foundation",
     mutation: true,
@@ -10386,6 +10406,17 @@ function resetDeveloperDiagnosticsState() {
   state.admin.developerDiagnostics.receiptIssueOperatorRecoveryCleanupRunId = "";
   state.admin.developerDiagnostics.receiptIssueOperatorRecoveryCleanupTimeoutRunId = "";
   state.admin.developerDiagnostics.receiptIssueOperatorRunId = "";
+  state.admin.developerDiagnostics.loadingTaxInvoiceIssueOperatorRuntimeTrace = false;
+  state.admin.developerDiagnostics.taxInvoiceIssueOperatorRuntimeTrace = null;
+  state.admin.developerDiagnostics.taxInvoiceIssueOperatorRuntimeTraceError = "";
+  state.admin.developerDiagnostics.loadingTaxInvoiceIssueOperatorRecoveryAudit = false;
+  state.admin.developerDiagnostics.loadingTaxInvoiceIssueOperatorRecoveryCleanup = false;
+  state.admin.developerDiagnostics.taxInvoiceIssueOperatorRecoveryAudit = null;
+  state.admin.developerDiagnostics.taxInvoiceIssueOperatorRecoveryError = "";
+  state.admin.developerDiagnostics.taxInvoiceIssueOperatorRecoveryCleanupMessage = "";
+  state.admin.developerDiagnostics.taxInvoiceIssueOperatorRecoveryCleanupRunId = "";
+  state.admin.developerDiagnostics.taxInvoiceIssueOperatorRecoveryCleanupTimeoutRunId = "";
+  state.admin.developerDiagnostics.taxInvoiceIssueOperatorRunId = "";
   state.admin.developerDiagnostics.loadingTaxInvoiceRuntimeTrace = false;
   state.admin.developerDiagnostics.taxInvoiceRuntimeTrace = null;
   state.admin.developerDiagnostics.taxInvoiceRuntimeTraceError = "";
@@ -10674,6 +10705,9 @@ function renderDeveloperDiagnosticResultCard(suite) {
           : ""}
         ${suite.id === TAX_INVOICE_FOUNDATION_SUITE_ID
           ? renderTaxInvoiceFoundationRuntimeRecoveryPanel()
+          : ""}
+        ${suite.id === TAX_INVOICE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID
+          ? renderTaxInvoiceIssueOperatorAcceptanceRuntimeRecoveryPanel()
           : ""}
         ${suite.id === CREDIT_NOTE_FOUNDATION_SUITE_ID
           ? renderCreditNoteFoundationRuntimeRecoveryPanel()
@@ -10997,6 +11031,18 @@ function shouldKeepDeveloperDiagnosticDetailsOpen(suiteId) {
       diagnostics.receiptIssueOperatorRuntimeTraceError ||
       diagnostics.receiptIssueOperatorRecoveryError ||
       diagnostics.receiptIssueOperatorRecoveryCleanupMessage
+    );
+  }
+  if (id === TAX_INVOICE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID) {
+    return !!(
+      diagnostics.loadingTaxInvoiceIssueOperatorRuntimeTrace ||
+      diagnostics.loadingTaxInvoiceIssueOperatorRecoveryAudit ||
+      diagnostics.loadingTaxInvoiceIssueOperatorRecoveryCleanup ||
+      diagnostics.taxInvoiceIssueOperatorRuntimeTrace ||
+      diagnostics.taxInvoiceIssueOperatorRecoveryAudit ||
+      diagnostics.taxInvoiceIssueOperatorRuntimeTraceError ||
+      diagnostics.taxInvoiceIssueOperatorRecoveryError ||
+      diagnostics.taxInvoiceIssueOperatorRecoveryCleanupMessage
     );
   }
   if (id === RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID) {
@@ -12593,6 +12639,7 @@ function isRuntimeRecoveryDeveloperDiagnosticSuite(suiteId) {
     id === PAYMENT_FOUNDATION_SUITE_ID ||
     id === PAYMENT_WORKSPACE_ACCEPTANCE_SUITE_ID ||
     id === RECEIPT_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID ||
+    id === TAX_INVOICE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID ||
     id === RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID ||
     id === PAYMENT_CORRECTION_FOUNDATION_SUITE_ID ||
     id === PAYMENT_CORRECTION_WORKSPACE_ACCEPTANCE_SUITE_ID ||
@@ -13038,6 +13085,10 @@ async function loadDeveloperDiagnosticRuntimeTraceAfterTimeoutFromAdmin(suite) {
   if (suite === RECEIPT_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID) {
     await loadLatestReceiptIssueOperatorAcceptanceRuntimeTraceFromAdmin();
     return state.admin.developerDiagnostics.receiptIssueOperatorRuntimeTrace;
+  }
+  if (suite === TAX_INVOICE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID) {
+    await loadLatestTaxInvoiceIssueOperatorAcceptanceRuntimeTraceFromAdmin();
+    return state.admin.developerDiagnostics.taxInvoiceIssueOperatorRuntimeTrace;
   }
   if (suite === RECEIVABLE_WORKSPACE_ACCEPTANCE_SUITE_ID) {
     await loadLatestReceivableWorkspaceAcceptanceRuntimeTraceFromAdmin();
@@ -14689,6 +14740,633 @@ async function openReceiptIssueOperatorAcceptancePaymentDetailFromAdmin() {
       await openDeveloperDiagnosticsSheet();
     }
     showToast(err.message || "Payment Detail is unavailable", "error");
+  }
+}
+
+function getTaxInvoiceIssueOperatorAcceptanceRunIdInputValue() {
+  return String(
+    document.getElementById("taxInvoiceIssueOperatorAcceptanceRecoveryRunId")?.value || ""
+  ).trim();
+}
+
+function getTaxInvoiceIssueOperatorAcceptanceCurrentRunId() {
+  const diagnostics = state.admin.developerDiagnostics;
+  return String(
+    diagnostics.taxInvoiceIssueOperatorRunId ||
+    diagnostics.taxInvoiceIssueOperatorRecoveryAudit?.runId ||
+    diagnostics.taxInvoiceIssueOperatorRuntimeTrace?.runId ||
+    ""
+  ).trim();
+}
+
+function getTaxInvoiceIssueOperatorAcceptanceRetainedFixture() {
+  const diagnostics = state.admin.developerDiagnostics;
+  return diagnostics.taxInvoiceIssueOperatorRuntimeTrace?.retainedFixture ||
+    diagnostics.taxInvoiceIssueOperatorRecoveryAudit?.retainedFixture ||
+    {};
+}
+
+function getTaxInvoiceIssueOperatorAcceptanceBillId() {
+  return String(
+    getTaxInvoiceIssueOperatorAcceptanceRetainedFixture().billId || ""
+  ).trim();
+}
+
+function getTaxInvoiceIssueOperatorAcceptanceRequestPrefixForBill(
+  billId,
+  detail = getFinanceLegalDetailState()
+) {
+  const id = String(billId || "").trim();
+  if (!id) return "";
+  const contextPrefix = String(
+    detail?.context?.taxInvoiceIssueRequestPrefix || ""
+  ).trim();
+  if (
+    contextPrefix.indexOf("TEST-DIAG-TAX-INVOICE-OP-") === 0 &&
+    String(detail?.context?.billId || "").trim() === id
+  ) {
+    return contextPrefix;
+  }
+  const fixture = getTaxInvoiceIssueOperatorAcceptanceRetainedFixture();
+  const fixtureBillId = String(fixture.billId || "").trim();
+  const fixturePrefix = String(fixture.operatorTaxInvoiceRequestPrefix || "")
+    .trim();
+  if (
+    fixtureBillId === id &&
+    fixturePrefix.indexOf("TEST-DIAG-TAX-INVOICE-OP-") === 0
+  ) {
+    return fixturePrefix;
+  }
+  return "";
+}
+
+function hasTaxInvoiceIssueOperatorAcceptanceTaxInvoiceForBill(billId) {
+  const id = String(billId || "").trim();
+  if (!id) return false;
+  const fixture = getTaxInvoiceIssueOperatorAcceptanceRetainedFixture();
+  return String(fixture.billId || "").trim() === id &&
+    (
+      !!String(fixture.operatorTaxInvoiceId || "").trim() ||
+      fixture.operatorTaxInvoiceDiscovered === true
+    );
+}
+
+function renderTaxInvoiceIssueOperatorAcceptanceRuntimeRecoveryPanel() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const trace = diagnostics.taxInvoiceIssueOperatorRuntimeTrace;
+  const isLoading = diagnostics.loadingTaxInvoiceIssueOperatorRuntimeTrace;
+  const traceError = diagnostics.taxInvoiceIssueOperatorRuntimeTraceError;
+  const recovery = diagnostics.taxInvoiceIssueOperatorRecoveryAudit;
+  const isRecoveryLoading = diagnostics.loadingTaxInvoiceIssueOperatorRecoveryAudit;
+  const isRecoveryCleanupLoading =
+    diagnostics.loadingTaxInvoiceIssueOperatorRecoveryCleanup;
+  const recoveryError = diagnostics.taxInvoiceIssueOperatorRecoveryError;
+  const recoveryCleanupMessage =
+    diagnostics.taxInvoiceIssueOperatorRecoveryCleanupMessage;
+  const runId = getTaxInvoiceIssueOperatorAcceptanceCurrentRunId();
+  const retainedFixture = getTaxInvoiceIssueOperatorAcceptanceRetainedFixture();
+  const billId = getTaxInvoiceIssueOperatorAcceptanceBillId();
+  const recoverySummary = recovery?.summary || {};
+  const recoverySummaryText = recovery
+    ? Object.keys(recoverySummary)
+        .map(key => {
+          const item = recoverySummary[key] || {};
+          return `${key}: ${Number(item.exists || 0)} exists / ${Number(item.missing || 0)} missing`;
+        })
+        .join(" | ")
+    : "";
+  const retainedFixtureText = retainedFixture && retainedFixture.billId
+    ? [
+        `Bill: ${retainedFixture.billId || "-"}`,
+        `Bill number: ${retainedFixture.billNumber || "-"}`,
+        `Customer: ${retainedFixture.customerId || "-"}`,
+        `Expected bill: ${retainedFixture.expectedBillStatus || "-"}`,
+        `Expected tax invoice: ${retainedFixture.expectedTaxInvoiceStatus || "-"}`,
+        `Operator tax invoice: ${retainedFixture.operatorTaxInvoiceId || "ABSENT"}`,
+        `Workspace row: ${retainedFixture.workspaceTaxInvoiceReadyRowRemoved === true ? "REMOVED_AFTER_ISSUE" : retainedFixture.workspaceEligibleAfterOperatorIssue === true ? "ELIGIBLE" : "-"}`,
+        `Request prefix: ${retainedFixture.operatorTaxInvoiceRequestPrefix || "-"}`
+      ].join(" | ")
+    : "";
+
+  return `
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Tax Invoice Issue Operator Runtime Trace</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadLatestTaxInvoiceIssueOperatorAcceptanceRuntimeTraceFromAdmin()">
+          ${isLoading ? "Loading..." : "Latest Tax Invoice Issue Operator Runtime Trace"}
+        </button>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isLoading ? "disabled" : ""}
+          onclick="loadTaxInvoiceIssueOperatorAcceptanceProgressFromAdmin()">
+          ${isLoading ? "Loading..." : "Tax Invoice Issue Operator Progress"}
+        </button>
+      </div>
+      <label class="display-inventory-help" for="taxInvoiceIssueOperatorAcceptanceRecoveryRunId">
+        Exact runId for recovery / cleanup
+      </label>
+      <input id="taxInvoiceIssueOperatorAcceptanceRecoveryRunId"
+        type="text"
+        autocomplete="off"
+        value="${escAttr(runId)}"
+        style="width:100%;max-width:560px"
+        placeholder="TINVISSOP-RUN-...">
+      <div class="diagnostic-check-summary">
+        ${trace ? `
+          Run: ${esc(trace.runId || "-")} |
+          Status: ${esc(trace.status || "-")} |
+          Last: ${esc(trace.lastCheckpoint || trace.lastCompletedCheckpoint || "-")} |
+          Current: ${esc(trace.currentCheckpoint || "-")} |
+          Failing: ${esc(trace.failingCheckpoint || "-")} |
+          Elapsed: ${Number(trace.elapsedMs || 0)} ms |
+          Cleanup: ${esc(trace.cleanupStatus || "-")}
+          ${trace.errorMessage ? `<br>Error: ${esc(trace.errorMessage)}` : ""}
+          ${trace.recordCountSummary ? `<br>Manifest: ${esc(JSON.stringify(trace.recordCountSummary))}` : ""}
+          ${retainedFixtureText ? `<br>Retained fixture: ${esc(retainedFixtureText)}` : ""}
+        ` : esc(traceError || "Tax Invoice Issue Operator runtime trace not loaded")}
+      </div>
+    </div>
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Tax Invoice Issue Operator Detail Entry</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${billId ? "" : "disabled"}
+          onclick="openTaxInvoiceIssueOperatorAcceptanceBillDetailFromAdmin()">
+          Open Bill Detail
+        </button>
+      </div>
+      <div class="diagnostic-check-summary">
+        ${billId
+          ? `Uses retained billId ${esc(billId)} and Workspace-equivalent tax_invoices_ready_to_issue context.`
+          : "Load Latest Runtime Trace or Recovery Status before opening Bill Detail."}
+      </div>
+    </div>
+    <div class="diagnostic-check-row">
+      <div class="diagnostic-check-head">
+        <span>Tax Invoice Issue Operator Recovery Status</span>
+        <button class="btn btn-outline diagnostic-suite-button" type="button"
+          ${isRecoveryLoading ? "disabled" : ""}
+          onclick="auditTaxInvoiceIssueOperatorAcceptanceRecoveryFromAdmin()">
+          ${isRecoveryLoading ? "Checking..." : "Check Tax Invoice Issue Operator Recovery Status"}
+        </button>
+        <button class="btn btn-danger diagnostic-suite-button" type="button"
+          ${isRecoveryCleanupLoading ? "disabled" : ""}
+          onclick="confirmTaxInvoiceIssueOperatorAcceptanceRecoveryCleanupFromAdmin()">
+          ${isRecoveryCleanupLoading ? "Cleaning..." : "Cleanup Tax Invoice Issue Operator Run"}
+        </button>
+      </div>
+      <div class="display-inventory-help">
+        TEST-only exact cleanup. Requires a visible runId and typed confirmation. It reconciles only a Tax Invoice owned by the retained billId and TEST-DIAG operator request prefix. No broad cleanup, no sequence rollback, no automatic retry, and no Workspace refresh after cleanup.
+      </div>
+      <div class="diagnostic-check-summary">
+        ${recovery ? `
+          Run: ${esc(recovery.runId || "-")} |
+          Status: ${esc(recovery.status || "-")} |
+          Cleanup: ${esc(recovery.cleanupStatus || "-")} |
+          Cleanup safe: ${recovery.cleanupSafe === false ? "NO" : "YES"} |
+          Sequence retained: ${(recovery.sequenceRetained || recovery.sequenceProtected) ? "YES" : "NO"}
+          ${recovery.ownershipStatus ? `<br>Ownership: ${esc(recovery.ownershipStatus)}` : ""}
+          ${recoverySummaryText ? `<br>${esc(recoverySummaryText)}` : ""}
+          ${retainedFixtureText ? `<br>Retained fixture: ${esc(retainedFixtureText)}` : ""}
+          ${recoveryCleanupMessage ? `<br>${esc(recoveryCleanupMessage)}` : ""}
+        ` : esc(recoveryError || "Tax Invoice Issue Operator recovery audit not loaded")}
+      </div>
+    </div>
+  `;
+}
+
+async function loadLatestTaxInvoiceIssueOperatorAcceptanceRuntimeTraceFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingTaxInvoiceIssueOperatorRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingTaxInvoiceIssueOperatorRuntimeTrace = true;
+  diagnostics.taxInvoiceIssueOperatorRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "getLatestTaxInvoiceIssueOperatorAcceptanceRuntimeTrace");
+    form.append("token", state.admin.token);
+
+    const json = await postFormAction(form);
+    diagnostics.taxInvoiceIssueOperatorRuntimeTrace = json.data?.trace || null;
+    if (diagnostics.taxInvoiceIssueOperatorRuntimeTrace?.runId) {
+      diagnostics.taxInvoiceIssueOperatorRunId =
+        diagnostics.taxInvoiceIssueOperatorRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        TAX_INVOICE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID,
+        { trace: diagnostics.taxInvoiceIssueOperatorRuntimeTrace }
+      );
+    }
+    if (!diagnostics.taxInvoiceIssueOperatorRuntimeTrace) {
+      diagnostics.taxInvoiceIssueOperatorRuntimeTraceError =
+        "No persistent Tax Invoice Issue Operator trace found";
+    }
+  } catch (err) {
+    diagnostics.taxInvoiceIssueOperatorRuntimeTrace = null;
+    diagnostics.taxInvoiceIssueOperatorRuntimeTraceError =
+      err.message || "Tax Invoice Issue Operator trace unavailable";
+    showToast(diagnostics.taxInvoiceIssueOperatorRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingTaxInvoiceIssueOperatorRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function loadTaxInvoiceIssueOperatorAcceptanceProgressFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingTaxInvoiceIssueOperatorRuntimeTrace) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingTaxInvoiceIssueOperatorRuntimeTrace = true;
+  diagnostics.taxInvoiceIssueOperatorRuntimeTraceError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const runId = getTaxInvoiceIssueOperatorAcceptanceRunIdInputValue();
+    const form = new URLSearchParams();
+    form.append("action", "getTaxInvoiceIssueOperatorAcceptanceDiagnosticProgress");
+    form.append("token", state.admin.token);
+    if (runId) {
+      form.append("runId", runId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.taxInvoiceIssueOperatorRuntimeTrace =
+      json.data?.progress || null;
+    if (diagnostics.taxInvoiceIssueOperatorRuntimeTrace?.runId) {
+      diagnostics.taxInvoiceIssueOperatorRunId =
+        diagnostics.taxInvoiceIssueOperatorRuntimeTrace.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        TAX_INVOICE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID,
+        { trace: diagnostics.taxInvoiceIssueOperatorRuntimeTrace }
+      );
+    }
+    if (!diagnostics.taxInvoiceIssueOperatorRuntimeTrace) {
+      diagnostics.taxInvoiceIssueOperatorRuntimeTraceError =
+        "No persistent Tax Invoice Issue Operator progress found";
+    }
+  } catch (err) {
+    diagnostics.taxInvoiceIssueOperatorRuntimeTrace = null;
+    diagnostics.taxInvoiceIssueOperatorRuntimeTraceError =
+      err.message || "Tax Invoice Issue Operator progress unavailable";
+    showToast(diagnostics.taxInvoiceIssueOperatorRuntimeTraceError, "error");
+  } finally {
+    diagnostics.loadingTaxInvoiceIssueOperatorRuntimeTrace = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function auditTaxInvoiceIssueOperatorAcceptanceRecoveryFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingTaxInvoiceIssueOperatorRecoveryAudit) return;
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingTaxInvoiceIssueOperatorRecoveryAudit = true;
+  diagnostics.taxInvoiceIssueOperatorRecoveryError = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const runId = getTaxInvoiceIssueOperatorAcceptanceRunIdInputValue();
+    const form = new URLSearchParams();
+    form.append("action", "auditTaxInvoiceIssueOperatorAcceptanceRecovery");
+    form.append("token", state.admin.token);
+    if (runId) {
+      form.append("runId", runId);
+    } else {
+      form.append("latest", "true");
+    }
+
+    const json = await postFormAction(form);
+    diagnostics.taxInvoiceIssueOperatorRecoveryAudit =
+      json.data?.recovery || null;
+    if (diagnostics.taxInvoiceIssueOperatorRecoveryAudit?.runId) {
+      diagnostics.taxInvoiceIssueOperatorRunId =
+        diagnostics.taxInvoiceIssueOperatorRecoveryAudit.runId;
+      reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+        TAX_INVOICE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID,
+        { recovery: diagnostics.taxInvoiceIssueOperatorRecoveryAudit }
+      );
+      const cleanupStatus = normalizeDeveloperDiagnosticStatus(
+        diagnostics.taxInvoiceIssueOperatorRecoveryAudit.cleanupStatus
+      );
+      if (cleanupStatus && cleanupStatus !== "RUNNING") {
+        diagnostics.taxInvoiceIssueOperatorRecoveryCleanupTimeoutRunId = "";
+      }
+    }
+    if (!diagnostics.taxInvoiceIssueOperatorRecoveryAudit) {
+      diagnostics.taxInvoiceIssueOperatorRecoveryError =
+        "No Tax Invoice Issue Operator recovery manifest found";
+    }
+  } catch (err) {
+    diagnostics.taxInvoiceIssueOperatorRecoveryError =
+      err.message || "Tax Invoice Issue Operator recovery audit unavailable";
+    showToast(diagnostics.taxInvoiceIssueOperatorRecoveryError, "error");
+  } finally {
+    diagnostics.loadingTaxInvoiceIssueOperatorRecoveryAudit = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+function confirmTaxInvoiceIssueOperatorAcceptanceRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (
+    diagnostics.runningSuite ||
+    diagnostics.loadingTaxInvoiceIssueOperatorRecoveryAudit ||
+    diagnostics.loadingTaxInvoiceIssueOperatorRecoveryCleanup
+  ) {
+    return;
+  }
+
+  const runId = getTaxInvoiceIssueOperatorAcceptanceRunIdInputValue();
+  if (!runId) {
+    showToast("Enter the exact Tax Invoice Issue Operator runId before cleanup.", "warning");
+    return;
+  }
+  if (
+    diagnostics.taxInvoiceIssueOperatorRecoveryCleanupTimeoutRunId &&
+    diagnostics.taxInvoiceIssueOperatorRecoveryCleanupTimeoutRunId === runId
+  ) {
+    showToast(
+      "Cleanup may still be running. Check Tax Invoice Issue Operator Recovery Status before retrying.",
+      "warning"
+    );
+    return;
+  }
+  diagnostics.taxInvoiceIssueOperatorRecoveryCleanupRunId = runId;
+
+  confirmSheet.setAttribute(
+    "aria-labelledby",
+    "taxInvoiceIssueOperatorRecoveryCleanupConfirmTitle"
+  );
+  confirmSheet.classList.add("developer-diagnostic-confirm-sheet");
+  confirmSheet.innerHTML = `
+    <h3 id="taxInvoiceIssueOperatorRecoveryCleanupConfirmTitle">Cleanup Tax Invoice Issue Operator Run</h3>
+    <div class="display-inventory-help">
+      TEST-only exact cleanup for run ${esc(runId)}. It deletes only exact tracked TEST-DIAG Tax Invoice, Bill, Customer, Contact, Company Legal Profile, and fixture records for this run. It does not roll back Tax Invoice or Bill number sequences and does not refresh Workspace automatically.
+    </div>
+    <label class="display-inventory-help" for="taxInvoiceIssueOperatorRecoveryCleanupConfirmation">
+      Type CLEANUP_TEST_DIAG_TAX_INVOICE_ISSUE_OPERATOR_RUN to confirm.
+    </label>
+    <input id="taxInvoiceIssueOperatorRecoveryCleanupConfirmation"
+      type="text"
+      autocomplete="off"
+      style="width:100%;max-width:560px"
+      placeholder="CLEANUP_TEST_DIAG_TAX_INVOICE_ISSUE_OPERATOR_RUN"
+      oninput="updateTaxInvoiceIssueOperatorAcceptanceCleanupButtonState()">
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closeTaxInvoiceIssueOperatorAcceptanceRecoveryCleanupConfirmation()">
+        Cancel
+      </button>
+      <button id="taxInvoiceIssueOperatorRecoveryCleanupSubmit"
+        class="btn btn-danger"
+        type="button"
+        disabled
+        onclick="executeTaxInvoiceIssueOperatorAcceptanceRecoveryCleanupFromAdmin()">
+        Cleanup Tax Invoice Issue Operator Run
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+  updateTaxInvoiceIssueOperatorAcceptanceCleanupButtonState();
+}
+
+function updateTaxInvoiceIssueOperatorAcceptanceCleanupButtonState() {
+  const diagnostics = state.admin.developerDiagnostics;
+  const button = document.getElementById(
+    "taxInvoiceIssueOperatorRecoveryCleanupSubmit"
+  );
+  if (!button) return;
+  const confirmation = String(
+    document.getElementById("taxInvoiceIssueOperatorRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  const runId = String(
+    diagnostics.taxInvoiceIssueOperatorRecoveryCleanupRunId || ""
+  ).trim();
+  button.disabled = !runId ||
+    confirmation !== "CLEANUP_TEST_DIAG_TAX_INVOICE_ISSUE_OPERATOR_RUN" ||
+    !!diagnostics.loadingTaxInvoiceIssueOperatorRecoveryCleanup;
+}
+
+function closeTaxInvoiceIssueOperatorAcceptanceRecoveryCleanupConfirmation() {
+  const diagnostics = state.admin.developerDiagnostics;
+  diagnostics.taxInvoiceIssueOperatorRecoveryCleanupRunId = "";
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  confirmSheet.classList.remove("developer-diagnostic-confirm-sheet");
+  closeOverlay(confirmSheet);
+}
+
+function updateTaxInvoiceIssueOperatorAcceptanceCardAfterRecoveryCleanup(cleanup) {
+  const diagnostics = state.admin.developerDiagnostics;
+  const cleanupStatus = String(cleanup && cleanup.status || "FAIL")
+    .trim()
+    .toUpperCase();
+  const cleanupSummary = String(cleanup && cleanup.summary || "").trim();
+  const current =
+    diagnostics.results[TAX_INVOICE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID] || {
+      suite: TAX_INVOICE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID,
+      status: cleanupStatus === "PASS" ? "PARTIAL" : "FAIL",
+      checks: []
+    };
+  const checks = Array.isArray(current.checks) ? current.checks.slice() : [];
+  const nextCheck = {
+    name: "tax_invoice_issue_operator_recovery_cleanup",
+    status: cleanupStatus,
+    summary: cleanupSummary ||
+      "Tax Invoice Issue Operator recovery cleanup completed"
+  };
+  const index = checks.findIndex(check => check.name === nextCheck.name);
+  if (index === -1) {
+    checks.push(nextCheck);
+  } else {
+    checks[index] = nextCheck;
+  }
+  current.checks = checks;
+  current.cleanup = {
+    required: true,
+    status: cleanupStatus
+  };
+  if (cleanupStatus !== "PASS") {
+    current.status = "FAIL";
+  } else if (!current.status || current.status === "NOT_RUN") {
+    current.status = "PARTIAL";
+  }
+  diagnostics.results[TAX_INVOICE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID] = current;
+}
+
+async function executeTaxInvoiceIssueOperatorAcceptanceRecoveryCleanupFromAdmin() {
+  const diagnostics = state.admin.developerDiagnostics;
+  if (diagnostics.loadingTaxInvoiceIssueOperatorRecoveryCleanup) return;
+
+  const runId = String(
+    diagnostics.taxInvoiceIssueOperatorRecoveryCleanupRunId || ""
+  ).trim();
+  const confirmation = String(
+    document.getElementById("taxInvoiceIssueOperatorRecoveryCleanupConfirmation")?.value || ""
+  ).trim();
+  if (!runId) {
+    showToast("Tax Invoice Issue Operator cleanup runId is required", "warning");
+    return;
+  }
+  if (confirmation !== "CLEANUP_TEST_DIAG_TAX_INVOICE_ISSUE_OPERATOR_RUN") {
+    showToast(
+      "Tax Invoice Issue Operator cleanup confirmation is required",
+      "warning"
+    );
+    return;
+  }
+
+  closeTaxInvoiceIssueOperatorAcceptanceRecoveryCleanupConfirmation();
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    await refreshDeveloperDiagnosticsAvailability();
+  }
+
+  if (!isDeveloperDiagnosticsAvailable()) {
+    renderDeveloperDiagnosticsSheet();
+    showToast("Developer diagnostics unavailable", "warning");
+    return;
+  }
+
+  diagnostics.loadingTaxInvoiceIssueOperatorRecoveryCleanup = true;
+  diagnostics.taxInvoiceIssueOperatorRecoveryError = "";
+  diagnostics.taxInvoiceIssueOperatorRecoveryCleanupMessage = "";
+  renderDeveloperDiagnosticsSheet();
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "cleanupTaxInvoiceIssueOperatorAcceptanceRecovery");
+    form.append("token", state.admin.token);
+    form.append("runId", runId);
+    form.append("confirmation", confirmation);
+
+    const json = await postFormAction(form);
+    const cleanup = json.data?.cleanup || {};
+    diagnostics.taxInvoiceIssueOperatorRuntimeTrace =
+      json.data?.progress || null;
+    diagnostics.taxInvoiceIssueOperatorRecoveryAudit =
+      json.data?.recovery || null;
+    if (diagnostics.taxInvoiceIssueOperatorRuntimeTrace?.runId) {
+      diagnostics.taxInvoiceIssueOperatorRunId =
+        diagnostics.taxInvoiceIssueOperatorRuntimeTrace.runId;
+    } else if (diagnostics.taxInvoiceIssueOperatorRecoveryAudit?.runId) {
+      diagnostics.taxInvoiceIssueOperatorRunId =
+        diagnostics.taxInvoiceIssueOperatorRecoveryAudit.runId;
+    }
+    diagnostics.taxInvoiceIssueOperatorRecoveryCleanupTimeoutRunId = "";
+    diagnostics.taxInvoiceIssueOperatorRecoveryCleanupMessage =
+      `Cleanup ${cleanup.status || "-"}: ${cleanup.summary || "-"}`;
+    updateTaxInvoiceIssueOperatorAcceptanceCardAfterRecoveryCleanup(cleanup);
+    reconcileDeveloperDiagnosticSuiteCardFromPersistedState(
+      TAX_INVOICE_ISSUE_OPERATOR_ACCEPTANCE_SUITE_ID,
+      {
+        trace: diagnostics.taxInvoiceIssueOperatorRuntimeTrace,
+        recovery: diagnostics.taxInvoiceIssueOperatorRecoveryAudit,
+        cleanup
+      }
+    );
+    showToast(
+      cleanup.status === "PASS"
+        ? "Tax Invoice Issue Operator cleanup PASS"
+        : "Tax Invoice Issue Operator cleanup completed",
+      cleanup.status === "PASS" ? "success" : "warning"
+    );
+  } catch (err) {
+    const message =
+      err.message || "Tax Invoice Issue Operator recovery cleanup unavailable";
+    if (isDeveloperDiagnosticTimeoutMessage(message)) {
+      diagnostics.taxInvoiceIssueOperatorRecoveryCleanupTimeoutRunId = runId;
+      diagnostics.taxInvoiceIssueOperatorRecoveryCleanupMessage =
+        "Cleanup request timed out on the client. The backend may still be running; check Tax Invoice Issue Operator Recovery Status before retrying.";
+      showToast(diagnostics.taxInvoiceIssueOperatorRecoveryCleanupMessage, "warning");
+    } else {
+      diagnostics.taxInvoiceIssueOperatorRecoveryCleanupMessage = message;
+      diagnostics.taxInvoiceIssueOperatorRecoveryError = message;
+      showToast(message, "error");
+    }
+  } finally {
+    diagnostics.loadingTaxInvoiceIssueOperatorRecoveryCleanup = false;
+    renderDeveloperDiagnosticsSheet();
+  }
+}
+
+async function openTaxInvoiceIssueOperatorAcceptanceBillDetailFromAdmin() {
+  const fixture = getTaxInvoiceIssueOperatorAcceptanceRetainedFixture();
+  const billId = String(fixture.billId || "").trim();
+  const customerId = String(fixture.customerId || "").trim();
+  const taxInvoiceIssueRequestPrefix = String(
+    fixture.operatorTaxInvoiceRequestPrefix || ""
+  ).trim();
+  if (!billId || !customerId || !taxInvoiceIssueRequestPrefix) {
+    showToast(
+      "Load Tax Invoice Issue Operator runtime or recovery before opening Bill Detail.",
+      "warning"
+    );
+    return;
+  }
+  if (typeof openFinanceLegalBillDetail !== "function") {
+    showToast("Bill Detail is unavailable", "error");
+    return;
+  }
+  const hadDiagnosticsOpen =
+    !!adminDeveloperDiagnosticsSheet?.classList.contains("show");
+  if (hadDiagnosticsOpen) {
+    closeDeveloperDiagnosticsSheet();
+  }
+  try {
+    await openFinanceLegalBillDetail(billId, {
+      title: fixture.billNumber || billId,
+      source: "workspace",
+      sectionId: "tax_invoices_ready_to_issue",
+      rowId: billId,
+      targetType: "tax_invoice",
+      billId,
+      customerId,
+      taxInvoiceIssueRequestPrefix
+    });
+    if (!adminDashboardSheet?.classList.contains("show")) {
+      throw new Error("Bill Detail did not open");
+    }
+  } catch (err) {
+    if (
+      hadDiagnosticsOpen &&
+      !adminDeveloperDiagnosticsSheet?.classList.contains("show")
+    ) {
+      await openDeveloperDiagnosticsSheet();
+    }
+    showToast(err.message || "Bill Detail is unavailable", "error");
   }
 }
 
@@ -22507,6 +23185,18 @@ function getFinanceLegalDetailState() {
   ) {
     state.admin.financeLegalDetail.receiptIssueUnknownCompletion = null;
   }
+  if (
+    state.admin.financeLegalDetail.taxInvoiceIssueRequest &&
+    typeof state.admin.financeLegalDetail.taxInvoiceIssueRequest !== "object"
+  ) {
+    state.admin.financeLegalDetail.taxInvoiceIssueRequest = null;
+  }
+  if (
+    state.admin.financeLegalDetail.taxInvoiceIssueUnknownCompletion &&
+    typeof state.admin.financeLegalDetail.taxInvoiceIssueUnknownCompletion !== "object"
+  ) {
+    state.admin.financeLegalDetail.taxInvoiceIssueUnknownCompletion = null;
+  }
   return state.admin.financeLegalDetail;
 }
 
@@ -22523,6 +23213,15 @@ function getFinanceLegalDetailReadableError(error) {
   }
   if (/Bill ID is required/i.test(message)) {
     return "Workspace row ไม่มีรหัสใบแจ้งหนี้สำหรับเปิดรายละเอียด";
+  }
+  if (/Bill already has a Tax Invoice/i.test(message)) {
+    return "Bill นี้มีใบกำกับภาษีแล้ว กรุณา refresh Workspace หรือตรวจเอกสารเดิมก่อนส่งคำขอใหม่";
+  }
+  if (/Complete Customer Legal Identity is required/i.test(message)) {
+    return "ข้อมูล Legal Identity ของลูกค้ายังไม่ครบสำหรับออกใบกำกับภาษี";
+  }
+  if (/Complete Company Legal Profile is required|Company Legal Profile has duplicate singleton rows/i.test(message)) {
+    return "ข้อมูล Company Legal Profile ยังไม่พร้อมสำหรับออกใบกำกับภาษี";
   }
   if (/Receivable not found/i.test(message)) {
     return "ไม่พบยอดค้างรับที่เลือก";
@@ -22828,6 +23527,83 @@ function renderFinanceLegalReceiptIssueAction(detail) {
       onclick="confirmFinanceLegalReceiptIssue()"
       aria-label="ออกใบรับเงิน">
       ${pending ? "กำลังออกใบรับเงิน..." : "ออกใบรับเงิน"}
+    </button>
+  `;
+}
+
+function getTaxInvoiceIssueOperatorPendingKey(billId) {
+  return `issueTaxInvoice:${String(billId || "").trim()}`;
+}
+
+function isTaxInvoiceIssueOperatorPending(detail = getFinanceLegalDetailState()) {
+  const billId = String(detail?.data?.billId || "").trim();
+  return Boolean(
+    billId &&
+    detail?.pendingKey === getTaxInvoiceIssueOperatorPendingKey(billId)
+  );
+}
+
+function isTaxInvoiceIssueUnknownCompletionForBill(detail, billId) {
+  return String(detail?.taxInvoiceIssueUnknownCompletion?.billId || "").trim() ===
+    String(billId || "").trim();
+}
+
+function isTrustedTaxInvoiceReadyWorkspaceContext(detail, bill) {
+  const context = detail?.context || {};
+  const billId = String(bill?.billId || "").trim();
+  if (
+    context.source !== "workspace" ||
+    context.sectionId !== "tax_invoices_ready_to_issue" ||
+    !billId ||
+    context.billId !== billId
+  ) {
+    return false;
+  }
+  if (context.rowId && context.rowId !== billId) return false;
+  if (
+    context.customerId &&
+    context.customerId !== String(bill?.customerId || "").trim()
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function isBillReadyForOperatorTaxInvoiceIssue(detail = getFinanceLegalDetailState()) {
+  const bill = detail?.data || {};
+  const billId = String(bill?.billId || "").trim();
+  return Boolean(
+    billId &&
+    detail?.recordId === billId &&
+    String(bill.status || "").trim().toUpperCase() === "ISSUED" &&
+    isTrustedTaxInvoiceReadyWorkspaceContext(detail, bill) &&
+    !hasTaxInvoiceIssueOperatorAcceptanceTaxInvoiceForBill(billId) &&
+    !isTaxInvoiceIssueUnknownCompletionForBill(detail, billId)
+  );
+}
+
+function isTaxInvoiceIssueOperatorAvailable(detail = getFinanceLegalDetailState()) {
+  return Boolean(
+    detail?.open &&
+    detail.type === "bill" &&
+    !detail.loading &&
+    !detail.error &&
+    isBillReadyForOperatorTaxInvoiceIssue(detail) &&
+    hasAdminPermission("tax_invoice.issue")
+  );
+}
+
+function renderFinanceLegalTaxInvoiceIssueAction(detail) {
+  if (!isTaxInvoiceIssueOperatorAvailable(detail)) {
+    return "";
+  }
+  const pending = isTaxInvoiceIssueOperatorPending(detail);
+  return `
+    <button class="btn btn-primary" type="button"
+      ${pending ? "disabled aria-disabled=\"true\"" : ""}
+      onclick="confirmFinanceLegalTaxInvoiceIssue()"
+      aria-label="ออกใบกำกับภาษี">
+      ${pending ? "กำลังออกใบกำกับภาษี..." : "ออกใบกำกับภาษี"}
     </button>
   `;
 }
@@ -23843,7 +24619,8 @@ function renderFinanceLegalDetailShell() {
   const body = renderFinanceLegalDetailBody(detail);
   const operatorAction = [
     renderFinanceLegalBillIssueAction(detail),
-    renderFinanceLegalReceiptIssueAction(detail)
+    renderFinanceLegalReceiptIssueAction(detail),
+    renderFinanceLegalTaxInvoiceIssueAction(detail)
   ].filter(Boolean).join("");
   const printAction = renderFinanceLegalBillPrintAction(detail) || renderFinanceLegalTaxInvoicePrintAction(detail) || renderFinanceLegalReceiptPrintAction(detail) || renderFinanceLegalCreditNotePrintAction(detail);
 
@@ -23894,6 +24671,8 @@ function closeFinanceLegalDetailSheet() {
   detail.context = {};
   detail.receiptIssueRequest = null;
   detail.receiptIssueUnknownCompletion = null;
+  detail.taxInvoiceIssueRequest = null;
+  detail.taxInvoiceIssueUnknownCompletion = null;
   detail.requestId += 1;
   detail.workspaceScrollTop = 0;
   renderAdminWorkspaceSheet();
@@ -23928,6 +24707,24 @@ function normalizeFinanceLegalDetailContext(context = {}, type = "", recordId = 
       ).trim()
     };
   }
+  if (
+    source === "workspace" &&
+    sectionId === "tax_invoices_ready_to_issue" &&
+    normalizedType === "bill"
+  ) {
+    const billId = String(context?.billId || recordId || "").trim();
+    return {
+      source,
+      sectionId,
+      rowId: String(context?.rowId || billId || "").trim(),
+      targetType: String(context?.targetType || "tax_invoice").trim(),
+      billId,
+      customerId: String(context?.customerId || "").trim(),
+      taxInvoiceIssueRequestPrefix: String(
+        context?.taxInvoiceIssueRequestPrefix || ""
+      ).trim()
+    };
+  }
   return {};
 }
 
@@ -23941,7 +24738,9 @@ function hasExplicitFinanceLegalDetailContext(context = {}) {
       context.paymentId ||
       context.billId ||
       context.customerId ||
-      context.receiptIssueRequestPrefix
+      context.receiptIssueRequestPrefix ||
+      context.targetType ||
+      context.taxInvoiceIssueRequestPrefix
     )
   );
 }
@@ -24018,6 +24817,8 @@ function restoreFinanceLegalDetailEntry(detail, entry) {
   detail.context = cloneFinanceLegalDetailContext(entry?.context);
   detail.receiptIssueRequest = null;
   detail.receiptIssueUnknownCompletion = null;
+  detail.taxInvoiceIssueRequest = null;
+  detail.taxInvoiceIssueUnknownCompletion = null;
 }
 
 function backFinanceLegalDetail() {
@@ -24332,6 +25133,178 @@ async function executeFinanceLegalReceiptIssueFromConfirm() {
   }
 }
 
+function makeTaxInvoiceIssueOperatorRequestId(billId) {
+  const ownedPrefix =
+    getTaxInvoiceIssueOperatorAcceptanceRequestPrefixForBill(billId);
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const randomPart = Math.random().toString(36).slice(2, 10).toUpperCase();
+  if (ownedPrefix) {
+    return `${ownedPrefix}${timestamp}-${randomPart}`.slice(0, 120);
+  }
+  const billPart = String(billId || "")
+    .trim()
+    .replace(/[^a-zA-Z0-9-]/g, "")
+    .slice(0, 36)
+    .toUpperCase() || "BILL";
+  return `TAX-INVOICE-OP-${billPart}-${timestamp}-${randomPart}`.slice(0, 120);
+}
+
+function closeFinanceLegalTaxInvoiceIssueConfirm() {
+  const detail = getFinanceLegalDetailState();
+  if (!isTaxInvoiceIssueOperatorPending(detail)) {
+    detail.taxInvoiceIssueRequest = null;
+  }
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  closeOverlay(confirmSheet);
+}
+
+function confirmFinanceLegalTaxInvoiceIssue() {
+  if (!ensureAdminSessionForWorkspace()) return;
+  const detail = getFinanceLegalDetailState();
+  if (!isTaxInvoiceIssueOperatorAvailable(detail)) {
+    showToast("Bill is not ready for Tax Invoice issue", "warning");
+    return;
+  }
+  if (isTaxInvoiceIssueOperatorPending(detail)) return;
+
+  const bill = detail.data || {};
+  const billId = String(bill.billId || "").trim();
+  const requestId = makeTaxInvoiceIssueOperatorRequestId(billId);
+  detail.taxInvoiceIssueRequest = {
+    billId,
+    requestId
+  };
+
+  confirmSheet.setAttribute("aria-labelledby", "confirmSheetTitle");
+  confirmSheet.classList.remove("developer-diagnostic-confirm-sheet");
+  confirmSheet.innerHTML = `
+    <h3 id="confirmSheetTitle">ยืนยันออกใบกำกับภาษี</h3>
+    <p>
+      ระบบจะเรียก backend <code>issueTaxInvoice</code> ด้วย Bill ID ที่มาจาก Workspace
+      <code>tax_invoices_ready_to_issue</code> เท่านั้น
+    </p>
+    <div class="finance-legal-detail-grid">
+      ${renderFinanceLegalDetailField("Bill ID", bill.billId || "-")}
+      ${renderFinanceLegalDetailField("Bill number", bill.billNumber || "-")}
+      ${renderFinanceLegalDetailField("Customer ID", bill.customerId || "-")}
+      ${renderFinanceLegalDetailField("ยอดรวม", bill.grandTotal, { money: true })}
+      ${renderFinanceLegalDetailField("Request ID", requestId)}
+    </div>
+    <div class="finance-legal-detail-related-note">
+      เลข Tax Invoice จะถูกออกโดย backend และไม่ถูกนำกลับมาใช้ซ้ำ ระบบจะใช้ VAT/money snapshot จาก Bill และ legal identity snapshot ณ เวลาออกเอกสาร
+      อย่ากดซ้ำหรือ retry แบบไม่ตรวจสอบหาก browser timeout
+    </div>
+    <div class="sheet-action-footer">
+      <button class="btn btn-outline" type="button"
+        onclick="closeFinanceLegalTaxInvoiceIssueConfirm()">
+        ยกเลิก
+      </button>
+      <button class="btn btn-primary" type="button" data-tax-invoice-issue-submit
+        onclick="executeFinanceLegalTaxInvoiceIssueFromConfirm()">
+        ออกใบกำกับภาษี
+      </button>
+    </div>
+  `;
+  openOverlay(confirmSheet);
+}
+
+async function executeFinanceLegalTaxInvoiceIssueFromConfirm() {
+  if (!ensureAdminSessionForWorkspace()) return;
+  const detail = getFinanceLegalDetailState();
+  if (!isTaxInvoiceIssueOperatorAvailable(detail)) {
+    closeFinanceLegalTaxInvoiceIssueConfirm();
+    showToast("Bill is not ready for Tax Invoice issue", "warning");
+    return;
+  }
+
+  const bill = detail.data || {};
+  const billId = String(bill.billId || "").trim();
+  const pendingKey = getTaxInvoiceIssueOperatorPendingKey(billId);
+  if (detail.pendingKey === pendingKey) return;
+
+  const request = detail.taxInvoiceIssueRequest || {};
+  const requestId = String(request.requestId || "").trim();
+  if (
+    String(request.billId || "").trim() !== billId ||
+    !requestId
+  ) {
+    closeFinanceLegalTaxInvoiceIssueConfirm();
+    showToast("Tax Invoice issue confirmation expired. Open confirmation again.", "warning");
+    return;
+  }
+
+  detail.pendingKey = pendingKey;
+  renderFinanceLegalDetailShell();
+  confirmSheet.querySelectorAll("button").forEach(button => {
+    button.disabled = true;
+    button.setAttribute("aria-disabled", "true");
+  });
+  const submitButton = confirmSheet.querySelector("[data-tax-invoice-issue-submit]");
+  if (submitButton) {
+    submitButton.textContent = "กำลังออกใบกำกับภาษี...";
+  }
+
+  try {
+    const form = new URLSearchParams();
+    form.append("action", "issueTaxInvoice");
+    form.append("token", state.admin.token);
+    form.append("requestId", requestId);
+    form.append("billId", billId);
+    const json = await postFormAction(form);
+    const taxInvoice = json?.data?.taxInvoice;
+    const taxInvoiceId = String(taxInvoice?.taxInvoiceId || "").trim();
+    if (!taxInvoice || !taxInvoiceId) {
+      const malformed = new Error("Malformed Tax Invoice issue response");
+      malformed.taxInvoiceIssueUnknown = true;
+      throw malformed;
+    }
+
+    detail.taxInvoiceIssueRequest = null;
+    detail.taxInvoiceIssueUnknownCompletion = null;
+    setFinanceLegalDetailCachedData(detail, "tax_invoice", taxInvoiceId, taxInvoice);
+    closeFinanceLegalTaxInvoiceIssueConfirm();
+    await openFinanceLegalTaxInvoiceDetail(taxInvoiceId, {
+      title: taxInvoice.taxInvoiceNumber || taxInvoiceId
+    });
+    showToast(`ออกใบกำกับภาษี ${taxInvoice.taxInvoiceNumber || taxInvoiceId} แล้ว`, "success");
+
+    const workspaceRefreshed = await refreshAdminWorkspaceAfterFinanceLegalMutation();
+    if (!workspaceRefreshed) {
+      showToast("ออกใบกำกับภาษีแล้ว แต่ Workspace ยังไม่ได้ refresh", "warning");
+    }
+  } catch (err) {
+    const rawMessage = String(err?.message || err || "").trim();
+    const shouldBlockRetry =
+      err?.taxInvoiceIssueUnknown ||
+      isDeveloperDiagnosticTimeoutMessage(rawMessage) ||
+      /Bill already has a Tax Invoice/i.test(rawMessage);
+    if (shouldBlockRetry) {
+      detail.taxInvoiceIssueUnknownCompletion = {
+        billId,
+        requestId,
+        recordedAt: new Date().toISOString(),
+        message: rawMessage
+      };
+    } else {
+      detail.taxInvoiceIssueRequest = null;
+    }
+    closeFinanceLegalTaxInvoiceIssueConfirm();
+    const readable = getFinanceLegalDetailReadableError(err);
+    showToast(
+      shouldBlockRetry
+        ? `${readable} กรุณา refresh Workspace หรือตรวจเอกสารเดิมก่อนส่งคำขอใหม่`
+        : readable,
+      "error",
+      shouldBlockRetry ? 5200 : 2500
+    );
+  } finally {
+    if (detail.pendingKey === pendingKey) {
+      detail.pendingKey = "";
+      renderFinanceLegalDetailShell();
+    }
+  }
+}
+
 async function fetchReceivableDetailByBillId(billId) {
   const form = new URLSearchParams();
   form.append("action", "getReceivable");
@@ -24503,12 +25476,20 @@ async function openFinanceLegalDetail(type, recordId, context = {}) {
   detail.data = null;
   detail.pendingKey = detail.loading ? targetKey : "";
   detail.receiptIssueRequest = null;
+  detail.taxInvoiceIssueRequest = null;
   if (
     normalizedType !== "payment" ||
     String(detail.receiptIssueUnknownCompletion?.paymentId || "").trim() !==
       normalizedRecordId
   ) {
     detail.receiptIssueUnknownCompletion = null;
+  }
+  if (
+    normalizedType !== "bill" ||
+    String(detail.taxInvoiceIssueUnknownCompletion?.billId || "").trim() !==
+      normalizedRecordId
+  ) {
+    detail.taxInvoiceIssueUnknownCompletion = null;
   }
   detail.requestId += 1;
   const requestId = detail.requestId;
@@ -26089,6 +27070,12 @@ async function openWorkspaceDrillDown(sectionId, rowId) {
       return;
     }
     openFinanceLegalBillDetail(billId, {
+      source: "workspace",
+      sectionId: "tax_invoices_ready_to_issue",
+      rowId: row?.id || billId,
+      targetType: "tax_invoice",
+      billId,
+      customerId: drillDown.customerId || "",
       title: row?.primaryLabel || billId || "รายละเอียดใบแจ้งหนี้"
     });
     return;
