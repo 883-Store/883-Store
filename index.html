@@ -7039,6 +7039,9 @@ const state = {
     permissions: [],
     expiredAt: null,
     orders: [],
+    ordersLoading: false,
+    ordersError: "",
+    ordersLoadedAt: "",
     selectedOrder: null,
     dashboardMode: "SUMMARY",
     logs: [],
@@ -9792,6 +9795,41 @@ function isAuthError(message = "") {
 
 function isPermissionDeniedError(message = "") {
   return String(message || "").trim() === "Forbidden";
+}
+
+function isTimeoutError(message = "") {
+  const text = String(message || "");
+  return (
+    text.includes(t("connectionSlowRetry", "การเชื่อมต่อช้าเกินไป กรุณาลองใหม่อีกครั้ง")) ||
+    text.toLowerCase().includes("timed out") ||
+    text.toLowerCase().includes("abort")
+  );
+}
+
+function isEndpointResponseError(message = "") {
+  const text = String(message || "");
+  return (
+    /^HTTP\s+\d+:/i.test(text) ||
+    text.includes("รูปแบบข้อมูลตอบกลับไม่ถูกต้อง") ||
+    text.toLowerCase().includes("unexpected token")
+  );
+}
+
+function getReadOnlyRequestErrorMessage(error, fallback) {
+  const message = String(error?.message || error || "").trim();
+  if (isTimeoutError(message)) {
+    return t("connectionSlowRetry", "การเชื่อมต่อช้าเกินไป กรุณาลองใหม่อีกครั้ง");
+  }
+  if (isAuthError(message)) {
+    return t("sessionExpiredLoginAgain", "Session หมดอายุ กรุณา login ใหม่");
+  }
+  if (isPermissionDeniedError(message)) {
+    return t("noPermission", "ไม่มีสิทธิ์ใช้งานส่วนนี้");
+  }
+  if (isEndpointResponseError(message)) {
+    return t("invalidResponse", "รูปแบบข้อมูลตอบกลับไม่ถูกต้อง");
+  }
+  return fallback || message || t("loadFailed", "โหลดข้อมูลไม่สำเร็จ");
 }
 
 function normalizeAdminPermissions(value) {
@@ -20218,6 +20256,11 @@ function redactDisplayUiIntegrationMessage(message) {
 const API_URL="https://script.google.com/macros/s/AKfycbyjxDG7oX0QK1SlGX_wQpElQUGSciz6ToszqYluNUJ2FOXN-91fJMvdd5EFeS9Vo59u/exec";
 
 let adminLogoutPromise = null;
+let productRefreshRequestId = 0;
+const productFetchInflight = {
+  public: null,
+  admin: null
+};
 
 async function adminLogout(token) {
   const form = new URLSearchParams();
@@ -20251,6 +20294,11 @@ function handleAdminLogout() {
 }
 
 const fetchProducts = async () => {
+  if (productFetchInflight.public) {
+    return productFetchInflight.public;
+  }
+
+  const request = (async () => {
   const res = await fetchWithTimeout(
    `${API_URL}?action=products`,
    {},
@@ -20267,6 +20315,16 @@ const fetchProducts = async () => {
   }
 
   return json.data;
+  })();
+
+  productFetchInflight.public = request;
+  try {
+    return await request;
+  } finally {
+    if (productFetchInflight.public === request) {
+      productFetchInflight.public = null;
+    }
+  }
 };
 
 const fetchAdminProducts = async () => {
@@ -20274,6 +20332,11 @@ const fetchAdminProducts = async () => {
     throw new Error("Not authenticated");
   }
 
+  if (productFetchInflight.admin) {
+    return productFetchInflight.admin;
+  }
+
+  const request = (async () => {
   const form = new URLSearchParams();
   form.append("action", "adminProducts");
   form.append("token", state.admin.token);
@@ -20294,6 +20357,16 @@ const fetchAdminProducts = async () => {
   }
 
   return json.data;
+  })();
+
+  productFetchInflight.admin = request;
+  try {
+    return await request;
+  } finally {
+    if (productFetchInflight.admin === request) {
+      productFetchInflight.admin = null;
+    }
+  }
 };  
 
 async function fetchPendingDeliveries() {
@@ -20334,9 +20407,47 @@ function sortProducts(products) {
     )
   );
 }
-  
-async function refreshProducts() {
+
+function getProductRefreshScope() {
+  return (
+    state.mode === "admin" &&
+    state.admin?.loggedIn &&
+    state.admin?.token &&
+    !isAdminSessionExpired()
+  )
+    ? "admin"
+    : "public";
+}
+
+function renderProductsLoadError(error) {
   const app = document.getElementById("app");
+  if (!app) return;
+
+  const message = getReadOnlyRequestErrorMessage(
+    error,
+    "Unable to load products. Please retry."
+  );
+
+  app.innerHTML = `
+    <div role="alert" style="
+      text-align:center;
+      color:#d93025;
+      margin-top:40px;
+      font-size:15px;
+    ">
+      ${esc(message)}
+    </div>
+    <button class="btn btn-primary" style="display:block;margin:16px auto 0" onclick="refreshProducts()">
+      ${t("retry", "à¸¥à¸­à¸‡à¹ƒà¸«à¸¡à¹ˆ")}
+    </button>
+  `;
+}
+
+async function refreshProducts(options = {}) {
+  const shouldRender = options.render !== false;
+  const app = shouldRender ? document.getElementById("app") : null;
+  const requestId = ++productRefreshRequestId;
+  const scope = getProductRefreshScope();
 
   // ✅ Premium Skeleton เฉพาะตอน "ยังไม่มีรายการ" (ลดอาการวูบ/กระพริบ)
   if (app && (!Array.isArray(state.products) || state.products.length === 0)) {
@@ -20356,32 +20467,27 @@ async function refreshProducts() {
   }
 
   try {
-    const useAdminProducts =
-      state.mode === "admin" &&
-      state.admin?.loggedIn &&
-      state.admin?.token &&
-      !isAdminSessionExpired();
-
-    const list = useAdminProducts
+    const list = scope === "admin"
       ? await fetchAdminProducts()
       : await fetchProducts();
+
+    if (
+      requestId !== productRefreshRequestId ||
+      scope !== getProductRefreshScope()
+    ) {
+      return;
+    }
    
     state.products = sortProducts(list);
    
-    renderProducts();
+    if (shouldRender) {
+      renderProducts();
+    }
   } catch (err) {
+    if (requestId !== productRefreshRequestId) return;
     console.error("refreshProducts failed:", err);
-    if (app) {
-      app.innerHTML = `
-        <div role="alert" style="
-          text-align:center;
-          color:#d93025;
-          margin-top:40px;
-          font-size:15px;
-        ">
-          ไม่สามารถโหลดรายการสินค้าได้
-        </div>
-      `;
+    if (shouldRender) {
+      renderProductsLoadError(err);
     }
   }
 }
@@ -20707,6 +20813,30 @@ async function fetchOrders(){
     saveAdminSession(sessionPayload);
   }
   return json.data;
+}
+
+async function refreshAdminOrders(options = {}) {
+  if (!state.admin.token || state.admin.ordersLoading) return;
+
+  state.admin.ordersLoading = true;
+  state.admin.ordersError = "";
+
+  try {
+    const orders = await fetchOrders();
+    state.admin.orders = Array.isArray(orders) ? orders : [];
+    state.admin.ordersLoadedAt = new Date().toISOString();
+  } catch (err) {
+    console.warn("refreshAdminOrders failed:", err);
+    state.admin.ordersError = getReadOnlyRequestErrorMessage(
+      err,
+      "Unable to load orders. Please retry."
+    );
+    if (!options.silent) {
+      showToast(state.admin.ordersError, "warning");
+    }
+  } finally {
+    state.admin.ordersLoading = false;
+  }
 }
   
 /* ================= STOCK CHECK ================= */
@@ -22349,6 +22479,12 @@ function openAdminEntry(){
   renderAdminLogin();
 }
 
+function startAdminOptionalPreloads() {
+  void refreshProducts({ render: false });
+  void refreshAdminOrders({ silent: true });
+  void refreshDeveloperDiagnosticsAvailability();
+}
+
 async function enterAdmin(){
   state.mode = "admin";
   state.search = ""; // ✅ reset
@@ -22361,17 +22497,9 @@ async function enterAdmin(){
   // 🔴 CHANGED: ล้าง selection เก่าจาก viewer/admin รอบก่อน
   state.selectedProduct = null;
 
-  // 🔴 CHANGED: ต้องโหลด admin products ให้เสร็จก่อน
-  await refreshProducts();
-
-  try {
-    const orders = await fetchOrders();
-    state.admin.orders = Array.isArray(orders) ? orders : [];
-  } catch (err) {
-    console.warn("enterAdmin: preload orders failed", err);
-  }
-
+  // Startup P0: open the admin shell before optional preloads finish.
   openAdminWorkspace();
+  startAdminOptionalPreloads();
 }
 
 // ✅ STEP 1: UI-only mode switch (ไม่ยุ่ง session/token)
@@ -22894,7 +23022,7 @@ async function handleAdminLogin(btn){
 
     // ✅ SAVE SESSION (PERSIST)
     saveAdminSession(json);
-    await refreshDeveloperDiagnosticsAvailability();
+    void refreshDeveloperDiagnosticsAvailability();
 
     // 🧹 CLOSE LOGIN SHEET
     closeOverlay(adminLoginSheet);
@@ -46118,6 +46246,9 @@ function clearAdminSession(){
   state.admin.permissions = [];
   state.admin.expiredAt = null;
   state.admin.orders = [];
+  state.admin.ordersLoading = false;
+  state.admin.ordersError = "";
+  state.admin.ordersLoadedAt = "";
   state.admin.selectedOrder = null;
   state.admin.logs = [];
   state.admin.ui.activeSheet = null;
@@ -46209,44 +46340,21 @@ async function restoreAdminSessionIfValid() {
     return false;
   }
 
-  try {
-    // ✅ lightweight validate (POST ให้ตรง backend)
-    const form = new URLSearchParams();
-    form.append("action", "orders");
-    form.append("token", restored.token);
+  const sessionPayload = {
+    ...restored,
+    role: restored.role || null,
+    permissions: normalizeAdminPermissions(restored.permissions)
+  };
+  state.admin.loggedIn = true;
+  state.admin.user = sessionPayload.username || null;
+  state.admin.token = sessionPayload.token;
+  state.admin.expiredAt = sessionPayload.expiredAt;
+  applyAdminAuthContext(sessionPayload);
+  saveAdminSession(sessionPayload);
+  void refreshDeveloperDiagnosticsAvailability();
 
-    const res = await fetch(API_URL, {
-      method: "POST",
-      body: form
-    });
-
-    const json = await res.json();
-
-    if (json?.success === true) {
-      const sessionPayload = {
-        ...restored,
-        role: json.role || restored.role,
-        permissions: Array.isArray(json.permissions)
-          ? json.permissions
-          : restored.permissions
-      };
-      state.admin.loggedIn = true;
-      state.admin.user = sessionPayload.username || null;
-      state.admin.token = sessionPayload.token;
-      state.admin.expiredAt = sessionPayload.expiredAt;
-      applyAdminAuthContext(sessionPayload);
-      saveAdminSession(sessionPayload);
-      await refreshDeveloperDiagnosticsAvailability();
-
-      // ❗ ไม่ set state.mode ที่นี่ (กันกระทบ flow)
-      return true;
-    }
-  } catch (e) {
-    console.warn("restore admin failed", e);
-  }
-
-  clearAdminSession();
-  return false;
+  // Do not set state.mode here; opening Admin remains an explicit UI action.
+  return true;
 }
   
 /* ================= INIT APP (CLEAN / SAFE) ================= */
@@ -46388,62 +46496,13 @@ const __domReady = new Promise((resolve) => {
     state.mode = "viewer";
     state.search = "";
 
-    const restored = loadAdminSession();
-    let adminRestored = false;
-
-    if (
-      restored &&
-      restored.token &&
-      restored.expiredAt &&
-      Date.now() < new Date(restored.expiredAt).getTime()
-    ) {
-      try {
-        // ✅ FIX: ใช้ POST ให้ตรง backend
-        const form = new URLSearchParams();
-        form.append("action", "orders");
-        form.append("token", restored.token);
-
-        const res = await fetchWithTimeout(API_URL, {
-          method: "POST",
-          body: form
-        }, 15000);
-
-        const json = await res.json();
-
-        if (json && json.success === true) {
-          const sessionPayload = {
-            ...restored,
-            role: json.role || restored.role,
-            permissions: Array.isArray(json.permissions)
-              ? json.permissions
-              : restored.permissions
-          };
-          state.admin.loggedIn = true;
-          state.admin.user = sessionPayload.username;
-          state.admin.token = sessionPayload.token;
-          state.admin.expiredAt = sessionPayload.expiredAt;
-          applyAdminAuthContext(sessionPayload);
-          saveAdminSession(sessionPayload);
-          await refreshDeveloperDiagnosticsAvailability();
-
-          adminRestored = true;
-        }
-      } catch (err) {
-        console.warn("Admin session validation failed", err);
-      }
-    }
-
-    // ❌ invalid / expired
-    if (!adminRestored) {
-      clearAdminSession();
-      // 🔴 CHANGED (STEP A5): mode ถูกบังคับเป็น viewer แล้วด้านบน ไม่ต้อง set ซ้ำ
-    }
+    await restoreAdminSessionIfValid();
 
     // ✅ RESTORE VIEWER STATE ก่อน render ทุกอย่าง
     loadCart();
 
-    // ✅ ค่อยโหลด data หลังรู้ mode แล้ว
-    await refreshProducts();
+    // Startup P0: products load independently from shell rendering.
+    void refreshProducts();
 
     // ✅ RENDER
     renderHeader();
